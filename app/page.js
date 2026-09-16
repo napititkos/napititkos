@@ -133,6 +133,7 @@ export default function HomePage() {
   const [toast, setToast] = useState('');
   const [showIntro, setShowIntro] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showHintModal, setShowHintModal] = useState(false);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const timerRef = useRef(null);
   const toastTimeout = useRef(null);
@@ -387,7 +388,7 @@ export default function HomePage() {
       {showIntro && (
         <div className="modal-overlay" onClick={dismissIntro}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
               Üdv a Titkosírásban! 🔐
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
@@ -420,7 +421,7 @@ export default function HomePage() {
       {showAchievements && (
         <div className="modal-overlay" onClick={() => setShowAchievements(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
               🏆 Trófeák
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -483,14 +484,6 @@ export default function HomePage() {
                   disabled={answered}
                   onEnter={() => checkAnswer(guess.join(''))}
                 />
-                <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
-                  Ellenőrzés
-                </button>
-                <button className="ghost small" onClick={giveUp}>
-                  Feladom, mutasd a választ
-                </button>
-              </div>
-              <div className="hintbar">
                 <button
                   className="ghost small"
                   disabled={!isRowFull()}
@@ -499,19 +492,18 @@ export default function HomePage() {
                 >
                   🌀 Keverés
                 </button>
+                <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
+                  Ellenőrzés
+                </button>
+                <button className="ghost small" onClick={giveUp}>
+                  Feladom, mutasd a választ
+                </button>
               </div>
               {availableHints.length > 0 && (
                 <div className="hintbar">
-                  {availableHints.map((t) => (
-                    <button
-                      key={t}
-                      className="ghost small"
-                      disabled={t === 'betu' ? noMoreLettersToReveal() : revealed.includes(t)}
-                      onClick={() => (t === 'betu' ? revealLetterHint() : revealHint(t))}
-                    >
-                      💡 {HINT_LABELS[t]}
-                    </button>
-                  ))}
+                  <button className="ghost small" onClick={() => setShowHintModal(true)}>
+                    💡 Tippek ({revealed.length}/{availableHints.length} felfedve)
+                  </button>
                 </div>
               )}
               {revealed.map((t) => (
@@ -528,6 +520,62 @@ export default function HomePage() {
                 </div>
               ))}
             </>
+          )}
+
+          {showHintModal && (
+            <div className="modal-overlay" onClick={() => setShowHintModal(false)}>
+              <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+                <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+                  💡 Melyik tippet kéred?
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {availableHints.map((t) => {
+                    const isBetu = t === 'betu';
+                    const used = isBetu ? false : revealed.includes(t);
+                    const exhausted = isBetu && noMoreLettersToReveal();
+                    return (
+                      <div
+                        key={t}
+                        style={{
+                          border: '2px solid var(--line)',
+                          borderRadius: 12,
+                          padding: '10px 12px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                          <b>{HINT_LABELS[t]}</b>
+                          <button
+                            className={used ? 'ghost small' : 'primary small'}
+                            disabled={used || exhausted}
+                            onClick={() => (isBetu ? revealLetterHint() : revealHint(t))}
+                          >
+                            {isBetu
+                              ? exhausted
+                                ? 'Nincs több betű'
+                                : `Kérek egy betűt (${betuCount} eddig)`
+                              : used
+                              ? 'Felhasználva ✓'
+                              : 'Ezt kérem'}
+                          </button>
+                        </div>
+                        {(isBetu ? betuCount > 0 : used) && (
+                          <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
+                            {isBetu
+                              ? `Eddig ${betuCount} betűt fedtünk fel a válaszban.`
+                              : puzzle.hints[t].text}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="actions" style={{ marginTop: 18 }}>
+                  <button className="primary" onClick={() => setShowHintModal(false)}>
+                    Bezárás
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {answered && (

@@ -20,7 +20,7 @@ export default function Nav() {
           ✨ Tutorial
         </a>
       </nav>
-      <div className="topnav" style={{ paddingTop: 0 }}>
+      <div className="sub-nav">
         <div className="links">
           <a href="/">Kezdőlap</a>
           <a href="/archive" onClick={handleArchiveClick}>Korábbi titkosírások</a>
