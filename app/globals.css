@@ -100,6 +100,11 @@ input.letter-box{
   font-size: 18px;
   font-weight: 700;
 }
+input.letter-box.locked{
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 textarea{ min-height: 64px; font-family:'IBM Plex Sans',sans-serif; resize:vertical; text-transform:none;}
 input:disabled{ opacity:0.75; }
 button{

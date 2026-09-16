@@ -7,8 +7,9 @@ const HINT_LABELS = {
   indikator: 'Indikátor',
   definicio: 'Definíció',
   alternativ: 'Alternatív tipp',
+  betu: 'Helyes betű',
 };
-const HINT_ORDER = ['definicio', 'indikator', 'fodder', 'alternativ'];
+const HINT_ORDER = ['definicio', 'indikator', 'fodder', 'alternativ', 'betu'];
 
 const STORAGE_KEY = 'titkositas_progress_v1';
 const norm = (s) => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -38,6 +39,13 @@ function tileFor(count) {
   if (count === 2) return '🟧';
   return '🟥';
 }
+function difficultyText(totalHints, parHints) {
+  if (parHints == null) return null;
+  const diff = totalHints - parHints;
+  if (diff === 0) return 'Pontosan a nehézségnek megfelelően oldottad meg!';
+  if (diff < 0) return `${Math.abs(diff)}-vel kevesebb tippet használtál, mint a nehézség — szép munka!`;
+  return `${diff}-vel több tippet használtál, mint a nehézség.`;
+}
 function numClass(count, answered) {
   if (!answered) return '';
   if (count <= 0) return 'good';
@@ -48,8 +56,11 @@ function numClass(count, answered) {
 function emptyGuess(answer) {
   return Array.from(answer).map((ch) => (ch === ' ' ? ' ' : ''));
 }
+function emptyLocked(answer) {
+  return Array.from(answer).map(() => false);
+}
 
-function LetterBoxes({ answer, value, onChange, disabled, onEnter }) {
+function LetterBoxes({ answer, value, locked, onChange, disabled, onEnter }) {
   const refs = useRef([]);
   const chars = Array.from(answer);
 
@@ -59,12 +70,12 @@ function LetterBoxes({ answer, value, onChange, disabled, onEnter }) {
   }
   function nextEditable(from) {
     let n = from;
-    while (n < chars.length && chars[n] === ' ') n++;
+    while (n < chars.length && (chars[n] === ' ' || locked[n])) n++;
     return n;
   }
   function prevEditable(from) {
     let p = from;
-    while (p >= 0 && chars[p] === ' ') p--;
+    while (p >= 0 && (chars[p] === ' ' || locked[p])) p--;
     return p;
   }
 
@@ -80,8 +91,8 @@ function LetterBoxes({ answer, value, onChange, disabled, onEnter }) {
             type="text"
             inputMode="text"
             maxLength={1}
-            className="letter-box"
-            disabled={disabled}
+            className={`letter-box${locked[idx] ? ' locked' : ''}`}
+            disabled={disabled || locked[idx]}
             value={value[idx] || ''}
             onChange={(e) => {
               const v = e.target.value.toUpperCase().slice(-1);
@@ -147,6 +158,7 @@ export default function HomePage() {
             gaveUp: false,
             revealed: [],
             guess: emptyGuess(c.answer),
+            lockedLetters: emptyLocked(c.answer),
           }))
         );
         const prog = loadProgress();
@@ -212,6 +224,25 @@ export default function HomePage() {
     }
   }
 
+  function revealLetterHint(i) {
+    const clue = puzzle.clues[i];
+    const cs = clueState[i];
+    if (cs.revealed.includes('betu')) return;
+    const answerChars = Array.from(clue.answer);
+    const guess = [...cs.guess];
+    const locked = [...cs.lockedLetters];
+    let idx = guess.findIndex(
+      (ch, pos) => answerChars[pos] !== ' ' && norm(ch) !== norm(answerChars[pos])
+    );
+    if (idx !== -1) {
+      guess[idx] = answerChars[idx].toUpperCase();
+      locked[idx] = true;
+    }
+    const next = [...clueState];
+    next[i] = { ...cs, guess, lockedLetters: locked, revealed: [...cs.revealed, 'betu'] };
+    setClueState(next);
+  }
+
   function giveUp(i) {
     const next = [...clueState];
     next[i] = { ...next[i], answered: true, correct: false, gaveUp: true };
@@ -263,11 +294,15 @@ export default function HomePage() {
 
   function shareText() {
     const tileRow = clueState.map((c, i) => tileFor(hintsUsedFor(i))).join('');
+    const totalHints = clueState.reduce((sum, c) => sum + c.revealed.length + (c.gaveUp ? 1 : 0), 0);
     const lines = [
       `Titkosírás · ${puzzleMeta?.date || ''}`,
       tileRow,
       `Idő: ${formatTime(elapsed)}`,
     ];
+    if (puzzle?.parHints != null) {
+      lines.push(difficultyText(totalHints, puzzle.parHints));
+    }
     if (avgHints !== null) lines.push(`Átlag tipp/játékos ma: ${avgHints.toFixed(1)}`);
     return lines.join('\n');
   }
@@ -315,7 +350,9 @@ export default function HomePage() {
 
         {puzzle.clues.map((clue, i) => {
           const cs = clueState[i];
-          const availableHints = HINT_ORDER.filter((t) => clue.hints?.[t]?.enabled && clue.hints[t].text);
+          const availableHints = HINT_ORDER.filter(
+            (t) => t === 'betu' || (clue.hints?.[t]?.enabled && clue.hints[t].text)
+          );
           return (
             <div className="clue-row" key={i}>
               <div className="clue-head">
@@ -329,6 +366,7 @@ export default function HomePage() {
                     <LetterBoxes
                       answer={clue.answer}
                       value={cs.guess}
+                      locked={cs.lockedLetters}
                       onChange={(next) => updateGuess(i, next)}
                       disabled={cs.answered}
                       onEnter={() => checkAnswer(i, cs.guess.join(''))}
@@ -347,7 +385,7 @@ export default function HomePage() {
                           key={t}
                           className="ghost small"
                           disabled={cs.revealed.includes(t)}
-                          onClick={() => revealHint(i, t)}
+                          onClick={() => (t === 'betu' ? revealLetterHint(i) : revealHint(i, t))}
                         >
                           💡 {HINT_LABELS[t]}
                         </button>
@@ -356,7 +394,15 @@ export default function HomePage() {
                   )}
                   {cs.revealed.map((t) => (
                     <div className="hint-box" key={t}>
-                      <b>{HINT_LABELS[t]}:</b> {clue.hints[t].text}
+                      {t === 'betu' ? (
+                        <>
+                          <b>Helyes betű:</b> Elárultunk egy betűt a válaszban.
+                        </>
+                      ) : (
+                        <>
+                          <b>{HINT_LABELS[t]}:</b> {clue.hints[t].text}
+                        </>
+                      )}
                     </div>
                   ))}
                 </>
@@ -398,6 +444,12 @@ export default function HomePage() {
               <b>{progress.best}</b>
               <span>legjobb sorozat</span>
             </div>
+            {puzzle.parHints != null && (
+              <div className="stat">
+                <b>{puzzle.parHints}</b>
+                <span>nehézség (elvárt tipp)</span>
+              </div>
+            )}
             {avgHints !== null && (
               <div className="stat">
                 <b>{avgHints.toFixed(1)}</b>
@@ -405,6 +457,14 @@ export default function HomePage() {
               </div>
             )}
           </div>
+          {puzzle.parHints != null && (
+            <div className="feedback hint" style={{ marginLeft: 0, display: 'inline-block' }}>
+              {difficultyText(
+                clueState.reduce((sum, c) => sum + c.revealed.length + (c.gaveUp ? 1 : 0), 0),
+                puzzle.parHints
+              )}
+            </div>
+          )}
           <div className="actions">
             <button className="primary" onClick={share}>
               Eredmény megosztása

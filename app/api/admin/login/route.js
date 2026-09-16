@@ -1,33 +1,38 @@
 export const dynamic = 'force-dynamic';
 
+import { NextResponse } from 'next/server';
+
 export async function POST(req) {
   const body = await req.json().catch(() => ({}));
   const { password } = body;
 
   if (!process.env.ADMIN_PASSWORD) {
-    return Response.json(
+    return NextResponse.json(
       { ok: false, error: 'Az ADMIN_PASSWORD nincs beállítva a szerveren.' },
       { status: 500 }
     );
   }
 
   if (password && password === process.env.ADMIN_PASSWORD) {
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: {
-        'Set-Cookie': `admin_token=${encodeURIComponent(password)}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`,
-        'Content-Type': 'application/json',
-      },
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set('admin_token', password, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 604800,
+      sameSite: 'lax',
     });
+    return res;
   }
-  return Response.json({ ok: false }, { status: 401 });
+  return NextResponse.json({ ok: false }, { status: 401 });
 }
 
 export async function DELETE() {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Set-Cookie': 'admin_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax',
-    },
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set('admin_token', '', {
+    httpOnly: true,
+    path: '/',
+    maxAge: 0,
+    sameSite: 'lax',
   });
+  return res;
 }

@@ -17,16 +17,18 @@ function emptyClue() {
       indikator: { enabled: false, text: '' },
       fodder: { enabled: false, text: '' },
       alternativ: { enabled: false, text: '' },
+      betu: { enabled: true },
     },
   };
 }
 function emptyPuzzle() {
-  return { clues: [emptyClue(), emptyClue(), emptyClue(), emptyClue(), emptyClue()] };
+  return { parHints: 3, clues: [emptyClue(), emptyClue(), emptyClue(), emptyClue(), emptyClue()] };
 }
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(null);
   const [puzzles, setPuzzles] = useState([]);
   const [submissions, setSubmissions] = useState([]);
@@ -34,15 +36,27 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
 
   async function tryLoad() {
-    const res = await fetch('/api/admin/puzzles');
-    if (res.status === 401) {
-      setAuthed(false);
-      return;
+    try {
+      const res = await fetch('/api/admin/puzzles');
+      if (res.status === 401) {
+        setAuthed(false);
+        return { ok: false, msg: null };
+      }
+      if (!res.ok) {
+        const bodyText = await res.text().catch(() => '');
+        return {
+          ok: false,
+          msg: `A szerver hibát adott vissza (${res.status}). Részletek: ${bodyText.slice(0, 200) || 'nincs részlet.'}`,
+        };
+      }
+      const data = await res.json();
+      setPuzzles(data.puzzles || []);
+      setAuthed(true);
+      loadSubmissions();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, msg: `Hálózati vagy feldolgozási hiba: ${err.message}` };
     }
-    const data = await res.json();
-    setPuzzles(data.puzzles || []);
-    setAuthed(true);
-    loadSubmissions();
   }
 
   async function loadSubmissions() {
@@ -60,16 +74,29 @@ export default function AdminPage() {
   async function login(e) {
     e.preventDefault();
     setLoginError(null);
-    const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    if (res.ok) {
-      setPassword('');
-      tryLoad();
-    } else {
-      setLoginError('Hibás jelszó, vagy nincs beállítva ADMIN_PASSWORD a szerveren.');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setPassword('');
+        const result = await tryLoad();
+        if (!result.ok) {
+          setLoginError(
+            result.msg ||
+              'A jelszó helyes volt, de a bejelentkezés mégsem maradt meg. Próbáld újra, vagy ellenőrizd, hogy a böngésződ nem blokkolja-e a sütiket.'
+          );
+        }
+      } else {
+        const bodyText = await res.text().catch(() => '');
+        setLoginError(
+          `Hibás jelszó, vagy nincs beállítva ADMIN_PASSWORD a szerveren. (${res.status}${bodyText ? ' — ' + bodyText.slice(0, 150) : ''})`
+        );
+      }
+    } catch (err) {
+      setLoginError(`Váratlan hiba történt: ${err.message}`);
     }
   }
 
@@ -140,12 +167,23 @@ export default function AdminPage() {
         <div className="card">
           <form onSubmit={login}>
             <label className="field-label">Admin jelszó</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ textTransform: 'none' }}
-            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ textTransform: 'none' }}
+              />
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
+                title={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
             <div style={{ marginTop: 14 }}>
               <button className="primary" type="submit">Belépés</button>
             </div>
@@ -184,6 +222,22 @@ export default function AdminPage() {
                 <button className="ghost small" onClick={() => movePuzzle(pi, 1)}>↓</button>
                 <button className="ghost small" onClick={() => removePuzzle(pi)}>Törlés</button>
               </div>
+            </div>
+
+            <div style={{ margin: '10px 0 4px' }}>
+              <label className="field-label" style={{ margin: '0 0 4px' }}>
+                Nehézség (hány tippre számítasz, hogy egy átlagos játékos megoldja?)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="20"
+                style={{ width: 90, textTransform: 'none' }}
+                value={p.parHints ?? 3}
+                onChange={(e) =>
+                  updatePuzzle(pi, (pp) => ({ ...pp, parHints: Number(e.target.value) || 0 }))
+                }
+              />
             </div>
 
             {p.clues.map((c, ci) => (
@@ -244,6 +298,11 @@ export default function AdminPage() {
                     )}
                   </div>
                 ))}
+
+                <div className="checkbox-row" style={{ opacity: 0.75 }}>
+                  <input type="checkbox" checked disabled />
+                  <label>Helyes betű tipp elérhető (automatikus, minden rejtvénynél jelen van)</label>
+                </div>
               </div>
             ))}
             <div style={{ marginTop: 12 }}>
