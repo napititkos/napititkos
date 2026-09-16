@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { loadProgress, saveProgress } from '../../lib/progress';
+import { computeNewAchievements } from '../../lib/achievements';
 
 export default function SubmitPage() {
   const [form, setForm] = useState({
@@ -42,7 +44,25 @@ export default function SubmitPage() {
         }),
       });
       if (res.ok) {
-        setStatus({ ok: true, msg: 'Köszönjük! Megkaptuk a rejtvényedet, hamarosan átnézzük.' });
+        let extra = '';
+        const prog = loadProgress();
+        if (!prog.submittedPuzzle) {
+          prog.submittedPuzzle = true;
+          const { unlocked, newly } = computeNewAchievements(
+            {
+              totalSolved: prog.totalSolved || 0,
+              streak: prog.streak || 0,
+              fastestTime: prog.fastestTime,
+              submittedPuzzle: true,
+              readHelp: prog.readHelp || false,
+            },
+            prog.unlocked
+          );
+          prog.unlocked = unlocked;
+          saveProgress(prog);
+          if (newly.includes('submitted_puzzle')) extra = ' 🏆 Új eredmény: Beküldő!';
+        }
+        setStatus({ ok: true, msg: 'Köszönjük! Megkaptuk a rejtvényedet, hamarosan átnézzük.' + extra });
         setForm({ name: '', clue: '', answer: '', fodder: '', indikator: '', definicio: '', alternativ: '' });
       } else {
         setStatus({ ok: false, msg: 'Valami nem sikerült. Próbáld újra kicsit később.' });
@@ -92,7 +112,7 @@ export default function SubmitPage() {
           <label className="field-label">Mutató (opcionális tipp)</label>
           <textarea value={form.indikator} onChange={(e) => update('indikator', e.target.value)} />
 
-          <label className="field-label">Alapszavak (opcionális tipp)</label>
+          <label className="field-label">Készlet (opcionális tipp)</label>
           <textarea value={form.fodder} onChange={(e) => update('fodder', e.target.value)} />
 
           <label className="field-label">Alternatív tipp (opcionális)</label>

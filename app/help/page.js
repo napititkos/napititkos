@@ -1,8 +1,11 @@
 export const metadata = { title: 'Súgó — Titkosírás' };
 
+import TrackHelpVisit from '../../components/TrackHelpVisit';
+
 export default function HelpPage() {
   return (
     <div className="wrap">
+      <TrackHelpVisit />
       <h1 className="page-title">Súgó</h1>
       <div className="card">
         <div className="help-block">
@@ -23,7 +26,7 @@ export default function HelpPage() {
           <p>A „jelzőszó”, ami elárulja, milyen trükköt kell alkalmazni a wordplay részben — pl. „összekeverve” egy anagrammát jelez, „elrejtve” egy rejtett szót, „visszafelé” egy megfordítást.</p>
         </div>
         <div className="help-block">
-          <h3>Alapszavak</h3>
+          <h3>Készlet</h3>
           <p>Az a betűhalmaz vagy szórészlet, amivel a mutató szerinti trükköt el kell végezni — például az anagramma esetén pontosan azok a betűk, amiket át kell rendezni.</p>
         </div>
         <div className="help-block">

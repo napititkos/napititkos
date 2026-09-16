@@ -5,6 +5,10 @@ export default function Nav() {
     e.preventDefault();
     alert('Hamarosan érkezik! Dolgozunk rajta. 🚧');
   }
+  function handleTutorialClick(e) {
+    e.preventDefault();
+    alert('Építés alatt! Hamarosan érkezik a tutorial. 🚧');
+  }
 
   return (
     <nav className="topnav">
@@ -15,6 +19,9 @@ export default function Nav() {
         <a href="/">Kezdőlap</a>
         <a href="/archive" onClick={handleArchiveClick}>Korábbi titkosírások</a>
         <a href="/help">Súgó</a>
+        <a href="#" onClick={handleTutorialClick} className="tutorial-badge">
+          ✨ Tutorial
+        </a>
         <a href="/submit">Rejtvény beküldése</a>
         <a href="/contact">Kapcsolat</a>
       </div>

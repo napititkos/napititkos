@@ -2,9 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { fireConfetti } from '../components/Confetti';
 import { enumerationFor } from '../lib/format';
+import { ACHIEVEMENTS, computeNewAchievements } from '../lib/achievements';
+import { loadProgress, saveProgress } from '../lib/progress';
 
 const HINT_LABELS = {
-  fodder: 'Alapszavak',
+  fodder: 'Készlet',
   indikator: 'Mutató',
   definicio: 'Definíció',
   alternativ: 'Alternatív tipp',
@@ -12,22 +14,8 @@ const HINT_LABELS = {
 };
 const HINT_ORDER = ['definicio', 'indikator', 'fodder', 'alternativ', 'betu'];
 
-const STORAGE_KEY = 'titkositas_progress_v2';
 const norm = (s) => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
 
-function loadProgress() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { lastDate: null, streak: 0, best: 0, history: {} };
-  } catch {
-    return { lastDate: null, streak: 0, best: 0, history: {} };
-  }
-}
-function saveProgress(p) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-  } catch {}
-}
 function formatTime(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const m = String(Math.floor(total / 60)).padStart(2, '0');
@@ -144,6 +132,8 @@ export default function HomePage() {
   const [avgHints, setAvgHints] = useState(null);
   const [toast, setToast] = useState('');
   const [showIntro, setShowIntro] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const timerRef = useRef(null);
   const toastTimeout = useRef(null);
 
@@ -178,6 +168,7 @@ export default function HomePage() {
 
         const prog = loadProgress();
         setProgress({ streak: prog.streak, best: prog.best });
+        setUnlockedAchievements(prog.unlocked || []);
         const saved = prog.history[data.date];
         if (saved) {
           setGuess(saved.guess);
@@ -275,6 +266,12 @@ export default function HomePage() {
     setGuess(nextGuess);
   }
 
+  function announceAchievements(ids) {
+    if (!ids.length) return;
+    const titles = ids.map((id) => ACHIEVEMENTS.find((a) => a.id === id)?.title).filter(Boolean);
+    if (titles.length) showToast(`🏆 Új eredmény: ${titles.join(', ')}`);
+  }
+
   function giveUp() {
     setAnswered(true);
     setGaveUp(true);
@@ -308,8 +305,27 @@ export default function HomePage() {
       gaveUp: didGiveUp,
       elapsed: finalElapsed,
     };
+    if (wasCorrect) {
+      prog.totalSolved = (prog.totalSolved || 0) + 1;
+      if (prog.fastestTime == null || finalElapsed < prog.fastestTime) {
+        prog.fastestTime = finalElapsed;
+      }
+    }
+    const { unlocked, newly } = computeNewAchievements(
+      {
+        totalSolved: prog.totalSolved || 0,
+        streak: prog.streak,
+        fastestTime: prog.fastestTime,
+        submittedPuzzle: prog.submittedPuzzle || false,
+        readHelp: prog.readHelp || false,
+      },
+      prog.unlocked
+    );
+    prog.unlocked = unlocked;
     saveProgress(prog);
     setProgress({ streak: prog.streak, best: prog.best });
+    setUnlockedAchievements(unlocked);
+    announceAchievements(newly);
 
     fetch('/api/stats', {
       method: 'POST',
@@ -381,7 +397,7 @@ export default function HomePage() {
               (ez utóbbi hamarosan érkezik).
             </p>
             <div className="actions" style={{ marginTop: 18 }}>
-              <a href="/help" style={{ textDecoration: 'none' }}>
+              <a href="/help" style={{ textDecoration: 'none' }} onClick={dismissIntro}>
                 <button className="ghost">Súgó megnyitása</button>
               </a>
               <button className="primary" onClick={dismissIntro}>
@@ -392,9 +408,52 @@ export default function HomePage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
+        <button className="pill" style={{ border: 'none', cursor: 'pointer' }} onClick={() => setShowAchievements(true)}>
+          🏆 {unlockedAchievements.length}/{ACHIEVEMENTS.length}
+        </button>
         <span className="pill">🔥 {progress.streak} napos sorozat</span>
       </div>
+
+      {showAchievements && (
+        <div className="modal-overlay" onClick={() => setShowAchievements(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+              🏆 Eredmények
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {ACHIEVEMENTS.map((a) => {
+                const done = unlockedAchievements.includes(a.id);
+                return (
+                  <div
+                    key={a.id}
+                    style={{
+                      display: 'flex',
+                      gap: 10,
+                      alignItems: 'center',
+                      opacity: done ? 1 : 0.4,
+                      background: done ? 'var(--accent-soft)' : 'transparent',
+                      borderRadius: 12,
+                      padding: '8px 10px',
+                    }}
+                  >
+                    <span style={{ fontSize: 22 }}>{a.emoji}</span>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{a.title}</div>
+                      <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{a.desc}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="actions" style={{ marginTop: 18 }}>
+              <button className="primary" onClick={() => setShowAchievements(false)}>
+                Bezárás
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="topbar">
