@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
-  { key: 'indikator', label: 'Indikátor' },
-  { key: 'fodder', label: 'Fodder' },
+  { key: 'indikator', label: 'Mutató' },
+  { key: 'fodder', label: 'Alapszavak' },
   { key: 'alternativ', label: 'Alternatív tipp' },
 ];
 
@@ -21,8 +21,16 @@ function emptyClue() {
     },
   };
 }
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
 function emptyPuzzle() {
-  return { parHints: 3, clues: [emptyClue(), emptyClue(), emptyClue(), emptyClue(), emptyClue()] };
+  return {
+    id: generateId(),
+    parHints: 3,
+    clues: [emptyClue(), emptyClue(), emptyClue(), emptyClue(), emptyClue()],
+  };
 }
 
 export default function AdminPage() {
@@ -50,7 +58,8 @@ export default function AdminPage() {
         };
       }
       const data = await res.json();
-      setPuzzles(data.puzzles || []);
+      const withIds = (data.puzzles || []).map((p) => (p.id ? p : { ...p, id: generateId() }));
+      setPuzzles(withIds);
       setAuthed(true);
       loadSubmissions();
       return { ok: true };
@@ -226,7 +235,7 @@ export default function AdminPage() {
 
             <div style={{ margin: '10px 0 4px' }}>
               <label className="field-label" style={{ margin: '0 0 4px' }}>
-                Nehézség (hány tippre számítasz, hogy egy átlagos játékos megoldja?)
+                Nehézség (azt jelöli, hány tippre van szüksége egy átlagos játékosnak a megoldáshoz)
               </label>
               <input
                 type="number"
@@ -327,8 +336,8 @@ export default function AdminPage() {
             <div style={{ margin: '6px 0' }}>{s.clue}</div>
             <div>Válasz: <b>{s.answer}</b></div>
             {s.hints?.definicio && <div>Definíció: {s.hints.definicio}</div>}
-            {s.hints?.indikator && <div>Indikátor: {s.hints.indikator}</div>}
-            {s.hints?.fodder && <div>Fodder: {s.hints.fodder}</div>}
+            {s.hints?.indikator && <div>Mutató: {s.hints.indikator}</div>}
+            {s.hints?.fodder && <div>Alapszavak: {s.hints.fodder}</div>}
             {s.hints?.alternativ && <div>Alternatív: {s.hints.alternativ}</div>}
             <div style={{ marginTop: 8 }}>
               <button className="ghost small" onClick={() => deleteSubmission(s.id)}>Törlés</button>

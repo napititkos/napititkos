@@ -89,10 +89,10 @@ export default function SubmitPage() {
           <label className="field-label">Definíció (opcionális tipp)</label>
           <textarea value={form.definicio} onChange={(e) => update('definicio', e.target.value)} />
 
-          <label className="field-label">Indikátor (opcionális tipp)</label>
+          <label className="field-label">Mutató (opcionális tipp)</label>
           <textarea value={form.indikator} onChange={(e) => update('indikator', e.target.value)} />
 
-          <label className="field-label">Fodder (opcionális tipp)</label>
+          <label className="field-label">Alapszavak (opcionális tipp)</label>
           <textarea value={form.fodder} onChange={(e) => update('fodder', e.target.value)} />
 
           <label className="field-label">Alternatív tipp (opcionális)</label>

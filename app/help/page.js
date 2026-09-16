@@ -19,12 +19,12 @@ export default function HelpPage() {
           <p>A rejtvény azon szava vagy kifejezése, ami közvetlenül, szó szerint jelenti a választ — pont úgy, mint egy hagyományos keresztrejtvényben.</p>
         </div>
         <div className="help-block">
-          <h3>Indikátor</h3>
+          <h3>Mutató</h3>
           <p>A „jelzőszó”, ami elárulja, milyen trükköt kell alkalmazni a wordplay részben — pl. „összekeverve” egy anagrammát jelez, „elrejtve” egy rejtett szót, „visszafelé” egy megfordítást.</p>
         </div>
         <div className="help-block">
-          <h3>Fodder</h3>
-          <p>Az a betűhalmaz vagy szórészlet, amivel az indikátor szerinti trükköt el kell végezni — például az anagramma esetén pontosan azok a betűk, amiket át kell rendezni.</p>
+          <h3>Alapszavak</h3>
+          <p>Az a betűhalmaz vagy szórészlet, amivel a mutató szerinti trükköt el kell végezni — például az anagramma esetén pontosan azok a betűk, amiket át kell rendezni.</p>
         </div>
         <div className="help-block">
           <h3>Alternatív tipp</h3>

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { fireConfetti } from '../components/Confetti';
 
 const HINT_LABELS = {
-  fodder: 'Fodder',
-  indikator: 'Indikátor',
+  fodder: 'Alapszavak',
+  indikator: 'Mutató',
   definicio: 'Definíció',
   alternativ: 'Alternatív tipp',
   betu: 'Helyes betű',
@@ -46,6 +46,12 @@ function difficultyText(totalHints, parHints) {
   if (diff < 0) return `${Math.abs(diff)}-vel kevesebb tippet használtál, mint a nehézség — szép munka!`;
   return `${diff}-vel több tippet használtál, mint a nehézség.`;
 }
+function totalHintsFor(clueState) {
+  return clueState.reduce(
+    (sum, c) => sum + c.revealed.filter((t) => t !== 'betu').length + (c.betuCount || 0) + (c.gaveUp ? 1 : 0),
+    0
+  );
+}
 function numClass(count, answered) {
   if (!answered) return '';
   if (count <= 0) return 'good';
@@ -80,10 +86,10 @@ function LetterBoxes({ answer, value, locked, onChange, disabled, onEnter }) {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    <div className="letterbox-row">
       {chars.map((ch, idx) =>
         ch === ' ' ? (
-          <div key={idx} style={{ width: 12 }} />
+          <div key={idx} style={{ width: 12, flex: '0 0 auto' }} />
         ) : (
           <input
             key={idx}
@@ -157,6 +163,7 @@ export default function HomePage() {
             correct: false,
             gaveUp: false,
             revealed: [],
+            betuCount: 0,
             guess: emptyGuess(c.answer),
             lockedLetters: emptyLocked(c.answer),
           }))
@@ -192,7 +199,8 @@ export default function HomePage() {
   function hintsUsedFor(i) {
     const c = clueState[i];
     if (!c) return 0;
-    return c.revealed.length + (c.gaveUp ? 1 : 0);
+    const otherCount = c.revealed.filter((t) => t !== 'betu').length;
+    return otherCount + (c.betuCount || 0) + (c.gaveUp ? 1 : 0);
   }
 
   function updateGuess(i, nextChars) {
@@ -227,20 +235,31 @@ export default function HomePage() {
   function revealLetterHint(i) {
     const clue = puzzle.clues[i];
     const cs = clueState[i];
-    if (cs.revealed.includes('betu')) return;
     const answerChars = Array.from(clue.answer);
     const guess = [...cs.guess];
     const locked = [...cs.lockedLetters];
-    let idx = guess.findIndex(
+    const idx = guess.findIndex(
       (ch, pos) => answerChars[pos] !== ' ' && norm(ch) !== norm(answerChars[pos])
     );
-    if (idx !== -1) {
-      guess[idx] = answerChars[idx].toUpperCase();
-      locked[idx] = true;
-    }
+    if (idx === -1) return;
+    guess[idx] = answerChars[idx].toUpperCase();
+    locked[idx] = true;
     const next = [...clueState];
-    next[i] = { ...cs, guess, lockedLetters: locked, revealed: [...cs.revealed, 'betu'] };
+    next[i] = {
+      ...cs,
+      guess,
+      lockedLetters: locked,
+      betuCount: (cs.betuCount || 0) + 1,
+      revealed: cs.revealed.includes('betu') ? cs.revealed : [...cs.revealed, 'betu'],
+    };
     setClueState(next);
+  }
+
+  function noMoreLettersToReveal(i) {
+    const clue = puzzle.clues[i];
+    const cs = clueState[i];
+    const answerChars = Array.from(clue.answer);
+    return !answerChars.some((ch, pos) => ch !== ' ' && norm(cs.guess[pos]) !== norm(ch));
   }
 
   function giveUp(i) {
@@ -262,10 +281,7 @@ export default function HomePage() {
     clearInterval(timerRef.current);
     fireConfetti();
 
-    const totalHints = finalState.reduce(
-      (sum, c) => sum + c.revealed.length + (c.gaveUp ? 1 : 0),
-      0
-    );
+    const totalHints = totalHintsFor(finalState);
 
     const prog = loadProgress();
     const today = puzzleMeta.date;
@@ -294,7 +310,7 @@ export default function HomePage() {
 
   function shareText() {
     const tileRow = clueState.map((c, i) => tileFor(hintsUsedFor(i))).join('');
-    const totalHints = clueState.reduce((sum, c) => sum + c.revealed.length + (c.gaveUp ? 1 : 0), 0);
+    const totalHints = totalHintsFor(clueState);
     const lines = [
       `Titkosírás · ${puzzleMeta?.date || ''}`,
       tileRow,
@@ -384,7 +400,7 @@ export default function HomePage() {
                         <button
                           key={t}
                           className="ghost small"
-                          disabled={cs.revealed.includes(t)}
+                          disabled={t === 'betu' ? noMoreLettersToReveal(i) : cs.revealed.includes(t)}
                           onClick={() => (t === 'betu' ? revealLetterHint(i) : revealHint(i, t))}
                         >
                           💡 {HINT_LABELS[t]}
@@ -396,7 +412,7 @@ export default function HomePage() {
                     <div className="hint-box" key={t}>
                       {t === 'betu' ? (
                         <>
-                          <b>Helyes betű:</b> Elárultunk egy betűt a válaszban.
+                          <b>Helyes betű:</b> Eddig {cs.betuCount || 0} betűt fedtünk fel a válaszban.
                         </>
                       ) : (
                         <>
@@ -447,7 +463,7 @@ export default function HomePage() {
             {puzzle.parHints != null && (
               <div className="stat">
                 <b>{puzzle.parHints}</b>
-                <span>nehézség (elvárt tipp)</span>
+                <span>nehézség (ennyi tipp kell hozzá)</span>
               </div>
             )}
             {avgHints !== null && (
@@ -459,10 +475,7 @@ export default function HomePage() {
           </div>
           {puzzle.parHints != null && (
             <div className="feedback hint" style={{ marginLeft: 0, display: 'inline-block' }}>
-              {difficultyText(
-                clueState.reduce((sum, c) => sum + c.revealed.length + (c.gaveUp ? 1 : 0), 0),
-                puzzle.parHints
-              )}
+              {difficultyText(totalHintsFor(clueState), puzzle.parHints)}
             </div>
           )}
           <div className="actions">
