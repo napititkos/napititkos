@@ -11,20 +11,23 @@ export default function Nav() {
   }
 
   return (
-    <nav className="topnav">
-      <a href="/" style={{ textDecoration: 'none' }}>
-        <div className="brand">Titkos<span>írás</span></div>
-      </a>
-      <div className="links">
-        <a href="/">Kezdőlap</a>
-        <a href="/archive" onClick={handleArchiveClick}>Korábbi titkosírások</a>
-        <a href="/help">Súgó</a>
+    <>
+      <nav className="topnav">
+        <a href="/" style={{ textDecoration: 'none' }}>
+          <div className="brand">Titkos<span>írás</span></div>
+        </a>
         <a href="#" onClick={handleTutorialClick} className="tutorial-badge">
           ✨ Tutorial
         </a>
-        <a href="/submit">Rejtvény beküldése</a>
-        <a href="/contact">Kapcsolat</a>
+      </nav>
+      <div className="topnav" style={{ paddingTop: 0 }}>
+        <div className="links">
+          <a href="/">Kezdőlap</a>
+          <a href="/archive" onClick={handleArchiveClick}>Korábbi titkosírások</a>
+          <a href="/help">Súgó</a>
+          <a href="/submit">Rejtvény beküldése</a>
+        </div>
       </div>
-    </nav>
+    </>
   );
 }

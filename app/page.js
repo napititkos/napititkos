@@ -269,7 +269,7 @@ export default function HomePage() {
   function announceAchievements(ids) {
     if (!ids.length) return;
     const titles = ids.map((id) => ACHIEVEMENTS.find((a) => a.id === id)?.title).filter(Boolean);
-    if (titles.length) showToast(`🏆 Új eredmény: ${titles.join(', ')}`);
+    if (titles.length) showToast(`🏆 Új trófea: ${titles.join(', ')}`);
   }
 
   function giveUp() {
@@ -307,6 +307,7 @@ export default function HomePage() {
     };
     if (wasCorrect) {
       prog.totalSolved = (prog.totalSolved || 0) + 1;
+      if (totalHints === 0) prog.noHintSolves = (prog.noHintSolves || 0) + 1;
       if (prog.fastestTime == null || finalElapsed < prog.fastestTime) {
         prog.fastestTime = finalElapsed;
       }
@@ -316,6 +317,7 @@ export default function HomePage() {
         totalSolved: prog.totalSolved || 0,
         streak: prog.streak,
         fastestTime: prog.fastestTime,
+        noHintSolves: prog.noHintSolves || 0,
         submittedPuzzle: prog.submittedPuzzle || false,
         readHelp: prog.readHelp || false,
       },
@@ -385,7 +387,7 @@ export default function HomePage() {
       {showIntro && (
         <div className="modal-overlay" onClick={dismissIntro}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
               Üdv a Titkosírásban! 🔐
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
@@ -418,8 +420,8 @@ export default function HomePage() {
       {showAchievements && (
         <div className="modal-overlay" onClick={() => setShowAchievements(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
-              🏆 Eredmények
+            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+              🏆 Trófeák
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {ACHIEVEMENTS.map((a) => {
