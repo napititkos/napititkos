@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { enumerationFor, splitAnswerWords } from '../../lib/format';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
@@ -8,10 +9,16 @@ const HINT_TYPES = [
   { key: 'alternativ', label: 'Alternatív tipp' },
 ];
 
-function emptyClue() {
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function emptyEntry() {
   return {
+    id: generateId(),
     clue: '',
     answer: '',
+    parHints: 3,
     hints: {
       definicio: { enabled: false, text: '' },
       indikator: { enabled: false, text: '' },
@@ -21,16 +28,33 @@ function emptyClue() {
     },
   };
 }
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
 
-function emptyPuzzle() {
-  return {
-    id: generateId(),
-    parHints: 3,
-    clues: [emptyClue(), emptyClue(), emptyClue(), emptyClue(), emptyClue()],
-  };
+function migrateOldFormat(rawList) {
+  const result = [];
+  for (const item of rawList) {
+    if (Array.isArray(item.clues)) {
+      // Régi, "5 rejtvény egy csomagban" formátum — szétbontjuk önálló bejegyzésekre.
+      for (const c of item.clues) {
+        if (!c.clue && !c.answer) continue;
+        result.push({
+          id: generateId(),
+          clue: c.clue || '',
+          answer: c.answer || '',
+          parHints: item.parHints ?? 3,
+          hints: c.hints || {
+            definicio: { enabled: false, text: '' },
+            indikator: { enabled: false, text: '' },
+            fodder: { enabled: false, text: '' },
+            alternativ: { enabled: false, text: '' },
+            betu: { enabled: true },
+          },
+        });
+      }
+    } else {
+      result.push(item.id ? item : { ...item, id: generateId() });
+    }
+  }
+  return result;
 }
 
 export default function AdminPage() {
@@ -38,7 +62,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(null);
-  const [puzzles, setPuzzles] = useState([]);
+  const [entries, setEntries] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [saveStatus, setSaveStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -58,8 +82,8 @@ export default function AdminPage() {
         };
       }
       const data = await res.json();
-      const withIds = (data.puzzles || []).map((p) => (p.id ? p : { ...p, id: generateId() }));
-      setPuzzles(withIds);
+      const migrated = migrateOldFormat(data.puzzles || []);
+      setEntries(migrated);
       setAuthed(true);
       loadSubmissions();
       return { ok: true };
@@ -109,42 +133,29 @@ export default function AdminPage() {
     }
   }
 
-  function updatePuzzle(pi, updater) {
-    setPuzzles((prev) => {
+  function updateEntry(ei, updater) {
+    setEntries((prev) => {
       const next = [...prev];
-      next[pi] = updater(next[pi]);
+      next[ei] = updater(next[ei]);
       return next;
-    });
-  }
-  function updateClue(pi, ci, updater) {
-    updatePuzzle(pi, (p) => {
-      const clues = [...p.clues];
-      clues[ci] = updater(clues[ci]);
-      return { ...p, clues };
     });
   }
 
-  function addPuzzle() {
-    setPuzzles((prev) => [...prev, emptyPuzzle()]);
+  function addEntry() {
+    setEntries((prev) => [...prev, emptyEntry()]);
   }
-  function removePuzzle(pi) {
-    if (!confirm('Biztosan törlöd ezt a teljes napi rejtvényt?')) return;
-    setPuzzles((prev) => prev.filter((_, i) => i !== pi));
+  function removeEntry(ei) {
+    if (!confirm('Biztosan törlöd ezt a titkosírást?')) return;
+    setEntries((prev) => prev.filter((_, i) => i !== ei));
   }
-  function movePuzzle(pi, dir) {
-    setPuzzles((prev) => {
+  function moveEntry(ei, dir) {
+    setEntries((prev) => {
       const next = [...prev];
-      const target = pi + dir;
+      const target = ei + dir;
       if (target < 0 || target >= next.length) return next;
-      [next[pi], next[target]] = [next[target], next[pi]];
+      [next[ei], next[target]] = [next[target], next[ei]];
       return next;
     });
-  }
-  function addClue(pi) {
-    updatePuzzle(pi, (p) => ({ ...p, clues: [...p.clues, emptyClue()] }));
-  }
-  function removeClue(pi, ci) {
-    updatePuzzle(pi, (p) => ({ ...p, clues: p.clues.filter((_, i) => i !== ci) }));
   }
 
   async function saveAll() {
@@ -153,7 +164,7 @@ export default function AdminPage() {
     const res = await fetch('/api/admin/puzzles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ puzzles }),
+      body: JSON.stringify({ puzzles: entries }),
     });
     setLoading(false);
     setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
@@ -206,116 +217,171 @@ export default function AdminPage() {
   return (
     <div className="wrap">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="page-title">Admin — rejtvények kezelése</h1>
+        <h1 className="page-title">Admin — titkosírások kezelése</h1>
         <button className="ghost small" onClick={logout}>Kijelentkezés</button>
       </div>
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <b>{puzzles.length} napi rejtvénycsomag</b>
+          <b>{entries.length} db titkosírás a sorban</b>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="ghost small" onClick={addPuzzle}>+ Új napi rejtvény</button>
+            <button className="ghost small" onClick={addEntry}>+ Új titkosírás</button>
             <button className="primary small" onClick={saveAll} disabled={loading}>
               {loading ? 'Mentés…' : 'Összes mentése'}
             </button>
           </div>
         </div>
+        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
+          Minden nap délben (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
+          listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
+        </p>
         {saveStatus && <div className="feedback good" style={{ marginLeft: 0 }}>{saveStatus}</div>}
 
-        {puzzles.map((p, pi) => (
-          <div className="puzzle-editor" key={pi}>
+        {entries.length > 0 && (
+          <div style={{ overflowX: 'auto', marginBottom: 18 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--line)', textAlign: 'left' }}>
+                  <th style={{ padding: '6px 8px' }}>#</th>
+                  <th style={{ padding: '6px 8px' }}>Rejtvény</th>
+                  <th style={{ padding: '6px 8px' }}>Válasz</th>
+                  <th style={{ padding: '6px 8px' }}>Nehézség</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e, ei) => (
+                  <tr key={e.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                    <td style={{ padding: '6px 8px', color: 'var(--ink-soft)' }}>{ei + 1}</td>
+                    <td style={{ padding: '6px 8px' }}>
+                      {(e.clue || '(üres)').slice(0, 50)}
+                      {e.clue?.length > 50 ? '…' : ''}
+                    </td>
+                    <td style={{ padding: '6px 8px', fontWeight: 600 }}>{e.answer || '—'}</td>
+                    <td style={{ padding: '6px 8px' }}>{e.parHints ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {entries.map((e, ei) => (
+          <div className="puzzle-editor" key={e.id}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <b>#{pi + 1}. napi rejtvény</b>
+              <b>#{ei + 1}. titkosírás</b>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button className="ghost small" onClick={() => movePuzzle(pi, -1)}>↑</button>
-                <button className="ghost small" onClick={() => movePuzzle(pi, 1)}>↓</button>
-                <button className="ghost small" onClick={() => removePuzzle(pi)}>Törlés</button>
+                <button className="ghost small" onClick={() => moveEntry(ei, -1)}>↑</button>
+                <button className="ghost small" onClick={() => moveEntry(ei, 1)}>↓</button>
+                <button className="ghost small" onClick={() => removeEntry(ei)}>Törlés</button>
               </div>
             </div>
 
-            <div style={{ margin: '10px 0 4px' }}>
-              <label className="field-label" style={{ margin: '0 0 4px' }}>
-                Nehézség (azt jelöli, hány tippre van szüksége egy átlagos játékosnak a megoldáshoz)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="20"
-                style={{ width: 90, textTransform: 'none' }}
-                value={p.parHints ?? 3}
-                onChange={(e) =>
-                  updatePuzzle(pi, (pp) => ({ ...pp, parHints: Number(e.target.value) || 0 }))
-                }
-              />
-            </div>
+            <label className="field-label">A titkosírás szövege</label>
+            <textarea
+              value={e.clue}
+              onChange={(ev) => updateEntry(ei, (en) => ({ ...en, clue: ev.target.value }))}
+              placeholder="A rejtvény szövege (a karakterszámot ne írd bele, azt automatikusan hozzáadjuk)…"
+            />
 
-            {p.clues.map((c, ci) => (
-              <div className="clue-editor" key={ci}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <label className="field-label">Rejtvény #{ci + 1}</label>
-                  <button className="ghost small" onClick={() => removeClue(pi, ci)}>Sor törlése</button>
-                </div>
-                <textarea
-                  value={c.clue}
-                  onChange={(e) =>
-                    updateClue(pi, ci, (cl) => ({ ...cl, clue: e.target.value }))
-                  }
-                  placeholder="A rejtvény teljes szövege…"
-                />
-                <label className="field-label">Válasz</label>
+            <label className="field-label">Válasz (szavanként)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              {splitAnswerWords(e.answer).map((word, wi) => (
                 <input
+                  key={wi}
                   type="text"
-                  value={c.answer}
-                  onChange={(e) =>
-                    updateClue(pi, ci, (cl) => ({ ...cl, answer: e.target.value }))
-                  }
+                  style={{ width: 130 }}
+                  value={word}
+                  onChange={(ev) => {
+                    const words = splitAnswerWords(e.answer);
+                    words[wi] = ev.target.value.toUpperCase();
+                    updateEntry(ei, (en) => ({ ...en, answer: words.join(' ') }));
+                  }}
+                  placeholder={`${wi + 1}. szó`}
                 />
+              ))}
+              <button
+                type="button"
+                className="ghost small"
+                onClick={() => {
+                  const words = splitAnswerWords(e.answer);
+                  words.push('');
+                  updateEntry(ei, (en) => ({ ...en, answer: words.join(' ') }));
+                }}
+              >
+                + Szó hozzáadása
+              </button>
+              {splitAnswerWords(e.answer).length > 1 && (
+                <button
+                  type="button"
+                  className="ghost small"
+                  onClick={() => {
+                    const words = splitAnswerWords(e.answer);
+                    words.pop();
+                    updateEntry(ei, (en) => ({ ...en, answer: words.join(' ') }));
+                  }}
+                >
+                  − Utolsó szó törlése
+                </button>
+              )}
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
+              Előnézet: <i>{e.clue || '(még nincs szöveg)'} {enumerationFor(e.answer)}</i>
+            </p>
 
-                {HINT_TYPES.map((h) => (
-                  <div key={h.key}>
-                    <div className="checkbox-row">
-                      <input
-                        type="checkbox"
-                        checked={c.hints[h.key]?.enabled || false}
-                        onChange={(e) =>
-                          updateClue(pi, ci, (cl) => ({
-                            ...cl,
-                            hints: {
-                              ...cl.hints,
-                              [h.key]: { ...cl.hints[h.key], enabled: e.target.checked },
-                            },
-                          }))
-                        }
-                        id={`hint-${pi}-${ci}-${h.key}`}
-                      />
-                      <label htmlFor={`hint-${pi}-${ci}-${h.key}`}>{h.label} tipp elérhető</label>
-                    </div>
-                    {c.hints[h.key]?.enabled && (
-                      <textarea
-                        value={c.hints[h.key]?.text || ''}
-                        onChange={(e) =>
-                          updateClue(pi, ci, (cl) => ({
-                            ...cl,
-                            hints: {
-                              ...cl.hints,
-                              [h.key]: { ...cl.hints[h.key], text: e.target.value },
-                            },
-                          }))
-                        }
-                        placeholder={`Írd be a(z) ${h.label.toLowerCase()} tippet…`}
-                      />
-                    )}
-                  </div>
-                ))}
+            <label className="field-label">
+              Nehézség (azt jelöli, hány tippre van szüksége egy átlagos játékosnak a megoldáshoz)
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="20"
+              style={{ width: 90, textTransform: 'none' }}
+              value={e.parHints ?? 3}
+              onChange={(ev) =>
+                updateEntry(ei, (en) => ({ ...en, parHints: Number(ev.target.value) || 0 }))
+              }
+            />
 
-                <div className="checkbox-row" style={{ opacity: 0.75 }}>
-                  <input type="checkbox" checked disabled />
-                  <label>Helyes betű tipp elérhető (automatikus, minden rejtvénynél jelen van)</label>
+            {HINT_TYPES.map((h) => (
+              <div key={h.key} style={{ marginTop: 10 }}>
+                <div className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={e.hints[h.key]?.enabled || false}
+                    onChange={(ev) =>
+                      updateEntry(ei, (en) => ({
+                        ...en,
+                        hints: {
+                          ...en.hints,
+                          [h.key]: { ...en.hints[h.key], enabled: ev.target.checked },
+                        },
+                      }))
+                    }
+                    id={`hint-${e.id}-${h.key}`}
+                  />
+                  <label htmlFor={`hint-${e.id}-${h.key}`}>{h.label} tipp elérhető</label>
                 </div>
+                {e.hints[h.key]?.enabled && (
+                  <textarea
+                    value={e.hints[h.key]?.text || ''}
+                    onChange={(ev) =>
+                      updateEntry(ei, (en) => ({
+                        ...en,
+                        hints: {
+                          ...en.hints,
+                          [h.key]: { ...en.hints[h.key], text: ev.target.value },
+                        },
+                      }))
+                    }
+                    placeholder={`Írd be a(z) ${h.label.toLowerCase()} tippet…`}
+                  />
+                )}
               </div>
             ))}
-            <div style={{ marginTop: 12 }}>
-              <button className="ghost small" onClick={() => addClue(pi)}>+ Új rejtvénysor</button>
+
+            <div className="checkbox-row" style={{ opacity: 0.75, marginTop: 10 }}>
+              <input type="checkbox" checked disabled />
+              <label>Helyes betű tipp elérhető (automatikus, mindig jelen van)</label>
             </div>
           </div>
         ))}

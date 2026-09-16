@@ -76,6 +76,16 @@ export async function GET() {
     state = { currentId: currentPuzzle.id, since: new Date(noonBoundary).toISOString() };
     await kv.set('rotation:state', state);
     await kv.set('rotation:usedIds', usedIds);
+
+    const history = (await kv.get('rotation:history')) || [];
+    history.push({
+      id: currentPuzzle.id,
+      clue: currentPuzzle.clue,
+      answer: currentPuzzle.answer,
+      parHints: currentPuzzle.parHints,
+      shownDate: todayStr(),
+    });
+    await kv.set('rotation:history', history.slice(-500));
   }
 
   const index = puzzles.findIndex((p) => p.id === currentPuzzle.id);

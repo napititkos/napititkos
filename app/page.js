@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { fireConfetti } from '../components/Confetti';
+import { enumerationFor } from '../lib/format';
 
 const HINT_LABELS = {
   fodder: 'Alapszavak',
@@ -11,7 +12,7 @@ const HINT_LABELS = {
 };
 const HINT_ORDER = ['definicio', 'indikator', 'fodder', 'alternativ', 'betu'];
 
-const STORAGE_KEY = 'titkositas_progress_v1';
+const STORAGE_KEY = 'titkositas_progress_v2';
 const norm = (s) => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
 
 function loadProgress() {
@@ -39,25 +40,19 @@ function tileFor(count) {
   if (count === 2) return '🟧';
   return '🟥';
 }
-function difficultyText(totalHints, parHints) {
-  if (parHints == null) return null;
-  const diff = totalHints - parHints;
-  if (diff === 0) return 'Pontosan a nehézségnek megfelelően oldottad meg!';
-  if (diff < 0) return `${Math.abs(diff)}-vel kevesebb tippet használtál, mint a nehézség — szép munka!`;
-  return `${diff}-vel több tippet használtál, mint a nehézség.`;
-}
-function totalHintsFor(clueState) {
-  return clueState.reduce(
-    (sum, c) => sum + c.revealed.filter((t) => t !== 'betu').length + (c.betuCount || 0) + (c.gaveUp ? 1 : 0),
-    0
-  );
-}
 function numClass(count, answered) {
   if (!answered) return '';
   if (count <= 0) return 'good';
   if (count === 1) return 'h1';
   if (count === 2) return 'h2';
   return 'h3';
+}
+function difficultyText(totalHints, parHints) {
+  if (parHints == null) return null;
+  const diff = totalHints - parHints;
+  if (diff === 0) return 'Pontosan a nehézségnek megfelelően oldottad meg!';
+  if (diff < 0) return `${Math.abs(diff)}-vel kevesebb tippet használtál, mint a nehézség — szép munka!`;
+  return `${diff}-vel több tippet használtál, mint a nehézség.`;
 }
 function emptyGuess(answer) {
   return Array.from(answer).map((ch) => (ch === ' ' ? ' ' : ''));
@@ -136,59 +131,77 @@ export default function HomePage() {
   const [errorMsg, setErrorMsg] = useState(null);
   const [puzzle, setPuzzle] = useState(null);
   const [puzzleMeta, setPuzzleMeta] = useState(null);
-  const [clueState, setClueState] = useState([]);
-  const [finished, setFinished] = useState(false);
+  const [guess, setGuess] = useState([]);
+  const [lockedLetters, setLockedLetters] = useState([]);
+  const [revealed, setRevealed] = useState([]);
+  const [betuCount, setBetuCount] = useState(0);
+  const [answered, setAnswered] = useState(false);
+  const [correct, setCorrect] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [startTime] = useState(Date.now());
   const [progress, setProgress] = useState({ streak: 0, best: 0 });
   const [avgHints, setAvgHints] = useState(null);
   const [toast, setToast] = useState('');
+  const [showIntro, setShowIntro] = useState(false);
   const timerRef = useRef(null);
   const toastTimeout = useRef(null);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('titkositas_intro_seen')) {
+        setShowIntro(true);
+      }
+    } catch {}
+  }, []);
+
+  function dismissIntro() {
+    setShowIntro(false);
+    try {
+      localStorage.setItem('titkositas_intro_seen', '1');
+    } catch {}
+  }
 
   useEffect(() => {
     fetch('/api/puzzle')
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
-          setErrorMsg('Még nincs feltöltve egyetlen rejtvény sem. Nézz vissza hamarosan!');
+          setErrorMsg('Még nincs feltöltve egyetlen titkosírás sem. Nézz vissza hamarosan!');
           setLoading(false);
           return;
         }
         setPuzzle(data.puzzle);
         setPuzzleMeta({ index: data.index, total: data.total, date: data.date });
-        setClueState(
-          data.puzzle.clues.map((c) => ({
-            answered: false,
-            correct: false,
-            gaveUp: false,
-            revealed: [],
-            betuCount: 0,
-            guess: emptyGuess(c.answer),
-            lockedLetters: emptyLocked(c.answer),
-          }))
-        );
+        setGuess(emptyGuess(data.puzzle.answer));
+        setLockedLetters(emptyLocked(data.puzzle.answer));
+
         const prog = loadProgress();
         setProgress({ streak: prog.streak, best: prog.best });
         const saved = prog.history[data.date];
         if (saved) {
-          setClueState(saved.clueState);
-          setFinished(true);
+          setGuess(saved.guess);
+          setLockedLetters(saved.lockedLetters);
+          setRevealed(saved.revealed);
+          setBetuCount(saved.betuCount || 0);
+          setAnswered(true);
+          setCorrect(saved.correct);
+          setGaveUp(saved.gaveUp);
           setElapsed(saved.elapsed);
         }
         setLoading(false);
       })
       .catch(() => {
-        setErrorMsg('Nem sikerült betölteni a mai rejtvényt. Próbáld frissíteni az oldalt.');
+        setErrorMsg('Nem sikerült betölteni a mai titkosírást. Próbáld frissíteni az oldalt.');
         setLoading(false);
       });
   }, []);
 
   useEffect(() => {
-    if (loading || finished || !puzzle) return;
+    if (loading || answered || !puzzle) return;
     timerRef.current = setInterval(() => setElapsed(Date.now() - startTime), 500);
     return () => clearInterval(timerRef.current);
-  }, [loading, finished, puzzle, startTime]);
+  }, [loading, answered, puzzle, startTime]);
 
   function showToast(msg) {
     setToast(msg);
@@ -196,92 +209,86 @@ export default function HomePage() {
     toastTimeout.current = setTimeout(() => setToast(''), 2600);
   }
 
-  function hintsUsedFor(i) {
-    const c = clueState[i];
-    if (!c) return 0;
-    const otherCount = c.revealed.filter((t) => t !== 'betu').length;
-    return otherCount + (c.betuCount || 0) + (c.gaveUp ? 1 : 0);
+  function hintsUsed() {
+    const otherCount = revealed.filter((t) => t !== 'betu').length;
+    return otherCount + betuCount + (gaveUp ? 1 : 0);
   }
 
-  function updateGuess(i, nextChars) {
-    setClueState((prev) => {
-      const next = [...prev];
-      next[i] = { ...next[i], guess: nextChars };
-      return next;
-    });
-  }
-
-  function checkAnswer(i, value) {
-    const clue = puzzle.clues[i];
-    if (norm(value) === norm(clue.answer)) {
-      const next = [...clueState];
-      next[i] = { ...next[i], answered: true, correct: true };
-      setClueState(next);
-      maybeFinish(next);
+  function checkAnswer(value) {
+    if (norm(value) === norm(puzzle.answer)) {
+      setCorrect(true);
+      setAnswered(true);
+      finishGame({ correct: true, gaveUp: false });
     } else {
       showToast('Ez még nem az. Próbálj egy tippet, ha elakadtál!');
     }
   }
 
-  function revealHint(i, type) {
-    const next = [...clueState];
-    const c = next[i];
-    if (!c.revealed.includes(type)) {
-      next[i] = { ...c, revealed: [...c.revealed, type] };
-      setClueState(next);
+  function revealHint(type) {
+    if (!revealed.includes(type)) {
+      setRevealed((prev) => [...prev, type]);
     }
   }
 
-  function revealLetterHint(i) {
-    const clue = puzzle.clues[i];
-    const cs = clueState[i];
-    const answerChars = Array.from(clue.answer);
-    const guess = [...cs.guess];
-    const locked = [...cs.lockedLetters];
-    const idx = guess.findIndex(
+  function revealLetterHint() {
+    const answerChars = Array.from(puzzle.answer);
+    const nextGuess = [...guess];
+    const nextLocked = [...lockedLetters];
+    const idx = nextGuess.findIndex(
       (ch, pos) => answerChars[pos] !== ' ' && norm(ch) !== norm(answerChars[pos])
     );
     if (idx === -1) return;
-    guess[idx] = answerChars[idx].toUpperCase();
-    locked[idx] = true;
-    const next = [...clueState];
-    next[i] = {
-      ...cs,
-      guess,
-      lockedLetters: locked,
-      betuCount: (cs.betuCount || 0) + 1,
-      revealed: cs.revealed.includes('betu') ? cs.revealed : [...cs.revealed, 'betu'],
-    };
-    setClueState(next);
+    nextGuess[idx] = answerChars[idx].toUpperCase();
+    nextLocked[idx] = true;
+    setGuess(nextGuess);
+    setLockedLetters(nextLocked);
+    setBetuCount((c) => c + 1);
+    if (!revealed.includes('betu')) setRevealed((prev) => [...prev, 'betu']);
   }
 
-  function noMoreLettersToReveal(i) {
-    const clue = puzzle.clues[i];
-    const cs = clueState[i];
-    const answerChars = Array.from(clue.answer);
-    return !answerChars.some((ch, pos) => ch !== ' ' && norm(cs.guess[pos]) !== norm(ch));
+  function noMoreLettersToReveal() {
+    const answerChars = Array.from(puzzle.answer);
+    return !answerChars.some((ch, pos) => ch !== ' ' && norm(guess[pos]) !== norm(ch));
   }
 
-  function giveUp(i) {
-    const next = [...clueState];
-    next[i] = { ...next[i], answered: true, correct: false, gaveUp: true };
-    setClueState(next);
-    maybeFinish(next);
+  function isRowFull() {
+    const answerChars = Array.from(puzzle.answer);
+    return answerChars.every((ch, pos) => ch === ' ' || !!guess[pos]);
   }
 
-  function maybeFinish(next) {
-    const allDone = next.every((c) => c.answered);
-    if (allDone) finishGame(next);
+  function shuffleGuess() {
+    if (!isRowFull()) return;
+    const answerChars = Array.from(puzzle.answer);
+    const movableIdx = answerChars
+      .map((ch, pos) => (ch !== ' ' && !lockedLetters[pos] ? pos : null))
+      .filter((v) => v !== null);
+    if (movableIdx.length < 2) return;
+    const letters = movableIdx.map((pos) => guess[pos]);
+    for (let i = letters.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [letters[i], letters[j]] = [letters[j], letters[i]];
+    }
+    const nextGuess = [...guess];
+    movableIdx.forEach((pos, i) => {
+      nextGuess[pos] = letters[i];
+    });
+    setGuess(nextGuess);
   }
 
-  function finishGame(finalState) {
-    setFinished(true);
+  function giveUp() {
+    setAnswered(true);
+    setGaveUp(true);
+    setCorrect(false);
+    finishGame({ correct: false, gaveUp: true });
+  }
+
+  function finishGame({ correct: wasCorrect, gaveUp: didGiveUp }) {
     const finalElapsed = Date.now() - startTime;
     setElapsed(finalElapsed);
     clearInterval(timerRef.current);
     fireConfetti();
 
-    const totalHints = totalHintsFor(finalState);
+    const totalHints = revealed.filter((t) => t !== 'betu').length + betuCount + (didGiveUp ? 1 : 0);
 
     const prog = loadProgress();
     const today = puzzleMeta.date;
@@ -292,7 +299,15 @@ export default function HomePage() {
     else if (prog.lastDate !== today) prog.streak = 1;
     prog.best = Math.max(prog.best, prog.streak);
     prog.lastDate = today;
-    prog.history[today] = { clueState: finalState, elapsed: finalElapsed };
+    prog.history[today] = {
+      guess,
+      lockedLetters,
+      revealed,
+      betuCount,
+      correct: wasCorrect,
+      gaveUp: didGiveUp,
+      elapsed: finalElapsed,
+    };
     saveProgress(prog);
     setProgress({ streak: prog.streak, best: prog.best });
 
@@ -309,16 +324,13 @@ export default function HomePage() {
   }
 
   function shareText() {
-    const tileRow = clueState.map((c, i) => tileFor(hintsUsedFor(i))).join('');
-    const totalHints = totalHintsFor(clueState);
+    const totalHints = hintsUsed();
     const lines = [
       `Titkosírás · ${puzzleMeta?.date || ''}`,
-      tileRow,
+      `${correct ? '✅ Megfejtve' : '❌ Feladva'} — ${tileFor(totalHints)}`,
       `Idő: ${formatTime(elapsed)}`,
     ];
-    if (puzzle?.parHints != null) {
-      lines.push(difficultyText(totalHints, puzzle.parHints));
-    }
+    if (puzzle?.parHints != null) lines.push(difficultyText(totalHints, puzzle.parHints));
     if (avgHints !== null) lines.push(`Átlag tipp/játékos ma: ${avgHints.toFixed(1)}`);
     return lines.join('\n');
   }
@@ -348,110 +360,132 @@ export default function HomePage() {
     );
   }
 
-  const correctCount = clueState.filter((c) => c.correct).length;
+  const availableHints = HINT_ORDER.filter(
+    (t) => t === 'betu' || (puzzle.hints?.[t]?.enabled && puzzle.hints[t].text)
+  );
 
   return (
     <div className="wrap">
+      {showIntro && (
+        <div className="modal-overlay" onClick={dismissIntro}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+              Üdv a Titkosírásban! 🔐
+            </h2>
+            <p style={{ fontSize: 15, lineHeight: 1.6 }}>
+              A Titkosírás a találós kérdések egy különleges formája, ahol a gyakorlott szem
+              elsőre lehetetlennek tűnő rejtvényeket is meg tud fejteni.
+            </p>
+            <p style={{ fontSize: 15, lineHeight: 1.6 }}>
+              Ahhoz, hogy belekezdj, először nézd át a <b>Súgót</b> és a <b>tutorialt</b>{' '}
+              (ez utóbbi hamarosan érkezik).
+            </p>
+            <div className="actions" style={{ marginTop: 18 }}>
+              <a href="/help" style={{ textDecoration: 'none' }}>
+                <button className="ghost">Súgó megnyitása</button>
+              </a>
+              <button className="primary" onClick={dismissIntro}>
+                Értem, kezdjünk neki!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
         <span className="pill">🔥 {progress.streak} napos sorozat</span>
       </div>
 
       <div className="card">
         <div className="topbar">
-          <div className="puzzle-title">
-            Napi rejtvény · #{(puzzleMeta?.index ?? 0) + 1}
+          <div>
+            <div className="puzzle-title">Napi titkosírás</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 2 }}>minden nap új!</div>
           </div>
           <div className="timer">{formatTime(elapsed)}</div>
         </div>
 
-        {puzzle.clues.map((clue, i) => {
-          const cs = clueState[i];
-          const availableHints = HINT_ORDER.filter(
-            (t) => t === 'betu' || (clue.hints?.[t]?.enabled && clue.hints[t].text)
-          );
-          return (
-            <div className="clue-row" key={i}>
-              <div className="clue-head">
-                <div className={`num ${numClass(hintsUsedFor(i), cs.answered)}`}>{i + 1}</div>
-                <div className="clue-text">{clue.clue}</div>
+        <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0 }}>
+          <div className="clue-head">
+            <div className={`num ${numClass(hintsUsed(), answered)}`}>1</div>
+            <div className="clue-text">{puzzle.clue} {enumerationFor(puzzle.answer)}</div>
+          </div>
+
+          {!answered && (
+            <>
+              <div className="answer-row">
+                <LetterBoxes
+                  answer={puzzle.answer}
+                  value={guess}
+                  locked={lockedLetters}
+                  onChange={setGuess}
+                  disabled={answered}
+                  onEnter={() => checkAnswer(guess.join(''))}
+                />
+                <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
+                  Ellenőrzés
+                </button>
+                <button className="ghost small" onClick={giveUp}>
+                  Feladom, mutasd a választ
+                </button>
               </div>
-
-              {!cs.answered && (
-                <>
-                  <div className="answer-row">
-                    <LetterBoxes
-                      answer={clue.answer}
-                      value={cs.guess}
-                      locked={cs.lockedLetters}
-                      onChange={(next) => updateGuess(i, next)}
-                      disabled={cs.answered}
-                      onEnter={() => checkAnswer(i, cs.guess.join(''))}
-                    />
-                    <button className="primary" onClick={() => checkAnswer(i, cs.guess.join(''))}>
-                      Ellenőrzés
+              <div className="hintbar">
+                <button
+                  className="ghost small"
+                  disabled={!isRowFull()}
+                  onClick={shuffleGuess}
+                  title="A beírt betűk véletlenszerű összekeverése"
+                >
+                  🌀 Keverés
+                </button>
+              </div>
+              {availableHints.length > 0 && (
+                <div className="hintbar">
+                  {availableHints.map((t) => (
+                    <button
+                      key={t}
+                      className="ghost small"
+                      disabled={t === 'betu' ? noMoreLettersToReveal() : revealed.includes(t)}
+                      onClick={() => (t === 'betu' ? revealLetterHint() : revealHint(t))}
+                    >
+                      💡 {HINT_LABELS[t]}
                     </button>
-                    <button className="ghost small" onClick={() => giveUp(i)}>
-                      Feladom, mutasd a választ
-                    </button>
-                  </div>
-                  {availableHints.length > 0 && (
-                    <div className="hintbar">
-                      {availableHints.map((t) => (
-                        <button
-                          key={t}
-                          className="ghost small"
-                          disabled={t === 'betu' ? noMoreLettersToReveal(i) : cs.revealed.includes(t)}
-                          onClick={() => (t === 'betu' ? revealLetterHint(i) : revealHint(i, t))}
-                        >
-                          💡 {HINT_LABELS[t]}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {cs.revealed.map((t) => (
-                    <div className="hint-box" key={t}>
-                      {t === 'betu' ? (
-                        <>
-                          <b>Helyes betű:</b> Eddig {cs.betuCount || 0} betűt fedtünk fel a válaszban.
-                        </>
-                      ) : (
-                        <>
-                          <b>{HINT_LABELS[t]}:</b> {clue.hints[t].text}
-                        </>
-                      )}
-                    </div>
                   ))}
-                </>
-              )}
-
-              {cs.answered && (
-                <div className={`feedback ${cs.correct ? 'good' : 'hint'}`}>
-                  {cs.correct
-                    ? hintsUsedFor(i) === 0
-                      ? '✓ Helyes válasz, tipp nélkül!'
-                      : `✓ Helyes válasz (${hintsUsedFor(i)} tipp felhasználva)`
-                    : `A válasz: ${clue.answer}`}
                 </div>
               )}
+              {revealed.map((t) => (
+                <div className="hint-box" key={t}>
+                  {t === 'betu' ? (
+                    <>
+                      <b>Helyes betű:</b> Eddig {betuCount} betűt fedtünk fel a válaszban.
+                    </>
+                  ) : (
+                    <>
+                      <b>{HINT_LABELS[t]}:</b> {puzzle.hints[t].text}
+                    </>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+
+          {answered && (
+            <div className={`feedback ${correct ? 'good' : 'hint'}`}>
+              {correct
+                ? hintsUsed() === 0
+                  ? '✓ Helyes válasz, tipp nélkül!'
+                  : `✓ Helyes válasz (${hintsUsed()} tipp felhasználva)`
+                : `A válasz: ${puzzle.answer}`}
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
 
-      {finished && (
+      {answered && (
         <div className="card result">
-          <h2>Kész vagy!</h2>
+          <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
           <div style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Idő: {formatTime(elapsed)}</div>
-          <div className="squares">
-            {clueState.map((c, i) => (
-              <span key={i}>{tileFor(hintsUsedFor(i))}</span>
-            ))}
-          </div>
           <div className="stats">
-            <div className="stat">
-              <b>{correctCount}/{clueState.length}</b>
-              <span>helyes tipp nélkül</span>
-            </div>
             <div className="stat">
               <b>{progress.streak}</b>
               <span>napos sorozat</span>
@@ -475,10 +509,10 @@ export default function HomePage() {
           </div>
           {puzzle.parHints != null && (
             <div className="feedback hint" style={{ marginLeft: 0, display: 'inline-block' }}>
-              {difficultyText(totalHintsFor(clueState), puzzle.parHints)}
+              {difficultyText(hintsUsed(), puzzle.parHints)}
             </div>
           )}
-          <div className="actions">
+          <div className="actions" style={{ marginTop: 16 }}>
             <button className="primary" onClick={share}>
               Eredmény megosztása
             </button>
@@ -487,7 +521,7 @@ export default function HomePage() {
       )}
 
       <footer className="page-footer">
-        Új rejtvény minden nap éjfélkor. Elakadtál egy trükkös rejtvényfajtánál? Nézd meg a Súgót.
+        Új titkosírás minden nap délben (magyar idő szerint). Elakadtál? Nézd meg a Súgót.
       </footer>
 
       <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>
