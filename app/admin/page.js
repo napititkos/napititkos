@@ -1,0 +1,282 @@
+'use client';
+import { useEffect, useState } from 'react';
+
+const HINT_TYPES = [
+  { key: 'definicio', label: 'Definíció' },
+  { key: 'indikator', label: 'Indikátor' },
+  { key: 'fodder', label: 'Fodder' },
+  { key: 'alternativ', label: 'Alternatív tipp' },
+];
+
+function emptyClue() {
+  return {
+    clue: '',
+    answer: '',
+    hints: {
+      definicio: { enabled: false, text: '' },
+      indikator: { enabled: false, text: '' },
+      fodder: { enabled: false, text: '' },
+      alternativ: { enabled: false, text: '' },
+    },
+  };
+}
+function emptyPuzzle() {
+  return { clues: [emptyClue(), emptyClue(), emptyClue(), emptyClue(), emptyClue()] };
+}
+
+export default function AdminPage() {
+  const [authed, setAuthed] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState(null);
+  const [puzzles, setPuzzles] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [saveStatus, setSaveStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function tryLoad() {
+    const res = await fetch('/api/admin/puzzles');
+    if (res.status === 401) {
+      setAuthed(false);
+      return;
+    }
+    const data = await res.json();
+    setPuzzles(data.puzzles || []);
+    setAuthed(true);
+    loadSubmissions();
+  }
+
+  async function loadSubmissions() {
+    const res = await fetch('/api/submissions');
+    if (res.ok) {
+      const data = await res.json();
+      setSubmissions(data.submissions || []);
+    }
+  }
+
+  useEffect(() => {
+    tryLoad();
+  }, []);
+
+  async function login(e) {
+    e.preventDefault();
+    setLoginError(null);
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) {
+      setPassword('');
+      tryLoad();
+    } else {
+      setLoginError('Hibás jelszó, vagy nincs beállítva ADMIN_PASSWORD a szerveren.');
+    }
+  }
+
+  function updatePuzzle(pi, updater) {
+    setPuzzles((prev) => {
+      const next = [...prev];
+      next[pi] = updater(next[pi]);
+      return next;
+    });
+  }
+  function updateClue(pi, ci, updater) {
+    updatePuzzle(pi, (p) => {
+      const clues = [...p.clues];
+      clues[ci] = updater(clues[ci]);
+      return { ...p, clues };
+    });
+  }
+
+  function addPuzzle() {
+    setPuzzles((prev) => [...prev, emptyPuzzle()]);
+  }
+  function removePuzzle(pi) {
+    if (!confirm('Biztosan törlöd ezt a teljes napi rejtvényt?')) return;
+    setPuzzles((prev) => prev.filter((_, i) => i !== pi));
+  }
+  function movePuzzle(pi, dir) {
+    setPuzzles((prev) => {
+      const next = [...prev];
+      const target = pi + dir;
+      if (target < 0 || target >= next.length) return next;
+      [next[pi], next[target]] = [next[target], next[pi]];
+      return next;
+    });
+  }
+  function addClue(pi) {
+    updatePuzzle(pi, (p) => ({ ...p, clues: [...p.clues, emptyClue()] }));
+  }
+  function removeClue(pi, ci) {
+    updatePuzzle(pi, (p) => ({ ...p, clues: p.clues.filter((_, i) => i !== ci) }));
+  }
+
+  async function saveAll() {
+    setLoading(true);
+    setSaveStatus(null);
+    const res = await fetch('/api/admin/puzzles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ puzzles }),
+    });
+    setLoading(false);
+    setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
+  }
+
+  async function deleteSubmission(id) {
+    await fetch(`/api/submissions?id=${id}`, { method: 'DELETE' });
+    loadSubmissions();
+  }
+
+  async function logout() {
+    await fetch('/api/admin/login', { method: 'DELETE' });
+    setAuthed(false);
+  }
+
+  if (!authed) {
+    return (
+      <div className="wrap">
+        <h1 className="page-title">Admin belépés</h1>
+        <div className="card">
+          <form onSubmit={login}>
+            <label className="field-label">Admin jelszó</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{ textTransform: 'none' }}
+            />
+            <div style={{ marginTop: 14 }}>
+              <button className="primary" type="submit">Belépés</button>
+            </div>
+          </form>
+          {loginError && <div className="feedback hint" style={{ marginLeft: 0, marginTop: 12 }}>{loginError}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="wrap">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 className="page-title">Admin — rejtvények kezelése</h1>
+        <button className="ghost small" onClick={logout}>Kijelentkezés</button>
+      </div>
+
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <b>{puzzles.length} napi rejtvénycsomag</b>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="ghost small" onClick={addPuzzle}>+ Új napi rejtvény</button>
+            <button className="primary small" onClick={saveAll} disabled={loading}>
+              {loading ? 'Mentés…' : 'Összes mentése'}
+            </button>
+          </div>
+        </div>
+        {saveStatus && <div className="feedback good" style={{ marginLeft: 0 }}>{saveStatus}</div>}
+
+        {puzzles.map((p, pi) => (
+          <div className="puzzle-editor" key={pi}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <b>#{pi + 1}. napi rejtvény</b>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button className="ghost small" onClick={() => movePuzzle(pi, -1)}>↑</button>
+                <button className="ghost small" onClick={() => movePuzzle(pi, 1)}>↓</button>
+                <button className="ghost small" onClick={() => removePuzzle(pi)}>Törlés</button>
+              </div>
+            </div>
+
+            {p.clues.map((c, ci) => (
+              <div className="clue-editor" key={ci}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <label className="field-label">Rejtvény #{ci + 1}</label>
+                  <button className="ghost small" onClick={() => removeClue(pi, ci)}>Sor törlése</button>
+                </div>
+                <textarea
+                  value={c.clue}
+                  onChange={(e) =>
+                    updateClue(pi, ci, (cl) => ({ ...cl, clue: e.target.value }))
+                  }
+                  placeholder="A rejtvény teljes szövege…"
+                />
+                <label className="field-label">Válasz</label>
+                <input
+                  type="text"
+                  value={c.answer}
+                  onChange={(e) =>
+                    updateClue(pi, ci, (cl) => ({ ...cl, answer: e.target.value }))
+                  }
+                />
+
+                {HINT_TYPES.map((h) => (
+                  <div key={h.key}>
+                    <div className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={c.hints[h.key]?.enabled || false}
+                        onChange={(e) =>
+                          updateClue(pi, ci, (cl) => ({
+                            ...cl,
+                            hints: {
+                              ...cl.hints,
+                              [h.key]: { ...cl.hints[h.key], enabled: e.target.checked },
+                            },
+                          }))
+                        }
+                        id={`hint-${pi}-${ci}-${h.key}`}
+                      />
+                      <label htmlFor={`hint-${pi}-${ci}-${h.key}`}>{h.label} tipp elérhető</label>
+                    </div>
+                    {c.hints[h.key]?.enabled && (
+                      <textarea
+                        value={c.hints[h.key]?.text || ''}
+                        onChange={(e) =>
+                          updateClue(pi, ci, (cl) => ({
+                            ...cl,
+                            hints: {
+                              ...cl.hints,
+                              [h.key]: { ...cl.hints[h.key], text: e.target.value },
+                            },
+                          }))
+                        }
+                        placeholder={`Írd be a(z) ${h.label.toLowerCase()} tippet…`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div style={{ marginTop: 12 }}>
+              <button className="ghost small" onClick={() => addClue(pi)}>+ Új rejtvénysor</button>
+            </div>
+          </div>
+        ))}
+
+        <button className="primary" onClick={saveAll} disabled={loading}>
+          {loading ? 'Mentés…' : 'Összes mentése'}
+        </button>
+      </div>
+
+      <div className="card">
+        <b>Beküldött fanmade rejtvények ({submissions.length})</b>
+        {submissions.length === 0 && (
+          <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még nincs beküldött rejtvény.</p>
+        )}
+        {submissions.map((s) => (
+          <div className="sub-item" key={s.id}>
+            <div><b>{s.name}</b> — {new Date(s.createdAt).toLocaleString('hu-HU')}</div>
+            <div style={{ margin: '6px 0' }}>{s.clue}</div>
+            <div>Válasz: <b>{s.answer}</b></div>
+            {s.hints?.definicio && <div>Definíció: {s.hints.definicio}</div>}
+            {s.hints?.indikator && <div>Indikátor: {s.hints.indikator}</div>}
+            {s.hints?.fodder && <div>Fodder: {s.hints.fodder}</div>}
+            {s.hints?.alternativ && <div>Alternatív: {s.hints.alternativ}</div>}
+            <div style={{ marginTop: 8 }}>
+              <button className="ghost small" onClick={() => deleteSubmission(s.id)}>Törlés</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
