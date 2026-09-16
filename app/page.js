@@ -223,17 +223,20 @@ export default function HomePage() {
   }
 
   function revealLetterHint() {
-    const answerChars = Array.from(puzzle.answer);
-    const nextGuess = [...guess];
-    const nextLocked = [...lockedLetters];
-    const idx = nextGuess.findIndex(
-      (ch, pos) => answerChars[pos] !== ' ' && norm(ch) !== norm(answerChars[pos])
-    );
-    if (idx === -1) return;
-    nextGuess[idx] = answerChars[idx].toUpperCase();
-    nextLocked[idx] = true;
-    setGuess(nextGuess);
-    setLockedLetters(nextLocked);
+    const clue = puzzle;
+    const answerChars = Array.from(clue.answer);
+    const guessNext = [...guess];
+    const locked = [...lockedLetters];
+    const candidates = [];
+    answerChars.forEach((ch, pos) => {
+      if (ch !== ' ' && norm(guessNext[pos]) !== norm(ch)) candidates.push(pos);
+    });
+    if (candidates.length === 0) return;
+    const idx = candidates[Math.floor(Math.random() * candidates.length)];
+    guessNext[idx] = answerChars[idx].toUpperCase();
+    locked[idx] = true;
+    setGuess(guessNext);
+    setLockedLetters(locked);
     setBetuCount((c) => c + 1);
     if (!revealed.includes('betu')) setRevealed((prev) => [...prev, 'betu']);
   }
@@ -502,7 +505,7 @@ export default function HomePage() {
               {availableHints.length > 0 && (
                 <div className="hintbar">
                   <button className="ghost small" onClick={() => setShowHintModal(true)}>
-                    💡 Tippek ({revealed.length}/{availableHints.length} felfedve)
+                    💡 Tippek ({hintsUsed()} felhasználva)
                   </button>
                 </div>
               )}
