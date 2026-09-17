@@ -40,14 +40,28 @@ const HU_STOPWORDS = new Set([
 function extractWords(text) {
   return (text || '').match(HU_WORD_RE) || [];
 }
-// Kísérleti: megkeresi, mely (nem túl gyakori) szavak szerepelnek mind a tipp
-// szövegében, mind magában a rejtvényben — ezeket emeljük ki.
+// Két szó "ugyanattól a tőtől" származik-e — egyszerű, ragozás-toleráns heurisztika:
+// egyezőnek számít, ha az egyik szó a másiknak (kellően hosszú) eleje.
+// Ez elkapja pl. "rettenetes" / "rettenetesen" vagy "citrom" / "citromot" párokat is.
+function sameStem(a, b) {
+  if (a === b) return true;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  if (shorter.length < 4) return false;
+  return longer.startsWith(shorter);
+}
+// Kísérleti: megkeresi, mely (nem túl gyakori) szavak szerepelnek — akár ragozott
+// alakban is — mind a tipp szövegében, mind magában a rejtvényben.
 function getHighlightWords(hintText, clueText) {
   const hintWords = extractWords(hintText)
     .map((w) => w.toLowerCase())
     .filter((w) => w.length >= 4 && !HU_STOPWORDS.has(w));
-  const clueWordsLower = new Set(extractWords(clueText).map((w) => w.toLowerCase()));
-  return Array.from(new Set(hintWords.filter((w) => clueWordsLower.has(w))));
+  const clueWordsLower = extractWords(clueText).map((w) => w.toLowerCase());
+  const matched = new Set();
+  for (const cw of clueWordsLower) {
+    if (hintWords.some((hw) => sameStem(hw, cw))) matched.add(cw);
+  }
+  return Array.from(matched);
 }
 function renderClueWithHighlight(clueText, highlightWords) {
   if (!highlightWords || highlightWords.length === 0) return clueText;
@@ -164,6 +178,7 @@ export default function HomePage() {
   const [showHintModal, setShowHintModal] = useState(false);
   const [highlightedHintType, setHighlightedHintType] = useState(null);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+  const [countdown, setCountdown] = useState('');
   const timerRef = useRef(null);
   const toastTimeout = useRef(null);
 
@@ -192,7 +207,12 @@ export default function HomePage() {
           return;
         }
         setPuzzle(data.puzzle);
-        setPuzzleMeta({ index: data.index, total: data.total, date: data.date });
+        setPuzzleMeta({
+          index: data.index,
+          total: data.total,
+          date: data.date,
+          nextRotationAt: data.nextRotationAt,
+        });
         setGuess(emptyGuess(data.puzzle.answer));
         setLockedLetters(emptyLocked(data.puzzle.answer));
 
@@ -224,6 +244,24 @@ export default function HomePage() {
     return () => clearInterval(timerRef.current);
   }, [loading, answered, puzzle, startTime]);
 
+  useEffect(() => {
+    if (!answered || !puzzleMeta?.nextRotationAt) return;
+    function tick() {
+      const diff = new Date(puzzleMeta.nextRotationAt).getTime() - Date.now();
+      if (diff <= 0) {
+        setCountdown('Bármely pillanatban…');
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [answered, puzzleMeta]);
+
   function showToast(msg) {
     setToast(msg);
     clearTimeout(toastTimeout.current);
@@ -249,6 +287,7 @@ export default function HomePage() {
     if (!revealed.includes(type)) {
       setRevealed((prev) => [...prev, type]);
     }
+    setHighlightedHintType(type);
   }
 
   function revealLetterHint() {
@@ -509,7 +548,18 @@ export default function HomePage() {
                 </div>
               )}
               {revealed.map((t) => (
-                <div className="hint-box" key={t}>
+                <div
+                  className="hint-box"
+                  key={t}
+                  style={{
+                    cursor: t === 'betu' ? 'default' : 'pointer',
+                    outline: highlightedHintType === t ? `2px solid var(--accent)` : 'none',
+                  }}
+                  onClick={() =>
+                    t !== 'betu' && setHighlightedHintType((prev) => (prev === t ? null : t))
+                  }
+                  title={t !== 'betu' ? 'Kattints: emelje ki (vagy tüntesse el) a rejtvényben a hasonló szót' : undefined}
+                >
                   {t === 'betu' ? (
                     <>
                       <b>Helyes betű:</b> Eddig {betuCount} betűt fedtünk fel a válaszban.
@@ -527,10 +577,7 @@ export default function HomePage() {
           {showHintModal && (
             <div
               className="modal-overlay hint-modal-overlay"
-              onClick={() => {
-                setShowHintModal(false);
-                setHighlightedHintType(null);
-              }}
+              onClick={() => setShowHintModal(false)}
             >
               <div className="modal-card" onClick={(e) => e.stopPropagation()}>
                 <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
@@ -592,17 +639,12 @@ export default function HomePage() {
                   })}
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 14 }}>
-                  🧪 Kísérleti: kattints egy felfedett tipp szövegére, és megjelöljük, hol
-                  bukkanhat fel hasonló szó a rejtvényben.
+                  🧪 Kísérleti: amint elkérsz egy tippet, automatikusan megjelöljük a
+                  rejtvényben a hozzá kapcsolódó szót. Kattints a tipp szövegére, hogy ki- vagy
+                  bekapcsold a kiemelést.
                 </p>
                 <div className="actions" style={{ marginTop: 10 }}>
-                  <button
-                    className="primary"
-                    onClick={() => {
-                      setShowHintModal(false);
-                      setHighlightedHintType(null);
-                    }}
-                  >
+                  <button className="primary" onClick={() => setShowHintModal(false)}>
                     Bezárás
                   </button>
                 </div>
@@ -658,11 +700,21 @@ export default function HomePage() {
               Eredmény megosztása
             </button>
           </div>
+          {countdown && (
+            <div style={{ marginTop: 18, fontSize: 13.5, color: 'var(--ink-soft)' }}>
+              ⏳ Következő titkosírás:{' '}
+              <b style={{ color: 'var(--accent2)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
+            </div>
+          )}
         </div>
       )}
 
       <footer className="page-footer">
-        Új titkosírás minden nap délben (magyar idő szerint). Elakadtál? Nézd meg a Súgót.
+        Új titkosírás minden nap délben (magyar idő szerint). Elakadtál? Nézd meg a{' '}
+        <a href="/help" style={{ color: 'var(--accent)', fontWeight: 700 }}>
+          Súgót
+        </a>
+        .
       </footer>
 
       <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>

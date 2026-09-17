@@ -89,11 +89,13 @@ export async function GET() {
   }
 
   const index = puzzles.findIndex((p) => p.id === currentPuzzle.id);
+  const activeSinceMs = new Date(state.since).getTime();
   return Response.json({
     puzzle: currentPuzzle,
     index,
     total: puzzles.length,
     date: todayStr(),
     activeSince: state.since,
+    nextRotationAt: new Date(activeSinceMs + ROTATION_MS).toISOString(),
   });
 }

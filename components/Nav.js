@@ -54,6 +54,9 @@ export default function Nav() {
           </a>
           <a href="#" onClick={handleAchievementsClick}>🏆 Trófeák</a>
           <a href="/submit" onClick={() => setOpen(false)}>✉️ Rejtvény beküldése</a>
+          <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0' }} />
+          <a href="/contact" onClick={() => setOpen(false)}>📬 Kapcsolat</a>
+          <a href="/privacy" onClick={() => setOpen(false)}>🔒 Adatvédelem</a>
         </div>
       </div>
     </>
