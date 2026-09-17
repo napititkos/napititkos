@@ -4,7 +4,7 @@ import { kv } from '../../../lib/kv';
 import { todayStr } from '../../../lib/date';
 
 const ROTATION_MS = 24 * 60 * 60 * 1000;
-const ROTATION_HOUR = 8; // hányadik órában (budapesti idő szerint) váltson naponta
+const ROTATION_HOUR = 0; // hányadik órában (budapesti idő szerint) váltson naponta
 
 // Kiszámolja, mikor van a váltás órája (ROTATION_HOUR) Budapesten egy adott UTC
 // pillanat szerinti naptári napon, nyári/téli időszámítástól függetlenül.
