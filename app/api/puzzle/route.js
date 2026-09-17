@@ -4,10 +4,11 @@ import { kv } from '../../../lib/kv';
 import { todayStr } from '../../../lib/date';
 
 const ROTATION_MS = 24 * 60 * 60 * 1000;
+const ROTATION_HOUR = 8; // hányadik órában (budapesti idő szerint) váltson naponta
 
-// Kiszámolja, mikor van dél (12:00) Budapesten egy adott UTC pillanat
-// szerinti naptári napon, nyári/téli időszámítástól függetlenül.
-function budapestNoonForDay(baseUTC) {
+// Kiszámolja, mikor van a váltás órája (ROTATION_HOUR) Budapesten egy adott UTC
+// pillanat szerinti naptári napon, nyári/téli időszámítástól függetlenül.
+function budapestRotationHourForDay(baseUTC) {
   const dayFmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Budapest',
     year: 'numeric',
@@ -26,19 +27,19 @@ function budapestNoonForDay(baseUTC) {
   });
 
   for (const offsetHours of [1, 2]) {
-    const candidateUTC = Date.UTC(year, month - 1, day, 12 - offsetHours, 0, 0);
+    const candidateUTC = Date.UTC(year, month - 1, day, ROTATION_HOUR - offsetHours, 0, 0);
     const localHour = parseInt(hourFmt.format(new Date(candidateUTC)), 10);
-    if (localHour === 12) return candidateUTC;
+    if (localHour === ROTATION_HOUR) return candidateUTC;
   }
-  return Date.UTC(year, month - 1, day, 11, 0, 0);
+  return Date.UTC(year, month - 1, day, ROTATION_HOUR - 1, 0, 0);
 }
 
-// A legutóbbi (most vagy korábbi) budapesti dél időpontja epoch ms-ben.
-function lastBudapestNoon(now) {
-  const todayNoon = budapestNoonForDay(now);
-  if (todayNoon <= now.getTime()) return todayNoon;
+// A legutóbbi (most vagy korábbi) budapesti váltási időpont epoch ms-ben.
+function lastBudapestRotation(now) {
+  const todayRotation = budapestRotationHourForDay(now);
+  if (todayRotation <= now.getTime()) return todayRotation;
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  return budapestNoonForDay(yesterday);
+  return budapestRotationHourForDay(yesterday);
 }
 
 export async function GET() {
@@ -49,7 +50,7 @@ export async function GET() {
 
   const validIds = new Set(puzzles.map((p) => p.id).filter(Boolean));
   const now = new Date();
-  const noonBoundary = lastBudapestNoon(now);
+  const rotationBoundary = lastBudapestRotation(now);
 
   let state = (await kv.get('rotation:state')) || null;
   let usedIds = (await kv.get('rotation:usedIds')) || [];
@@ -60,7 +61,7 @@ export async function GET() {
 
   if (!state || !state.currentId || !validIds.has(state.currentId)) {
     needNew = true;
-  } else if (new Date(state.since).getTime() < noonBoundary) {
+  } else if (new Date(state.since).getTime() < rotationBoundary) {
     needNew = true;
   } else {
     currentPuzzle = puzzles.find((p) => p.id === state.currentId);
@@ -78,7 +79,7 @@ export async function GET() {
     const prevDayNumber = state?.dayNumber || 0;
     state = {
       currentId: currentPuzzle.id,
-      since: new Date(noonBoundary).toISOString(),
+      since: new Date(rotationBoundary).toISOString(),
       dayNumber: prevDayNumber + 1,
     };
     await kv.set('rotation:state', state);

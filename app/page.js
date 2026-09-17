@@ -747,7 +747,7 @@ export default function HomePage() {
       )}
 
       <footer className="page-footer">
-        Új titkosírás minden nap délben (magyar idő szerint). Elakadtál? Nézd meg a{' '}
+        Új titkosírás minden nap reggel 8-kor (magyar idő szerint). Elakadtál? Nézd meg a{' '}
         <a href="/help" style={{ color: 'var(--accent)', fontWeight: 700 }}>
           Súgót
         </a>

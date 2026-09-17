@@ -300,7 +300,7 @@ export default function AdminPage() {
           </div>
         </div>
         <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
-          Minden nap délben (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
+          Minden nap reggel 8-kor (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
           listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
         </p>
         {saveStatus && (
