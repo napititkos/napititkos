@@ -94,17 +94,23 @@ export async function GET() {
       shownDate: todayStr(),
     });
     await kv.set('rotation:history', history.slice(-500));
+  } else if (new Date(state.since).getTime() !== rotationBoundary) {
+    // Önjavítás: a tárolt "since" egy korábbi váltási szabály (pl. dél) szerint
+    // állhat, ami időben "később" van, mint a mai helyes határidő, ezért a fenti
+    // ellenőrzés nem cserélte le — itt korrigáljuk, hogy a visszaszámláló is
+    // a valódi, mai határidőhöz igazodjon.
+    state = { ...state, since: new Date(rotationBoundary).toISOString() };
+    await kv.set('rotation:state', state);
   }
 
   const index = puzzles.findIndex((p) => p.id === currentPuzzle.id);
-  const activeSinceMs = new Date(state.since).getTime();
   return Response.json({
     puzzle: currentPuzzle,
     index,
     total: puzzles.length,
     date: todayStr(),
     activeSince: state.since,
-    nextRotationAt: new Date(activeSinceMs + ROTATION_MS).toISOString(),
+    nextRotationAt: new Date(rotationBoundary + ROTATION_MS).toISOString(),
     dayNumber: state.dayNumber || 1,
   });
 }
