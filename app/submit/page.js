@@ -15,6 +15,7 @@ export default function SubmitPage() {
   });
   const [status, setStatus] = useState(null);
   const [sending, setSending] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -24,6 +25,10 @@ export default function SubmitPage() {
     e.preventDefault();
     if (!form.clue.trim() || !form.answer.trim()) {
       setStatus({ ok: false, msg: 'A rejtvény szövege és a válasz kitöltése kötelező.' });
+      return;
+    }
+    if (!consent) {
+      setStatus({ ok: false, msg: 'A beküldéshez el kell fogadnod az alábbi feltételt.' });
       return;
     }
     setSending(true);
@@ -64,6 +69,7 @@ export default function SubmitPage() {
         }
         setStatus({ ok: true, msg: 'Köszönjük! Megkaptuk a rejtvényedet, hamarosan átnézzük.' + extra });
         setForm({ name: '', clue: '', answer: '', fodder: '', indikator: '', definicio: '', alternativ: '' });
+        setConsent(false);
       } else {
         setStatus({ ok: false, msg: 'Valami nem sikerült. Próbáld újra kicsit később.' });
       }
@@ -118,8 +124,26 @@ export default function SubmitPage() {
           <label className="field-label">Alternatív tipp (opcionális)</label>
           <textarea value={form.alternativ} onChange={(e) => update('alternativ', e.target.value)} />
 
+          <div className="checkbox-row" style={{ marginTop: 16, alignItems: 'flex-start' }}>
+            <input
+              type="checkbox"
+              id="consent"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              style={{ marginTop: 3 }}
+            />
+            <label htmlFor="consent" style={{ fontSize: 13.5, lineHeight: 1.5 }}>
+              Elfogadom, hogy a beküldött rejtvényemet a Titkosírás szabadon közzéteheti,
+              szerkesztheti, és akár más projektjeiben is felhasználhatja — az{' '}
+              <a href="/privacy" style={{ color: 'var(--accent)' }}>
+                Adatvédelmi tájékoztatóban
+              </a>{' '}
+              foglaltak szerint.
+            </label>
+          </div>
+
           <div style={{ marginTop: 16 }}>
-            <button className="primary" type="submit" disabled={sending}>
+            <button className="primary" type="submit" disabled={sending || !consent}>
               {sending ? 'Küldés…' : 'Beküldés'}
             </button>
           </div>

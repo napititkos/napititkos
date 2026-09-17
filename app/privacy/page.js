@@ -29,6 +29,14 @@ export default function PrivacyPage() {
             eltároljuk, hogy elbírálhassuk. Ha nem adsz meg becenevet, a beküldés névtelenként
             kerül rögzítésre.
           </p>
+          <p>
+            A beküldéssel hozzájárulsz ahhoz, hogy az általad beküldött rejtvényt (annak
+            szövegét, megfejtését és tippjeit) szabadon felhasználhassuk — beleértve a napi
+            titkosírások közé való bekerülést, szerkesztését, közzétételét, valamint akár egyéb,
+            jövőbeli projektjeinkben történő felhasználását is. A beküldött rejtvény ezáltal a
+            Titkosírás szellemi tulajdonává válik, a beküldő nevének feltüntetése mellett,
+            amennyiben becenevet adott meg.
+          </p>
         </div>
         <div className="help-block">
           <h3>A jövőben: regisztráció</h3>

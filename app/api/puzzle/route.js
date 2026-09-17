@@ -75,7 +75,12 @@ export async function GET() {
     }
     currentPuzzle = candidates[0];
     usedIds.push(currentPuzzle.id);
-    state = { currentId: currentPuzzle.id, since: new Date(noonBoundary).toISOString() };
+    const prevDayNumber = state?.dayNumber || 0;
+    state = {
+      currentId: currentPuzzle.id,
+      since: new Date(noonBoundary).toISOString(),
+      dayNumber: prevDayNumber + 1,
+    };
     await kv.set('rotation:state', state);
     await kv.set('rotation:usedIds', usedIds);
 
@@ -99,5 +104,6 @@ export async function GET() {
     date: todayStr(),
     activeSince: state.since,
     nextRotationAt: new Date(activeSinceMs + ROTATION_MS).toISOString(),
+    dayNumber: state.dayNumber || 1,
   });
 }

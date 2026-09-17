@@ -12,6 +12,10 @@ const HINT_TYPES = [
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
+function capitalizeFirst(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 function emptyEntry() {
   return {
@@ -57,18 +61,28 @@ function migrateOldFormat(rawList) {
   return result;
 }
 
-function sortedEntries(entries, mode) {
+function sortedEntries(entries, mode, direction, justAddedId) {
   const withIndex = entries.map((entry, index) => ({ entry, index }));
+  let sorted = withIndex;
   if (mode === 'time') {
     // Az id base36 időbélyeggel kezdődik, ezért lexikografikusan is időrendet ad.
-    return [...withIndex].sort((a, b) => (a.entry.id > b.entry.id ? 1 : -1));
-  }
-  if (mode === 'answer') {
-    return [...withIndex].sort((a, b) =>
-      (a.entry.answer || '').localeCompare(b.entry.answer || '', 'hu')
+    sorted = [...withIndex].sort((a, b) => (a.entry.id > b.entry.id ? 1 : -1));
+  } else if (mode === 'clue') {
+    sorted = [...withIndex].sort((a, b) =>
+      (a.entry.clue || '').localeCompare(b.entry.clue || '', 'hu')
     );
   }
-  return withIndex;
+  if ((mode === 'time' || mode === 'clue') && direction === 'desc') {
+    sorted = [...sorted].reverse();
+  }
+  if (mode === 'manual' && justAddedId) {
+    const idx = sorted.findIndex((item) => item.entry.id === justAddedId);
+    if (idx > 0) {
+      const [item] = sorted.splice(idx, 1);
+      sorted = [item, ...sorted];
+    }
+  }
+  return sorted;
 }
 
 export default function AdminPage() {
@@ -82,6 +96,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [sortMode, setSortMode] = useState('manual');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [justAddedId, setJustAddedId] = useState(null);
+  const [revealedAnswers, setRevealedAnswers] = useState({});
 
   async function tryLoad() {
     try {
@@ -161,6 +178,7 @@ export default function AdminPage() {
     const fresh = emptyEntry();
     setEntries((prev) => [...prev, fresh]);
     setExpandedId(fresh.id);
+    setJustAddedId(fresh.id);
   }
   function removeEntry(ei) {
     if (!confirm('Biztosan törlöd ezt a titkosírást?')) return;
@@ -260,27 +278,44 @@ export default function AdminPage() {
             <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>Rendezés:</span>
             <button
               className={sortMode === 'manual' ? 'primary small' : 'ghost small'}
-              onClick={() => setSortMode('manual')}
+              onClick={() => {
+                setSortMode('manual');
+              }}
             >
               Egyéni sorrend
             </button>
             <button
               className={sortMode === 'time' ? 'primary small' : 'ghost small'}
-              onClick={() => setSortMode('time')}
+              onClick={() => {
+                setJustAddedId(null);
+                if (sortMode === 'time') setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+                else {
+                  setSortMode('time');
+                  setSortDirection('asc');
+                }
+              }}
             >
-              Idő szerint
+              Idő szerint {sortMode === 'time' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
             </button>
             <button
-              className={sortMode === 'answer' ? 'primary small' : 'ghost small'}
-              onClick={() => setSortMode('answer')}
+              className={sortMode === 'clue' ? 'primary small' : 'ghost small'}
+              onClick={() => {
+                setJustAddedId(null);
+                if (sortMode === 'clue') setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+                else {
+                  setSortMode('clue');
+                  setSortDirection('asc');
+                }
+              }}
             >
-              Megfejtés (ABC)
+              Rejtvény (ABC) {sortMode === 'clue' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
             </button>
           </div>
         )}
 
-        {sortedEntries(entries, sortMode).map(({ entry: e, index: ei }) => {
+        {sortedEntries(entries, sortMode, sortDirection, justAddedId).map(({ entry: e, index: ei }) => {
           const isOpen = expandedId === e.id;
+          const answerShown = !!revealedAnswers[e.id];
           return (
             <div className="puzzle-editor" key={e.id}>
               <div
@@ -293,7 +328,28 @@ export default function AdminPage() {
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                     {e.clue || '(üres)'}
                   </span>
-                  <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{e.answer || '—'}</span>
+                  {answerShown ? (
+                    <span
+                      style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setRevealedAnswers((prev) => ({ ...prev, [e.id]: false }));
+                      }}
+                      title="Elrejtés"
+                    >
+                      {e.answer || '—'}
+                    </span>
+                  ) : (
+                    <button
+                      className="ghost small"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setRevealedAnswers((prev) => ({ ...prev, [e.id]: true }));
+                      }}
+                    >
+                      👁️ Megoldás
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }} onClick={(ev) => ev.stopPropagation()}>
                   <button className="ghost small" onClick={() => moveEntry(ei, -1)}>↑</button>
@@ -307,7 +363,7 @@ export default function AdminPage() {
                   <label className="field-label">A titkosírás szövege</label>
                   <textarea
                     value={e.clue}
-                    onChange={(ev) => updateEntry(ei, (en) => ({ ...en, clue: ev.target.value }))}
+                    onChange={(ev) => updateEntry(ei, (en) => ({ ...en, clue: capitalizeFirst(ev.target.value) }))}
                     placeholder="A rejtvény szövege (a karakterszámot ne írd bele, azt automatikusan hozzáadjuk)…"
                   />
 
@@ -397,7 +453,7 @@ export default function AdminPage() {
                               ...en,
                               hints: {
                                 ...en.hints,
-                                [h.key]: { ...en.hints[h.key], text: ev.target.value },
+                                [h.key]: { ...en.hints[h.key], text: capitalizeFirst(ev.target.value) },
                               },
                             }))
                           }

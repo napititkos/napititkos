@@ -30,6 +30,16 @@ function tileFor(count) {
 function withSuffix(n) {
   return n === 1 ? '1-gyel' : `${n}-vel`;
 }
+const HU_MONTHS = [
+  'január', 'február', 'március', 'április', 'május', 'június',
+  'július', 'augusztus', 'szeptember', 'október', 'november', 'december',
+];
+function formatHuDate(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  return `${y}. ${HU_MONTHS[m - 1]} ${d}.`;
+}
 
 const HU_WORD_RE = /[A-Za-zÁÉÍÓÖŐÚÜŰáéíóöőúüű]+/g;
 const HU_STOPWORDS = new Set([
@@ -212,6 +222,7 @@ export default function HomePage() {
           total: data.total,
           date: data.date,
           nextRotationAt: data.nextRotationAt,
+          dayNumber: data.dayNumber,
         });
         setGuess(emptyGuess(data.puzzle.answer));
         setLockedLetters(emptyLocked(data.puzzle.answer));
@@ -345,13 +356,19 @@ export default function HomePage() {
   }
 
   function giveUp() {
+    const fullGuess = Array.from(puzzle.answer).map((ch) => (ch === ' ' ? ' ' : ch.toUpperCase()));
+    const fullLocked = fullGuess.map(() => true);
+    setGuess(fullGuess);
+    setLockedLetters(fullLocked);
     setAnswered(true);
     setGaveUp(true);
     setCorrect(false);
-    finishGame({ correct: false, gaveUp: true });
+    finishGame({ correct: false, gaveUp: true, guessOverride: fullGuess, lockedOverride: fullLocked });
   }
 
-  function finishGame({ correct: wasCorrect, gaveUp: didGiveUp }) {
+  function finishGame({ correct: wasCorrect, gaveUp: didGiveUp, guessOverride, lockedOverride }) {
+    const finalGuess = guessOverride || guess;
+    const finalLocked = lockedOverride || lockedLetters;
     const finalElapsed = Date.now() - startTime;
     setElapsed(finalElapsed);
     clearInterval(timerRef.current);
@@ -369,8 +386,8 @@ export default function HomePage() {
     prog.best = Math.max(prog.best, prog.streak);
     prog.lastDate = today;
     prog.history[today] = {
-      guess,
-      lockedLetters,
+      guess: finalGuess,
+      lockedLetters: finalLocked,
       revealed,
       betuCount,
       correct: wasCorrect,
@@ -501,7 +518,9 @@ export default function HomePage() {
       <div className="card">
         <div className="topbar">
           <div>
-            <div className="puzzle-title">Napi titkosírás</div>
+            <div className="puzzle-title">
+              Napi titkosírás{puzzleMeta?.dayNumber ? ` #${puzzleMeta.dayNumber}` : ''}
+            </div>
             <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 2 }}>minden nap új!</div>
           </div>
           <div className="timer">{formatTime(elapsed)}</div>
@@ -653,12 +672,30 @@ export default function HomePage() {
           )}
 
           {answered && (
+            <div className="answer-row">
+              <LetterBoxes
+                answer={puzzle.answer}
+                value={guess}
+                locked={lockedLetters}
+                onChange={() => {}}
+                disabled={true}
+              />
+            </div>
+          )}
+
+          {answered && (
             <div className={`feedback ${correct ? 'good' : 'hint'}`}>
               {correct
                 ? hintsUsed() === 0
                   ? '✓ Helyes válasz, tipp nélkül!'
                   : `✓ Helyes válasz (${hintsUsed()} tipp felhasználva)`
                 : `A válasz: ${puzzle.answer}`}
+            </div>
+          )}
+
+          {puzzleMeta?.date && (
+            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 12, marginLeft: 8 }}>
+              📅 {formatHuDate(puzzleMeta.date)}
             </div>
           )}
         </div>
