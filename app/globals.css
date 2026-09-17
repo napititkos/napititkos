@@ -59,31 +59,58 @@ a{ color: inherit; }
 .brand{ font-family:'Fredoka', sans-serif; font-weight:700; font-size: 28px; letter-spacing: 0.01em; }
 .brand span{ color: var(--accent); }
 nav.topnav{
-  display:flex; align-items:center; justify-content:space-between;
-  max-width: 640px; margin: 0 auto; padding: 18px 14px 0;
-  flex-wrap: wrap; gap: 10px;
+  display:flex; align-items:center; gap: 12px;
+  max-width: 640px; margin: 0 auto; padding: 18px 14px 10px;
 }
-nav.topnav .links{ display:flex; gap: 14px; flex-wrap: wrap; }
-nav.topnav .links a{
-  font-size: 13.5px; color: var(--ink-soft); text-decoration:none;
-  border-bottom: 1px solid transparent;
+.hamburger-btn{
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 2px solid var(--line); background: var(--card);
+  cursor: pointer; padding: 0; flex-shrink: 0;
 }
-nav.topnav .links a:hover{ border-color: var(--ink-soft); }
-.sub-nav{
-  max-width: 640px; margin: 0 auto; padding: 8px 14px 0;
-  display: flex; justify-content: center;
+.hamburger-btn span{
+  display: block; height: 2.5px; width: 18px; margin: 0 auto;
+  background: var(--ink); border-radius: 2px;
 }
-.sub-nav .links{ display:flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
-.tutorial-badge{
-  border: 2px solid var(--accent3) !important;
-  background: var(--accent3-soft);
-  color: var(--accent3) !important;
-  padding: 3px 10px;
-  border-radius: 999px;
+.drawer-overlay{
+  position: fixed; inset: 0; background: rgba(61,52,82,0.45);
+  z-index: 90;
+}
+.drawer-panel{
+  position: fixed; top: 0; left: 0; bottom: 0; width: 260px; max-width: 80vw;
+  background: var(--card); z-index: 95; box-shadow: var(--shadow);
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  padding: 18px;
+  overflow-y: auto;
+}
+.drawer-panel.open{ transform: translateX(0); }
+.drawer-header{
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
+}
+.drawer-links{ display: flex; flex-direction: column; gap: 6px; }
+.drawer-links a{
+  text-decoration: none; color: var(--ink); font-weight: 600; font-size: 15px;
+  padding: 10px 10px; border-radius: 10px;
+}
+.drawer-links a:hover{ background: var(--paper); }
+.drawer-link-disabled{
+  color: var(--ink-soft) !important;
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.soon-badge{
+  font-size: 10.5px;
   font-weight: 700;
-  text-decoration: none !important;
-  white-space: nowrap;
-  flex-shrink: 0;
+  color: var(--ink-soft);
+  background: var(--line);
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .card{
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -207,6 +234,18 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
   position: fixed; inset: 0; background: rgba(61, 52, 82, 0.45);
   display: flex; align-items: center; justify-content: center;
   z-index: 100; padding: 20px;
+}
+.hint-modal-overlay{
+  background: rgba(61, 52, 82, 0.12);
+  align-items: flex-start;
+  padding-top: 90px;
+}
+.clue-highlight{
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 1px 4px;
+  font-weight: 800;
 }
 .modal-card{
   background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);

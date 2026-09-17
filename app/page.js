@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { fireConfetti } from '../components/Confetti';
-import { enumerationFor } from '../lib/format';
 import { ACHIEVEMENTS, computeNewAchievements } from '../lib/achievements';
 import { loadProgress, saveProgress } from '../lib/progress';
 
@@ -28,19 +27,49 @@ function tileFor(count) {
   if (count === 2) return '🟧';
   return '🟥';
 }
-function numClass(count, answered) {
-  if (!answered) return '';
-  if (count <= 0) return 'good';
-  if (count === 1) return 'h1';
-  if (count === 2) return 'h2';
-  return 'h3';
+function withSuffix(n) {
+  return n === 1 ? '1-gyel' : `${n}-vel`;
 }
-function difficultyText(totalHints, parHints) {
+
+const HU_WORD_RE = /[A-Za-zÁÉÍÓÖŐÚÜŰáéíóöőúüű]+/g;
+const HU_STOPWORDS = new Set([
+  'a', 'az', 'egy', 'és', 'de', 'hogy', 'ha', 'is', 'nem', 'ez', 'ezt', 'ennek',
+  'arra', 'vagy', 'mint', 'majd', 'még', 'csak', 'már', 'meg', 'vele', 'lesz',
+  'volt', 'ami', 'amit', 'aki', 'akit', 'itt', 'ott', 'nagyon', 'ilyen', 'olyan',
+]);
+function extractWords(text) {
+  return (text || '').match(HU_WORD_RE) || [];
+}
+// Kísérleti: megkeresi, mely (nem túl gyakori) szavak szerepelnek mind a tipp
+// szövegében, mind magában a rejtvényben — ezeket emeljük ki.
+function getHighlightWords(hintText, clueText) {
+  const hintWords = extractWords(hintText)
+    .map((w) => w.toLowerCase())
+    .filter((w) => w.length >= 4 && !HU_STOPWORDS.has(w));
+  const clueWordsLower = new Set(extractWords(clueText).map((w) => w.toLowerCase()));
+  return Array.from(new Set(hintWords.filter((w) => clueWordsLower.has(w))));
+}
+function renderClueWithHighlight(clueText, highlightWords) {
+  if (!highlightWords || highlightWords.length === 0) return clueText;
+  const wordsSet = new Set(highlightWords);
+  const tokens = (clueText || '').split(new RegExp(`(${HU_WORD_RE.source})`, 'g'));
+  return tokens.map((tok, i) =>
+    wordsSet.has(tok.toLowerCase()) ? (
+      <mark className="clue-highlight" key={i}>
+        {tok}
+      </mark>
+    ) : (
+      tok
+    )
+  );
+}
+function difficultyText(totalHints, parHints, correct) {
   if (parHints == null) return null;
+  if (!correct) return 'Legközelebb sikerülni fog!';
   const diff = totalHints - parHints;
   if (diff === 0) return 'Pontosan a nehézségnek megfelelően oldottad meg!';
-  if (diff < 0) return `${Math.abs(diff)}-vel kevesebb tippet használtál, mint a nehézség — szép munka!`;
-  return `${diff}-vel több tippet használtál, mint a nehézség.`;
+  if (diff < 0) return `${withSuffix(Math.abs(diff))} kevesebb tippet használtál, mint a nehézség — szép munka!`;
+  return `${withSuffix(diff)} több tippet használtál, mint a nehézség.`;
 }
 function emptyGuess(answer) {
   return Array.from(answer).map((ch) => (ch === ' ' ? ' ' : ''));
@@ -132,8 +161,8 @@ export default function HomePage() {
   const [avgHints, setAvgHints] = useState(null);
   const [toast, setToast] = useState('');
   const [showIntro, setShowIntro] = useState(false);
-  const [showAchievements, setShowAchievements] = useState(false);
   const [showHintModal, setShowHintModal] = useState(false);
+  const [highlightedHintType, setHighlightedHintType] = useState(null);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const timerRef = useRef(null);
   const toastTimeout = useRef(null);
@@ -352,7 +381,7 @@ export default function HomePage() {
       `${correct ? '✅ Megfejtve' : '❌ Feladva'} — ${tileFor(totalHints)}`,
       `Idő: ${formatTime(elapsed)}`,
     ];
-    if (puzzle?.parHints != null) lines.push(difficultyText(totalHints, puzzle.parHints));
+    if (puzzle?.parHints != null) lines.push(difficultyText(totalHints, puzzle.parHints, correct));
     if (avgHints !== null) lines.push(`Átlag tipp/játékos ma: ${avgHints.toFixed(1)}`);
     return lines.join('\n');
   }
@@ -386,6 +415,11 @@ export default function HomePage() {
     (t) => t === 'betu' || (puzzle.hints?.[t]?.enabled && puzzle.hints[t].text)
   );
 
+  const activeHighlightWords =
+    highlightedHintType && highlightedHintType !== 'betu' && puzzle.hints?.[highlightedHintType]?.text
+      ? getHighlightWords(puzzle.hints[highlightedHintType].text, puzzle.clue)
+      : [];
+
   return (
     <div className="wrap">
       {showIntro && (
@@ -415,51 +449,15 @@ export default function HomePage() {
       )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
-        <button className="pill" style={{ border: 'none', cursor: 'pointer' }} onClick={() => setShowAchievements(true)}>
+        <button
+          className="pill"
+          style={{ border: 'none', cursor: 'pointer' }}
+          onClick={() => window.dispatchEvent(new Event('open-achievements'))}
+        >
           🏆 {unlockedAchievements.length}/{ACHIEVEMENTS.length}
         </button>
         <span className="pill">🔥 {progress.streak} napos sorozat</span>
       </div>
-
-      {showAchievements && (
-        <div className="modal-overlay" onClick={() => setShowAchievements(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
-              🏆 Trófeák
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {ACHIEVEMENTS.map((a) => {
-                const done = unlockedAchievements.includes(a.id);
-                return (
-                  <div
-                    key={a.id}
-                    style={{
-                      display: 'flex',
-                      gap: 10,
-                      alignItems: 'center',
-                      opacity: done ? 1 : 0.4,
-                      background: done ? 'var(--accent-soft)' : 'transparent',
-                      borderRadius: 12,
-                      padding: '8px 10px',
-                    }}
-                  >
-                    <span style={{ fontSize: 22 }}>{a.emoji}</span>
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{a.title}</div>
-                      <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{a.desc}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="actions" style={{ marginTop: 18 }}>
-              <button className="primary" onClick={() => setShowAchievements(false)}>
-                Bezárás
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="card">
         <div className="topbar">
@@ -472,8 +470,9 @@ export default function HomePage() {
 
         <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0 }}>
           <div className="clue-head">
-            <div className={`num ${numClass(hintsUsed(), answered)}`}>1</div>
-            <div className="clue-text">{puzzle.clue} {enumerationFor(puzzle.answer)}</div>
+            <div className="clue-text">
+              {renderClueWithHighlight(puzzle.clue, activeHighlightWords)}
+            </div>
           </div>
 
           {!answered && (
@@ -526,7 +525,13 @@ export default function HomePage() {
           )}
 
           {showHintModal && (
-            <div className="modal-overlay" onClick={() => setShowHintModal(false)}>
+            <div
+              className="modal-overlay hint-modal-overlay"
+              onClick={() => {
+                setShowHintModal(false);
+                setHighlightedHintType(null);
+              }}
+            >
               <div className="modal-card" onClick={(e) => e.stopPropagation()}>
                 <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
                   💡 Melyik tippet kéred?
@@ -536,13 +541,15 @@ export default function HomePage() {
                     const isBetu = t === 'betu';
                     const used = isBetu ? false : revealed.includes(t);
                     const exhausted = isBetu && noMoreLettersToReveal();
+                    const isHighlighted = highlightedHintType === t;
                     return (
                       <div
                         key={t}
                         style={{
-                          border: '2px solid var(--line)',
+                          border: `2px solid ${isHighlighted ? 'var(--accent)' : 'var(--line)'}`,
                           borderRadius: 12,
                           padding: '10px 12px',
+                          background: isHighlighted ? 'var(--accent-soft)' : 'transparent',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
@@ -562,7 +569,19 @@ export default function HomePage() {
                           </button>
                         </div>
                         {(isBetu ? betuCount > 0 : used) && (
-                          <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
+                          <p
+                            style={{
+                              fontSize: 13.5,
+                              color: 'var(--ink-soft)',
+                              margin: '8px 0 0',
+                              cursor: isBetu ? 'default' : 'pointer',
+                              textDecoration: !isBetu ? 'underline dotted' : 'none',
+                            }}
+                            onClick={() =>
+                              !isBetu && setHighlightedHintType((prev) => (prev === t ? null : t))
+                            }
+                            title={!isBetu ? 'Kattints: emelje ki a rejtvényben, hol illik ez a szó' : undefined}
+                          >
                             {isBetu
                               ? `Eddig ${betuCount} betűt fedtünk fel a válaszban.`
                               : puzzle.hints[t].text}
@@ -572,8 +591,18 @@ export default function HomePage() {
                     );
                   })}
                 </div>
-                <div className="actions" style={{ marginTop: 18 }}>
-                  <button className="primary" onClick={() => setShowHintModal(false)}>
+                <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 14 }}>
+                  🧪 Kísérleti: kattints egy felfedett tipp szövegére, és megjelöljük, hol
+                  bukkanhat fel hasonló szó a rejtvényben.
+                </p>
+                <div className="actions" style={{ marginTop: 10 }}>
+                  <button
+                    className="primary"
+                    onClick={() => {
+                      setShowHintModal(false);
+                      setHighlightedHintType(null);
+                    }}
+                  >
                     Bezárás
                   </button>
                 </div>
@@ -621,7 +650,7 @@ export default function HomePage() {
           </div>
           {puzzle.parHints != null && (
             <div className="feedback hint" style={{ marginLeft: 0, display: 'inline-block' }}>
-              {difficultyText(hintsUsed(), puzzle.parHints)}
+              {difficultyText(hintsUsed(), puzzle.parHints, correct)}
             </div>
           )}
           <div className="actions" style={{ marginTop: 16 }}>

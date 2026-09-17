@@ -1,6 +1,7 @@
 import './globals.css';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
+import AchievementsModal from '../components/AchievementsModal';
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
@@ -36,6 +37,7 @@ export default function RootLayout({ children }) {
         <Nav />
         {children}
         <Footer />
+        <AchievementsModal />
       </body>
     </html>
   );
