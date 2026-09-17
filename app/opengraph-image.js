@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og';
-import fs from 'fs';
-import path from 'path';
+import { FREDOKA_BASE64 } from './fredoka-font-data';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,8 +8,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function Image() {
-  const fontPath = path.join(process.cwd(), 'app', 'fredoka.ttf');
-  const fontData = fs.readFileSync(fontPath);
+  const fontData = Buffer.from(FREDOKA_BASE64, 'base64');
 
   return new ImageResponse(
     (
