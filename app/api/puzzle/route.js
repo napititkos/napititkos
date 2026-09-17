@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../lib/kv';
 import { todayStr } from '../../../lib/date';
 
+const ROTATION_MS = 24 * 60 * 60 * 1000;
+
 // Kiszámolja, mikor van dél (12:00) Budapesten egy adott UTC pillanat
 // szerinti naptári napon, nyári/téli időszámítástól függetlenül.
 function budapestNoonForDay(baseUTC) {
