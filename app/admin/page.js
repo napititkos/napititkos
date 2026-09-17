@@ -22,6 +22,7 @@ function emptyEntry() {
     id: generateId(),
     clue: '',
     answer: '',
+    answerWords: [''],
     parHints: 3,
     hints: {
       definicio: { enabled: false, text: '' },
@@ -44,6 +45,7 @@ function migrateOldFormat(rawList) {
           id: generateId(),
           clue: c.clue || '',
           answer: c.answer || '',
+          answerWords: splitAnswerWords(c.answer || ''),
           parHints: item.parHints ?? 3,
           hints: c.hints || {
             definicio: { enabled: false, text: '' },
@@ -55,7 +57,10 @@ function migrateOldFormat(rawList) {
         });
       }
     } else {
-      result.push(item.id ? item : { ...item, id: generateId() });
+      const withId = item.id ? item : { ...item, id: generateId() };
+      result.push(
+        withId.answerWords ? withId : { ...withId, answerWords: splitAnswerWords(withId.answer || '') }
+      );
     }
   }
   return result;
@@ -197,13 +202,40 @@ export default function AdminPage() {
   async function saveAll() {
     setLoading(true);
     setSaveStatus(null);
+    const normalized = entries.map((en) => ({
+      ...en,
+      answer: (en.answerWords || splitAnswerWords(en.answer)).join(' ').trim(),
+      parHints: en.parHints === '' || en.parHints == null ? 0 : en.parHints,
+    }));
     const res = await fetch('/api/admin/puzzles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ puzzles: entries }),
+      body: JSON.stringify({ puzzles: normalized }),
     });
     setLoading(false);
     setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
+  }
+
+  function convertSubmissionToEntry(s) {
+    const fresh = {
+      id: generateId(),
+      clue: capitalizeFirst(s.clue || ''),
+      answer: (s.answer || '').toUpperCase(),
+      answerWords: splitAnswerWords((s.answer || '').toUpperCase()),
+      parHints: 3,
+      hints: {
+        definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || '') },
+        indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || '') },
+        fodder: { enabled: !!s.hints?.fodder, text: capitalizeFirst(s.hints?.fodder || '') },
+        alternativ: { enabled: !!s.hints?.alternativ, text: capitalizeFirst(s.hints?.alternativ || '') },
+        betu: { enabled: true },
+      },
+    };
+    setEntries((prev) => [...prev, fresh]);
+    setExpandedId(fresh.id);
+    setJustAddedId(fresh.id);
+    setSortMode('manual');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function deleteSubmission(id) {
@@ -271,7 +303,11 @@ export default function AdminPage() {
           Minden nap délben (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
           listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
         </p>
-        {saveStatus && <div className="feedback good" style={{ marginLeft: 0 }}>{saveStatus}</div>}
+        {saveStatus && (
+          <div className="feedback good" style={{ marginLeft: 0, marginTop: 14, display: 'inline-block' }}>
+            {saveStatus}
+          </div>
+        )}
 
         {entries.length > 0 && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
@@ -328,27 +364,31 @@ export default function AdminPage() {
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                     {e.clue || '(üres)'}
                   </span>
-                  {answerShown ? (
-                    <span
-                      style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        setRevealedAnswers((prev) => ({ ...prev, [e.id]: false }));
-                      }}
-                      title="Elrejtés"
-                    >
-                      {e.answer || '—'}
-                    </span>
+                  {e.answer ? (
+                    answerShown ? (
+                      <span
+                        style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          setRevealedAnswers((prev) => ({ ...prev, [e.id]: false }));
+                        }}
+                        title="Elrejtés"
+                      >
+                        {e.answer}
+                      </span>
+                    ) : (
+                      <button
+                        className="ghost small"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          setRevealedAnswers((prev) => ({ ...prev, [e.id]: true }));
+                        }}
+                      >
+                        👁️ Megoldás
+                      </button>
+                    )
                   ) : (
-                    <button
-                      className="ghost small"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        setRevealedAnswers((prev) => ({ ...prev, [e.id]: true }));
-                      }}
-                    >
-                      👁️ Megoldás
-                    </button>
+                    <span style={{ color: 'var(--ink-soft)', fontSize: 13 }}>(nincs még válasz)</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }} onClick={(ev) => ev.stopPropagation()}>
@@ -369,16 +409,16 @@ export default function AdminPage() {
 
                   <label className="field-label">Válasz (szavanként)</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                    {splitAnswerWords(e.answer).map((word, wi) => (
+                    {(e.answerWords || ['']).map((word, wi) => (
                       <input
                         key={wi}
                         type="text"
                         style={{ width: 130 }}
                         value={word}
                         onChange={(ev) => {
-                          const words = splitAnswerWords(e.answer);
+                          const words = [...(e.answerWords || [''])];
                           words[wi] = ev.target.value.toUpperCase();
-                          updateEntry(ei, (en) => ({ ...en, answer: words.join(' ') }));
+                          updateEntry(ei, (en) => ({ ...en, answerWords: words }));
                         }}
                         placeholder={`${wi + 1}. szó`}
                       />
@@ -387,21 +427,19 @@ export default function AdminPage() {
                       type="button"
                       className="ghost small"
                       onClick={() => {
-                        const words = splitAnswerWords(e.answer);
-                        words.push('');
-                        updateEntry(ei, (en) => ({ ...en, answer: words.join(' ') }));
+                        const words = [...(e.answerWords || ['']), ''];
+                        updateEntry(ei, (en) => ({ ...en, answerWords: words }));
                       }}
                     >
                       + Szó hozzáadása
                     </button>
-                    {splitAnswerWords(e.answer).length > 1 && (
+                    {(e.answerWords || ['']).length > 1 && (
                       <button
                         type="button"
                         className="ghost small"
                         onClick={() => {
-                          const words = splitAnswerWords(e.answer);
-                          words.pop();
-                          updateEntry(ei, (en) => ({ ...en, answer: words.join(' ') }));
+                          const words = (e.answerWords || ['']).slice(0, -1);
+                          updateEntry(ei, (en) => ({ ...en, answerWords: words }));
                         }}
                       >
                         − Utolsó szó törlése
@@ -409,7 +447,10 @@ export default function AdminPage() {
                     )}
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
-                    Előnézet: <i>{e.clue || '(még nincs szöveg)'} {enumerationFor(e.answer)}</i>
+                    Előnézet:{' '}
+                    <i>
+                      {e.clue || '(még nincs szöveg)'} {enumerationFor((e.answerWords || ['']).join(' '))}
+                    </i>
                   </p>
 
                   <label className="field-label">
@@ -420,10 +461,14 @@ export default function AdminPage() {
                     min="0"
                     max="20"
                     style={{ width: 90, textTransform: 'none' }}
-                    value={e.parHints ?? 3}
-                    onChange={(ev) =>
-                      updateEntry(ei, (en) => ({ ...en, parHints: Number(ev.target.value) || 0 }))
-                    }
+                    value={e.parHints === '' || e.parHints == null ? '' : e.parHints}
+                    onChange={(ev) => {
+                      const raw = ev.target.value;
+                      updateEntry(ei, (en) => ({
+                        ...en,
+                        parHints: raw === '' ? '' : Number(raw),
+                      }));
+                    }}
                   />
 
                   {HINT_TYPES.map((h) => (
@@ -467,6 +512,12 @@ export default function AdminPage() {
                     <input type="checkbox" checked disabled />
                     <label>Helyes betű tipp elérhető (automatikus, mindig jelen van)</label>
                   </div>
+
+                  <div style={{ marginTop: 16 }}>
+                    <button className="primary small" onClick={saveAll} disabled={loading}>
+                      {loading ? 'Mentés…' : 'Mentés'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -492,7 +543,10 @@ export default function AdminPage() {
             {s.hints?.indikator && <div>Mutató: {s.hints.indikator}</div>}
             {s.hints?.fodder && <div>Készlet: {s.hints.fodder}</div>}
             {s.hints?.alternativ && <div>Alternatív: {s.hints.alternativ}</div>}
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+              <button className="ghost small" onClick={() => convertSubmissionToEntry(s)}>
+                ✏️ Átemelés rejtvénynek
+              </button>
               <button className="ghost small" onClick={() => deleteSubmission(s.id)}>Törlés</button>
             </div>
           </div>
