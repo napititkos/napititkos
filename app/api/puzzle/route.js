@@ -67,6 +67,8 @@ export async function GET() {
     currentPuzzle = puzzles.find((p) => p.id === state.currentId);
   }
 
+  let history = (await kv.get('rotation:history')) || [];
+
   if (needNew) {
     let candidates = puzzles.filter((p) => p.id && !usedIds.includes(p.id));
     if (candidates.length === 0) {
@@ -76,24 +78,25 @@ export async function GET() {
     }
     currentPuzzle = candidates[0];
     usedIds.push(currentPuzzle.id);
-    const prevDayNumber = state?.dayNumber || 0;
     state = {
       currentId: currentPuzzle.id,
       since: new Date(rotationBoundary).toISOString(),
-      dayNumber: prevDayNumber + 1,
     };
     await kv.set('rotation:state', state);
     await kv.set('rotation:usedIds', usedIds);
 
-    const history = (await kv.get('rotation:history')) || [];
-    history.push({
-      id: currentPuzzle.id,
-      clue: currentPuzzle.clue,
-      answer: currentPuzzle.answer,
-      parHints: currentPuzzle.parHints,
-      shownDate: todayStr(),
-    });
-    await kv.set('rotation:history', history.slice(-500));
+    history = [
+      ...history,
+      {
+        id: currentPuzzle.id,
+        clue: currentPuzzle.clue,
+        answer: currentPuzzle.answer,
+        parHints: currentPuzzle.parHints,
+        shownDate: todayStr(),
+      },
+    ];
+    history = history.slice(-500);
+    await kv.set('rotation:history', history);
   } else if (new Date(state.since).getTime() !== rotationBoundary) {
     // Önjavítás: a tárolt "since" egy korábbi váltási szabály (pl. dél) szerint
     // állhat, ami időben "később" van, mint a mai helyes határidő, ezért a fenti
@@ -111,6 +114,6 @@ export async function GET() {
     date: todayStr(),
     activeSince: state.since,
     nextRotationAt: new Date(rotationBoundary + ROTATION_MS).toISOString(),
-    dayNumber: state.dayNumber || 1,
+    dayNumber: history.length || 1,
   });
 }
