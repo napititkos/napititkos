@@ -122,6 +122,7 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState(null);
   const [entries, setEntries] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [users, setUsers] = useState([]);
   const [saveStatus, setSaveStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
@@ -153,6 +154,7 @@ export default function AdminPage() {
       setAuthed(true);
       loadSubmissions();
       loadHistory();
+      loadUsers();
       return { ok: true };
     } catch (err) {
       return { ok: false, msg: `Hálózati vagy feldolgozási hiba: ${err.message}` };
@@ -164,6 +166,27 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       setSubmissions(data.submissions || []);
+    }
+  }
+
+  async function loadUsers() {
+    const res = await fetch('/api/admin/users');
+    if (res.ok) {
+      const data = await res.json();
+      setUsers(data.users || []);
+    }
+  }
+
+  async function changeUserRole(id, role) {
+    const res = await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, role }),
+    });
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
+    } else {
+      alert('Nem sikerült módosítani a jogosultságot.');
     }
   }
 
@@ -603,6 +626,34 @@ export default function AdminPage() {
         <button className="primary" onClick={saveAll} disabled={loading}>
           {loading ? 'Mentés…' : 'Összes mentése'}
         </button>
+      </div>
+
+      <div className="card">
+        <b>Felhasználók ({users.length})</b>
+        {users.length === 0 && (
+          <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még nincs regisztrált felhasználó.</p>
+        )}
+        {users.map((u) => (
+          <div className="sub-item" key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+            <div>
+              <div>
+                <b>{u.name || u.email}</b>{' '}
+                {u.role === 'admin' && (
+                  <span className="progress-badge" style={{ marginLeft: 6 }}>admin</span>
+                )}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+                {u.email} · {u.emailVerified ? 'megerősítve' : 'nincs megerősítve'}
+              </div>
+            </div>
+            <button
+              className="ghost small"
+              onClick={() => changeUserRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
+            >
+              {u.role === 'admin' ? 'Admin-jog visszavonása' : 'Admin-jog adása'}
+            </button>
+          </div>
+        ))}
       </div>
 
       <div className="card">
