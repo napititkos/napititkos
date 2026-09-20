@@ -1,28 +1,21 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
   const [tutorialDone, setTutorialDone] = useState(0);
-  const [user, setUser] = useState(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     setTutorialDone(completedSectionsCount(loadTutorialProgress()));
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((d) => setUser(d.user))
-      .catch(() => {})
-      .finally(() => setUserLoading(false));
   }, []);
 
   async function handleLogout(e) {
     e.preventDefault();
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
     setOpen(false);
-    window.location.href = '/';
+    await signOut({ callbackUrl: '/' });
   }
 
   function handleArchiveClick(e) {
@@ -85,11 +78,11 @@ export default function Nav() {
           <a href="/contact" onClick={() => setOpen(false)}>📬 Kapcsolat</a>
           <a href="/privacy" onClick={() => setOpen(false)}>🔒 Adatvédelem</a>
           <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0' }} />
-          {!userLoading && (
-            user ? (
+          {status !== 'loading' && (
+            session?.user ? (
               <>
                 <div style={{ padding: '10px 10px 2px', fontSize: 13, color: 'var(--ink-soft)' }}>
-                  Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{user.name}</b>
+                  Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{session.user.name || session.user.email}</b>
                 </div>
                 <a href="#" onClick={handleLogout}>🚪 Kijelentkezés</a>
               </>

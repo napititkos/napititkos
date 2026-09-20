@@ -4,6 +4,7 @@ import Footer from '../components/Footer';
 import AchievementsModal from '../components/AchievementsModal';
 import LeaderboardModal from '../components/LeaderboardModal';
 import TutorialModal from '../components/TutorialModal';
+import AuthProvider from '../components/AuthProvider';
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
@@ -36,12 +37,14 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        <Nav />
-        {children}
-        <Footer />
-        <AchievementsModal />
-        <LeaderboardModal />
-        <TutorialModal />
+        <AuthProvider>
+          <Nav />
+          {children}
+          <Footer />
+          <AchievementsModal />
+          <LeaderboardModal />
+          <TutorialModal />
+        </AuthProvider>
       </body>
     </html>
   );
