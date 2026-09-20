@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { fireConfetti } from '../components/Confetti';
 import { ACHIEVEMENTS, computeNewAchievements } from '../lib/achievements';
 import { loadProgress, saveProgress } from '../lib/progress';
+import { getIdentity } from '../lib/identity';
+import PodiumIcon from '../components/PodiumIcon';
 
 const HINT_LABELS = {
   fodder: 'Készlet',
@@ -21,14 +23,14 @@ function formatTime(ms) {
   const s = String(total % 60).padStart(2, '0');
   return `${m}:${s}`;
 }
-function tileFor(count) {
-  if (count <= 0) return '🟩';
-  if (count === 1) return '🟨';
-  if (count === 2) return '🟧';
-  return '🟥';
-}
 function withSuffix(n) {
   return n === 1 ? '1-gyel' : `${n}-vel`;
+}
+function feedbackText(isCorrect, hintCount, answer) {
+  if (isCorrect) {
+    return hintCount === 0 ? 'Helyes válasz, tipp nélkül!' : `Helyes válasz (${hintCount} tipp felhasználva)`;
+  }
+  return `A válasz: ${answer}`;
 }
 const HU_MONTHS = [
   'január', 'február', 'március', 'április', 'május', 'június',
@@ -50,7 +52,7 @@ const HU_STOPWORDS = new Set([
 function extractWords(text) {
   return (text || '').match(HU_WORD_RE) || [];
 }
-// Két szó "ugyanattól a tőtől" származik-e — egyszerű, ragozás-toleráns heurisztika:
+// Két szó "ugyanattól a tőtől" származik-e - egyszerű, ragozás-toleráns heurisztika:
 // egyezőnek számít, ha az egyik szó a másiknak (kellően hosszú) eleje.
 // Ez elkapja pl. "rettenetes" / "rettenetesen" vagy "citrom" / "citromot" párokat is.
 function sameStem(a, b) {
@@ -60,8 +62,8 @@ function sameStem(a, b) {
   if (shorter.length < 4) return false;
   return longer.startsWith(shorter);
 }
-// Kísérleti: megkeresi, mely (nem túl gyakori) szavak szerepelnek — akár ragozott
-// alakban is — mind a tipp szövegében, mind magában a rejtvényben.
+// Kísérleti: megkeresi, mely (nem túl gyakori) szavak szerepelnek - akár ragozott
+// alakban is - mind a tipp szövegében, mind magában a rejtvényben.
 function getHighlightWords(hintText, clueText) {
   const hintWords = extractWords(hintText)
     .map((w) => w.toLowerCase())
@@ -92,7 +94,7 @@ function difficultyText(totalHints, parHints, correct) {
   if (!correct) return 'Legközelebb sikerülni fog!';
   const diff = totalHints - parHints;
   if (diff === 0) return 'Pontosan a nehézségnek megfelelően oldottad meg!';
-  if (diff < 0) return `${withSuffix(Math.abs(diff))} kevesebb tippet használtál, mint a nehézség — szép munka!`;
+  if (diff < 0) return `${withSuffix(Math.abs(diff))} kevesebb tippet használtál, mint a nehézség - szép munka!`;
   return `${withSuffix(diff)} több tippet használtál, mint a nehézség.`;
 }
 function emptyGuess(answer) {
@@ -183,6 +185,7 @@ export default function HomePage() {
   const [startTime] = useState(Date.now());
   const [progress, setProgress] = useState({ streak: 0, best: 0 });
   const [avgHints, setAvgHints] = useState(null);
+  const [solverCount, setSolverCount] = useState(null);
   const [toast, setToast] = useState('');
   const [showIntro, setShowIntro] = useState(false);
   const [showHintModal, setShowHintModal] = useState(false);
@@ -240,6 +243,7 @@ export default function HomePage() {
           setCorrect(saved.correct);
           setGaveUp(saved.gaveUp);
           setElapsed(saved.elapsed);
+          fetchStats(data.date);
         }
         setLoading(false);
       })
@@ -421,12 +425,28 @@ export default function HomePage() {
     fetch('/api/stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: today, hintsUsed: totalHints }),
+      body: JSON.stringify({ date: today, hintsUsed: totalHints, correct: wasCorrect }),
     }).catch(() => {});
 
-    fetch(`/api/stats?date=${today}`)
+    if (wasCorrect) {
+      const identity = getIdentity();
+      fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: today, name: identity.name, hintsUsed: totalHints, elapsed: finalElapsed }),
+      }).catch(() => {});
+    }
+
+    fetchStats(today);
+  }
+
+  function fetchStats(date) {
+    fetch(`/api/stats?date=${date}`)
       .then((r) => r.json())
-      .then((d) => setAvgHints(d.average))
+      .then((d) => {
+        setAvgHints(d.average);
+        setSolverCount(d.correctCount ?? 0);
+      })
       .catch(() => {});
   }
 
@@ -434,11 +454,12 @@ export default function HomePage() {
     const totalHints = hintsUsed();
     const lines = [
       `Titkosírás · ${puzzleMeta?.date || ''}`,
-      `${correct ? '✅ Megfejtve' : '❌ Feladva'} — ${tileFor(totalHints)}`,
+      `"${puzzle.clue}"`,
+      correct ? feedbackText(true, totalHints) : feedbackText(false, 0, puzzle.answer),
       `Idő: ${formatTime(elapsed)}`,
+      `Eddigi megfejtők száma ma: ${solverCount ?? 0}`,
+      'napititkos.hu',
     ];
-    if (puzzle?.parHints != null) lines.push(difficultyText(totalHints, puzzle.parHints, correct));
-    if (avgHints !== null) lines.push(`Átlag tipp/játékos ma: ${avgHints.toFixed(1)}`);
     return lines.join('\n');
   }
 
@@ -507,10 +528,10 @@ export default function HomePage() {
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
         <button
           className="pill"
-          style={{ border: 'none', cursor: 'pointer' }}
-          onClick={() => window.dispatchEvent(new Event('open-achievements'))}
+          style={{ border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          onClick={() => window.dispatchEvent(new Event('open-leaderboard'))}
         >
-          🏆 {unlockedAchievements.length}/{ACHIEVEMENTS.length}
+          <PodiumIcon size={16} /> Ranglista
         </button>
         <span className="pill">🔥 {progress.streak} napos sorozat</span>
       </div>
@@ -532,6 +553,11 @@ export default function HomePage() {
               {renderClueWithHighlight(puzzle.clue, activeHighlightWords)}
             </div>
           </div>
+          {puzzle.submittedBy && (
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
+              Beküldte: {puzzle.submittedBy}
+            </div>
+          )}
 
           {!answered && (
             <>
@@ -685,11 +711,7 @@ export default function HomePage() {
 
           {answered && (
             <div className={`feedback ${correct ? 'good' : 'hint'}`}>
-              {correct
-                ? hintsUsed() === 0
-                  ? '✓ Helyes válasz, tipp nélkül!'
-                  : `✓ Helyes válasz (${hintsUsed()} tipp felhasználva)`
-                : `A válasz: ${puzzle.answer}`}
+              {correct ? `✓ ${feedbackText(true, hintsUsed())}` : feedbackText(false, 0, puzzle.answer)}
             </div>
           )}
 
@@ -726,6 +748,12 @@ export default function HomePage() {
                 <span>átlag tipp / játékos</span>
               </div>
             )}
+            {solverCount !== null && (
+              <div className="stat">
+                <b>{solverCount}</b>
+                <span>megfejtő ma</span>
+              </div>
+            )}
           </div>
           {puzzle.parHints != null && (
             <div className="feedback hint" style={{ marginLeft: 0, display: 'inline-block' }}>
@@ -733,8 +761,9 @@ export default function HomePage() {
             </div>
           )}
           <div className="actions" style={{ marginTop: 16 }}>
-            <button className="primary" onClick={share}>
-              Eredmény megosztása
+            <button className="primary" onClick={share} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, lineHeight: 1.2 }}>
+              <span style={{ fontSize: 20 }}>📤</span>
+              <span>Eredmény másolása</span>
             </button>
           </div>
           {countdown && (

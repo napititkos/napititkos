@@ -1,4 +1,4 @@
-export const metadata = { title: 'Kapcsolat — Titkosírás' };
+export const metadata = { title: 'Kapcsolat - Titkosírás' };
 
 export default function ContactPage() {
   return (

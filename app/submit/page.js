@@ -133,12 +133,11 @@ export default function SubmitPage() {
               style={{ marginTop: 3 }}
             />
             <label htmlFor="consent" style={{ fontSize: 13.5, lineHeight: 1.5 }}>
-              Elfogadom, hogy a beküldött rejtvényemet a Titkosírás szabadon közzéteheti,
-              szerkesztheti, és akár más projektjeiben is felhasználhatja — az{' '}
+              Kijelentem, hogy elolvastam és elfogadom az{' '}
               <a href="/privacy" style={{ color: 'var(--accent)' }}>
-                Adatvédelmi tájékoztatóban
-              </a>{' '}
-              foglaltak szerint.
+                Adatvédelmi tájékoztatót
+              </a>
+              .
             </label>
           </div>
 

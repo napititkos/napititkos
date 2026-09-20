@@ -2,13 +2,15 @@ import './globals.css';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
 import AchievementsModal from '../components/AchievementsModal';
+import LeaderboardModal from '../components/LeaderboardModal';
+import TutorialModal from '../components/TutorialModal';
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
-  title: 'Titkosírás — napi kriptikus rejtvény',
-  description: 'Napi magyar nyelvű kriptikus (cryptic) szórejtvény — napititkos.hu',
+  title: 'Titkosírás - napi kriptikus rejtvény',
+  description: 'Napi magyar nyelvű kriptikus (cryptic) szórejtvény - napititkos.hu',
   openGraph: {
-    title: 'Titkosírás — napi kriptikus rejtvény',
+    title: 'Titkosírás - napi kriptikus rejtvény',
     description: 'Napi magyar nyelvű kriptikus (cryptic) szórejtvény.',
     url: 'https://napititkos.hu',
     siteName: 'Titkosírás',
@@ -17,7 +19,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Titkosírás — napi kriptikus rejtvény',
+    title: 'Titkosírás - napi kriptikus rejtvény',
     description: 'Napi magyar nyelvű kriptikus (cryptic) szórejtvény.',
   },
 };
@@ -38,6 +40,8 @@ export default function RootLayout({ children }) {
         {children}
         <Footer />
         <AchievementsModal />
+        <LeaderboardModal />
+        <TutorialModal />
       </body>
     </html>
   );

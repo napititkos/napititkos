@@ -3,7 +3,7 @@ import { FREDOKA_BASE64 } from './fredoka-font-data';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const alt = 'Titkosírás — napi kriptikus rejtvény';
+export const alt = 'Titkosírás - napi kriptikus rejtvény';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

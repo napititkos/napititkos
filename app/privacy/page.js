@@ -1,4 +1,4 @@
-export const metadata = { title: 'Adatvédelem — Titkosírás' };
+export const metadata = { title: 'Adatvédelem - Titkosírás' };
 
 export default function PrivacyPage() {
   return (
@@ -31,11 +31,9 @@ export default function PrivacyPage() {
           </p>
           <p>
             A beküldéssel hozzájárulsz ahhoz, hogy az általad beküldött rejtvényt (annak
-            szövegét, megfejtését és tippjeit) szabadon felhasználhassuk — beleértve a napi
-            titkosírások közé való bekerülést, szerkesztését, közzétételét, valamint akár egyéb,
-            jövőbeli projektjeinkben történő felhasználását is. A beküldött rejtvény ezáltal a
-            Titkosírás szellemi tulajdonává válik, a beküldő nevének feltüntetése mellett,
-            amennyiben becenevet adott meg.
+            szövegét, megfejtését és tippjeit) szabadon felhasználhassuk - beleértve a napi
+            titkosírások közé való bekerülést, szerkesztését, közzétételét, a beküldő nevének
+            feltüntetésével, amennyiben becenevet adott meg.
           </p>
         </div>
         <div className="help-block">

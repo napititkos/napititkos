@@ -24,6 +24,7 @@ function emptyEntry() {
     answer: '',
     answerWords: [''],
     parHints: 3,
+    submittedBy: '',
     hints: {
       definicio: { enabled: false, text: '' },
       indikator: { enabled: false, text: '' },
@@ -38,7 +39,7 @@ function migrateOldFormat(rawList) {
   const result = [];
   for (const item of rawList) {
     if (Array.isArray(item.clues)) {
-      // Régi, "5 rejtvény egy csomagban" formátum — szétbontjuk önálló bejegyzésekre.
+      // Régi, "5 rejtvény egy csomagban" formátum - szétbontjuk önálló bejegyzésekre.
       for (const c of item.clues) {
         if (!c.clue && !c.answer) continue;
         result.push({
@@ -66,14 +67,19 @@ function migrateOldFormat(rawList) {
   return result;
 }
 
-function sortedEntries(entries, mode, direction, justAddedId) {
-  const withIndex = entries.map((entry, index) => ({ entry, index }));
-  let sorted = withIndex;
+function indexedEntries(entries) {
+  return entries.map((entry, index) => ({ entry, index }));
+}
+function isArchived(entry, shownDateById, currentActiveId) {
+  return !!shownDateById[entry.id] && entry.id !== currentActiveId;
+}
+function sortIndexed(list, mode, direction, justAddedId) {
+  let sorted = list;
   if (mode === 'time') {
     // Az id base36 időbélyeggel kezdődik, ezért lexikografikusan is időrendet ad.
-    sorted = [...withIndex].sort((a, b) => (a.entry.id > b.entry.id ? 1 : -1));
+    sorted = [...list].sort((a, b) => (a.entry.id > b.entry.id ? 1 : -1));
   } else if (mode === 'clue') {
-    sorted = [...withIndex].sort((a, b) =>
+    sorted = [...list].sort((a, b) =>
       (a.entry.clue || '').localeCompare(b.entry.clue || '', 'hu')
     );
   }
@@ -83,11 +89,30 @@ function sortedEntries(entries, mode, direction, justAddedId) {
   if (mode === 'manual' && justAddedId) {
     const idx = sorted.findIndex((item) => item.entry.id === justAddedId);
     if (idx > 0) {
-      const [item] = sorted.splice(idx, 1);
-      sorted = [item, ...sorted];
+      const copy = [...sorted];
+      const [item] = copy.splice(idx, 1);
+      sorted = [item, ...copy];
     }
   }
   return sorted;
+}
+function freshEntries(entries, mode, direction, justAddedId, shownDateById, currentActiveId) {
+  const list = indexedEntries(entries).filter(
+    ({ entry }) => !isArchived(entry, shownDateById, currentActiveId)
+  );
+  return sortIndexed(list, mode, direction, justAddedId);
+}
+function archivedList(entries, shownDateById, currentActiveId) {
+  const list = indexedEntries(entries).filter(({ entry }) =>
+    isArchived(entry, shownDateById, currentActiveId)
+  );
+  // Legfrissebb (legutóbb futott) elöl.
+  list.sort((a, b) => {
+    const da = shownDateById[a.entry.id] || '';
+    const db = shownDateById[b.entry.id] || '';
+    return db.localeCompare(da);
+  });
+  return list;
 }
 
 export default function AdminPage() {
@@ -104,6 +129,9 @@ export default function AdminPage() {
   const [sortDirection, setSortDirection] = useState('asc');
   const [justAddedId, setJustAddedId] = useState(null);
   const [revealedAnswers, setRevealedAnswers] = useState({});
+  const [shownDateById, setShownDateById] = useState({});
+  const [currentActiveId, setCurrentActiveId] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   async function tryLoad() {
     try {
@@ -124,6 +152,7 @@ export default function AdminPage() {
       setEntries(migrated);
       setAuthed(true);
       loadSubmissions();
+      loadHistory();
       return { ok: true };
     } catch (err) {
       return { ok: false, msg: `Hálózati vagy feldolgozási hiba: ${err.message}` };
@@ -135,6 +164,19 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       setSubmissions(data.submissions || []);
+    }
+  }
+
+  async function loadHistory() {
+    const res = await fetch('/api/admin/history');
+    if (res.ok) {
+      const data = await res.json();
+      const map = {};
+      (data.history || []).forEach((h) => {
+        map[h.id] = h.shownDate;
+      });
+      setShownDateById(map);
+      setCurrentActiveId(data.currentId || null);
     }
   }
 
@@ -163,7 +205,7 @@ export default function AdminPage() {
       } else {
         const bodyText = await res.text().catch(() => '');
         setLoginError(
-          `Hibás jelszó, vagy nincs beállítva ADMIN_PASSWORD a szerveren. (${res.status}${bodyText ? ' — ' + bodyText.slice(0, 150) : ''})`
+          `Hibás jelszó, vagy nincs beállítva ADMIN_PASSWORD a szerveren. (${res.status}${bodyText ? ' - ' + bodyText.slice(0, 150) : ''})`
         );
       }
     } catch (err) {
@@ -223,6 +265,7 @@ export default function AdminPage() {
       answer: (s.answer || '').toUpperCase(),
       answerWords: splitAnswerWords((s.answer || '').toUpperCase()),
       parHints: 3,
+      submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
       hints: {
         definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || '') },
         indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || '') },
@@ -248,108 +291,7 @@ export default function AdminPage() {
     setAuthed(false);
   }
 
-  if (!authed) {
-    return (
-      <div className="wrap">
-        <h1 className="page-title">Admin belépés</h1>
-        <div className="card">
-          <form onSubmit={login}>
-            <label className="field-label">Admin jelszó</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ textTransform: 'none' }}
-              />
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
-                title={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <button className="primary" type="submit">Belépés</button>
-            </div>
-          </form>
-          {loginError && <div className="feedback hint" style={{ marginLeft: 0, marginTop: 12 }}>{loginError}</div>}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="wrap">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="page-title">Admin — titkosírások kezelése</h1>
-        <button className="ghost small" onClick={logout}>Kijelentkezés</button>
-      </div>
-
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <b>{entries.length} db titkosírás a sorban</b>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="ghost small" onClick={addEntry}>+ Új titkosírás</button>
-            <button className="primary small" onClick={saveAll} disabled={loading}>
-              {loading ? 'Mentés…' : 'Összes mentése'}
-            </button>
-          </div>
-        </div>
-        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
-          Minden nap éjfélkor (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
-          listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
-        </p>
-        {saveStatus && (
-          <div className="feedback good" style={{ marginLeft: 0, marginTop: 14, display: 'inline-block' }}>
-            {saveStatus}
-          </div>
-        )}
-
-        {entries.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>Rendezés:</span>
-            <button
-              className={sortMode === 'manual' ? 'primary small' : 'ghost small'}
-              onClick={() => {
-                setSortMode('manual');
-              }}
-            >
-              Egyéni sorrend
-            </button>
-            <button
-              className={sortMode === 'time' ? 'primary small' : 'ghost small'}
-              onClick={() => {
-                setJustAddedId(null);
-                if (sortMode === 'time') setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
-                else {
-                  setSortMode('time');
-                  setSortDirection('asc');
-                }
-              }}
-            >
-              Idő szerint {sortMode === 'time' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
-            </button>
-            <button
-              className={sortMode === 'clue' ? 'primary small' : 'ghost small'}
-              onClick={() => {
-                setJustAddedId(null);
-                if (sortMode === 'clue') setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
-                else {
-                  setSortMode('clue');
-                  setSortDirection('asc');
-                }
-              }}
-            >
-              Rejtvény (ABC) {sortMode === 'clue' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
-            </button>
-          </div>
-        )}
-
-        {sortedEntries(entries, sortMode, sortDirection, justAddedId).map(({ entry: e, index: ei }) => {
+  function renderEntryRow(e, ei) {
           const isOpen = expandedId === e.id;
           const answerShown = !!revealedAnswers[e.id];
           return (
@@ -471,6 +413,15 @@ export default function AdminPage() {
                     }}
                   />
 
+                  <label className="field-label">Beküldő neve (opcionális - megjelenik a játékosoknak)</label>
+                  <input
+                    type="text"
+                    style={{ textTransform: 'none' }}
+                    value={e.submittedBy || ''}
+                    onChange={(ev) => updateEntry(ei, (en) => ({ ...en, submittedBy: ev.target.value }))}
+                    placeholder="pl. saját, vagy egy beküldő beceneve"
+                  />
+
                   {HINT_TYPES.map((h) => (
                     <div key={h.key} style={{ marginTop: 10 }}>
                       <div className="checkbox-row">
@@ -522,7 +473,132 @@ export default function AdminPage() {
               )}
             </div>
           );
-        })}
+  }
+
+  if (!authed) {
+    return (
+      <div className="wrap">
+        <h1 className="page-title">Admin belépés</h1>
+        <div className="card">
+          <form onSubmit={login}>
+            <label className="field-label">Admin jelszó</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ textTransform: 'none' }}
+              />
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
+                title={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <button className="primary" type="submit">Belépés</button>
+            </div>
+          </form>
+          {loginError && <div className="feedback hint" style={{ marginLeft: 0, marginTop: 12 }}>{loginError}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="wrap">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 className="page-title">Admin - titkosírások kezelése</h1>
+        <button className="ghost small" onClick={logout}>Kijelentkezés</button>
+      </div>
+
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <b>{entries.length} db titkosírás a sorban</b>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="ghost small" onClick={addEntry}>+ Új titkosírás</button>
+            <button className="primary small" onClick={saveAll} disabled={loading}>
+              {loading ? 'Mentés…' : 'Összes mentése'}
+            </button>
+          </div>
+        </div>
+        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
+          Minden nap éjfélkor (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
+          listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
+        </p>
+        {saveStatus && (
+          <div className="feedback good" style={{ marginLeft: 0, marginTop: 14, display: 'inline-block' }}>
+            {saveStatus}
+          </div>
+        )}
+
+        {entries.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>Rendezés:</span>
+            <button
+              className={sortMode === 'manual' ? 'primary small' : 'ghost small'}
+              onClick={() => {
+                setSortMode('manual');
+              }}
+            >
+              Egyéni sorrend
+            </button>
+            <button
+              className={sortMode === 'time' ? 'primary small' : 'ghost small'}
+              onClick={() => {
+                setJustAddedId(null);
+                if (sortMode === 'time') setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+                else {
+                  setSortMode('time');
+                  setSortDirection('asc');
+                }
+              }}
+            >
+              Idő szerint {sortMode === 'time' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+            </button>
+            <button
+              className={sortMode === 'clue' ? 'primary small' : 'ghost small'}
+              onClick={() => {
+                setJustAddedId(null);
+                if (sortMode === 'clue') setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+                else {
+                  setSortMode('clue');
+                  setSortDirection('asc');
+                }
+              }}
+            >
+              Rejtvény (ABC) {sortMode === 'clue' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+            </button>
+          </div>
+        )}
+
+        {freshEntries(entries, sortMode, sortDirection, justAddedId, shownDateById, currentActiveId).map(
+          ({ entry: e, index: ei }) => renderEntryRow(e, ei)
+        )}
+
+        {archivedList(entries, shownDateById, currentActiveId).length > 0 && (
+          <div className="puzzle-editor" style={{ borderStyle: 'solid' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => setShowArchived((v) => !v)}
+            >
+              <b>
+                {showArchived ? '▾' : '▸'} 📦 Archivált ({archivedList(entries, shownDateById, currentActiveId).length})
+              </b>
+            </div>
+            {showArchived && (
+              <div style={{ marginTop: 14 }}>
+                {archivedList(entries, shownDateById, currentActiveId).map(({ entry: e, index: ei }) =>
+                  renderEntryRow(e, ei)
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <button className="primary" onClick={saveAll} disabled={loading}>
           {loading ? 'Mentés…' : 'Összes mentése'}
@@ -536,7 +612,7 @@ export default function AdminPage() {
         )}
         {submissions.map((s) => (
           <div className="sub-item" key={s.id}>
-            <div><b>{s.name}</b> — {new Date(s.createdAt).toLocaleString('hu-HU')}</div>
+            <div><b>{s.name}</b> - {new Date(s.createdAt).toLocaleString('hu-HU')}</div>
             <div style={{ margin: '6px 0' }}>{s.clue}</div>
             <div>Válasz: <b>{s.answer}</b></div>
             {s.hints?.definicio && <div>Definíció: {s.hints.definicio}</div>}

@@ -100,7 +100,7 @@ export async function GET() {
   } else if (new Date(state.since).getTime() !== rotationBoundary) {
     // Önjavítás: a tárolt "since" egy korábbi váltási szabály (pl. dél) szerint
     // állhat, ami időben "később" van, mint a mai helyes határidő, ezért a fenti
-    // ellenőrzés nem cserélte le — itt korrigáljuk, hogy a visszaszámláló is
+    // ellenőrzés nem cserélte le - itt korrigáljuk, hogy a visszaszámláló is
     // a valódi, mai határidőhöz igazodjon.
     state = { ...state, since: new Date(rotationBoundary).toISOString() };
     await kv.set('rotation:state', state);
