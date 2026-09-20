@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
+import Icon from './Icon';
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
@@ -63,34 +64,51 @@ export default function Nav() {
           <button className="ghost small" onClick={() => setOpen(false)}>✕</button>
         </div>
         <div className="drawer-links">
-          <a href="/" onClick={() => setOpen(false)}>🏠 Kezdőlap</a>
+          <a href="/" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Kezdolap.png" /> Kezdőlap
+          </a>
           <a href="/archive" onClick={handleArchiveClick} className="drawer-link-disabled">
-            🗂️ Korábbi titkosírások <span className="soon-badge">Hamarosan!</span>
+            <Icon src="/icons/Korabbi_titkosirasok.png" /> Korábbi titkosírások{' '}
+            <span className="soon-badge">Hamarosan!</span>
           </a>
-          <a href="/help" onClick={() => setOpen(false)}>📖 Súgó</a>
+          <a href="/help" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Sugo.png" /> Súgó
+          </a>
           <a href="#" onClick={handleTutorialClick} className="tutorial-link">
-            ✨ Tutorial <span className="progress-badge">{tutorialDone}/{TUTORIAL_SECTIONS.length}</span>
+            <Icon src="/icons/Tutorial.png" /> Tutorial{' '}
+            <span className="progress-badge">{tutorialDone}/{TUTORIAL_SECTIONS.length}</span>
           </a>
-          <a href="#" onClick={handleLeaderboardClick}>🏅 Ranglista</a>
-          <a href="#" onClick={handleAchievementsClick}>🏆 Trófeák</a>
-          <a href="/submit" onClick={() => setOpen(false)}>✉️ Rejtvény beküldése</a>
+          <a href="#" onClick={handleLeaderboardClick}>
+            <Icon src="/icons/Ranglista.png" /> Ranglista
+          </a>
+          <a href="#" onClick={handleAchievementsClick}>
+            <Icon src="/icons/Trofeak.png" /> Trófeák
+          </a>
+          <a href="/submit" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Rejtveny_bekuldese.png" /> Rejtvény beküldése
+          </a>
           {session?.user?.role === 'admin' && (
             <a href="/admin" onClick={() => setOpen(false)}>🛠️ Admin</a>
           )}
           <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0' }} />
-          <a href="/contact" onClick={() => setOpen(false)}>📬 Kapcsolat</a>
+          <a href="/contact" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Kapcsolat.png" /> Kapcsolat
+          </a>
           <a href="/privacy" onClick={() => setOpen(false)}>🔒 Adatvédelem</a>
           <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0' }} />
           {status !== 'loading' && (
             session?.user ? (
               <>
-                <div style={{ padding: '10px 10px 2px', fontSize: 13, color: 'var(--ink-soft)' }}>
+                <div style={{ padding: '10px 10px 2px', fontSize: 13, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon src="/icons/Fiok.png" size={16} />
                   Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{session.user.name || session.user.email}</b>
                 </div>
                 <a href="#" onClick={handleLogout}>🚪 Kijelentkezés</a>
               </>
             ) : (
-              <a href="/login" onClick={() => setOpen(false)}>🔑 Bejelentkezés</a>
+              <a href="/login" onClick={() => setOpen(false)}>
+                <Icon src="/icons/Fiok.png" /> Bejelentkezés
+              </a>
             )
           )}
         </div>

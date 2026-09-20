@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getIdentity } from '../lib/identity';
+import Icon from './Icon';
 
 function formatTime(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -34,7 +35,7 @@ export default function LeaderboardModal() {
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
-          🏅 Mai ranglista
+          <Icon src="/icons/Ranglista.png" size={24} /> Mai ranglista
         </h2>
         <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: -6 }}>
           Sorrend: kevesebb tipp, majd gyorsabb idő számít. Éjfélkor nullázódik.

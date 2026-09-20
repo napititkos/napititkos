@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { TUTORIAL_SECTIONS, loadTutorialProgress } from '../lib/tutorial';
+import Icon from './Icon';
 
 export default function TutorialModal() {
   const [open, setOpen] = useState(false);
@@ -21,7 +22,7 @@ export default function TutorialModal() {
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
-          ✨ Tutorial
+          <Icon src="/icons/Tutorial.png" size={24} /> Tutorial
         </h2>
         <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: -6 }}>
           Három rész segít felkészülni a kriptikus rejtvényekre. A tartalom hamarosan érkezik -

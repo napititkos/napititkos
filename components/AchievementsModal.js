@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { ACHIEVEMENTS } from '../lib/achievements';
 import { loadProgress } from '../lib/progress';
+import Icon from './Icon';
 
 export default function AchievementsModal() {
   const [open, setOpen] = useState(false);
@@ -23,7 +24,7 @@ export default function AchievementsModal() {
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
-          🏆 Trófeák
+          <Icon src="/icons/Trofeak.png" size={24} /> Trófeák
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {ACHIEVEMENTS.map((a) => {

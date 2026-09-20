@@ -4,7 +4,7 @@ import { fireConfetti } from '../components/Confetti';
 import { ACHIEVEMENTS, computeNewAchievements } from '../lib/achievements';
 import { loadProgress, saveProgress } from '../lib/progress';
 import { getIdentity } from '../lib/identity';
-import PodiumIcon from '../components/PodiumIcon';
+import Icon from '../components/Icon';
 
 const HINT_LABELS = {
   fodder: 'Készlet',
@@ -531,7 +531,7 @@ export default function HomePage() {
           style={{ border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
           onClick={() => window.dispatchEvent(new Event('open-leaderboard'))}
         >
-          <PodiumIcon size={16} /> Ranglista
+          <Icon src="/icons/Ranglista.png" size={16} /> Ranglista
         </button>
         <span className="pill">🔥 {progress.streak} napos sorozat</span>
       </div>
@@ -743,7 +743,7 @@ export default function HomePage() {
           </div>
           <div className="actions" style={{ marginTop: 12 }}>
             <button className="primary" onClick={share} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, lineHeight: 1.2 }}>
-              <span style={{ fontSize: 20 }}>📤</span>
+              <Icon src="/icons/Megosztas.png" size={22} className="icon-on-accent" />
               <span>Eredmény másolása</span>
             </button>
           </div>
