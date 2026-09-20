@@ -25,6 +25,7 @@ function emptyEntry() {
     answerWords: [''],
     parHints: 3,
     submittedBy: '',
+    submittedByEmail: '',
     hints: {
       definicio: { enabled: false, text: '' },
       indikator: { enabled: false, text: '' },
@@ -289,6 +290,7 @@ export default function AdminPage() {
       answerWords: splitAnswerWords((s.answer || '').toUpperCase()),
       parHints: 3,
       submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
+      submittedByEmail: s.submitterEmail || '',
       hints: {
         definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || '') },
         indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || '') },

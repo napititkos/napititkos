@@ -55,7 +55,7 @@ export default function Nav() {
             session?.user ? (
               <a href="#" onClick={handleLogout} className="account-badge" title="Kijelentkezés">
                 <Icon src="/icons/Fiok.png" size={16} />
-                <span className="account-badge-name">{session.user.name || session.user.email}</span>
+                <span className="account-badge-name">Kijelentkezés</span>
               </a>
             ) : (
               <a href="/login" className="account-badge" title="Bejelentkezés">

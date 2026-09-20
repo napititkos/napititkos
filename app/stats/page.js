@@ -4,6 +4,8 @@ import { useSession } from 'next-auth/react';
 import { loadProgress } from '../../lib/progress';
 import { ACHIEVEMENTS } from '../../lib/achievements';
 
+import { enumerationFor } from '../../lib/format';
+
 function formatTime(ms) {
   if (ms == null) return '–';
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -15,10 +17,19 @@ function formatTime(ms) {
 export default function StatsPage() {
   const { data: session } = useSession();
   const [progress, setProgress] = useState(null);
+  const [mySubmissions, setMySubmissions] = useState(null);
 
   useEffect(() => {
     setProgress(loadProgress());
   }, []);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/account/my-submissions')
+      .then((r) => r.json())
+      .then((d) => setMySubmissions(d.submissions || []))
+      .catch(() => setMySubmissions([]));
+  }, [session]);
 
   if (!progress) {
     return (
@@ -79,6 +90,37 @@ export default function StatsPage() {
           </a>
         </div>
       </div>
+
+      {session?.user && (
+        <div className="card">
+          <b>Elfogadott beküldéseim {mySubmissions ? `(${mySubmissions.length})` : ''}</b>
+          {mySubmissions === null && <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Betöltés…</p>}
+          {mySubmissions && mySubmissions.length === 0 && (
+            <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>
+              Még egy beküldésed sem került be a napi titkosírások közé.{' '}
+              <a href="/submit" style={{ color: 'var(--accent)' }}>
+                Küldj be egyet!
+              </a>
+            </p>
+          )}
+          {mySubmissions && mySubmissions.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              {mySubmissions.map((s) => (
+                <div className="sub-item" key={s.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <span>
+                      {s.clue} {enumerationFor(s.answer)}
+                    </span>
+                    <span style={{ fontSize: 12.5, color: s.shownDate ? 'var(--good)' : 'var(--ink-soft)' }}>
+                      {s.shownDate ? `✓ ${s.shownDate}-án szerepelt` : 'még beütemezve'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

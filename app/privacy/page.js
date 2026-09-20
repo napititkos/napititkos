@@ -6,42 +6,79 @@ export default function PrivacyPage() {
       <h1 className="page-title">Adatvédelmi tájékoztató</h1>
       <div className="card">
         <div className="help-block">
-          <h3>Milyen adatokat tárolunk most?</h3>
+          <h3>Milyen adatokat kezelünk regisztrációkor?</h3>
           <p>
-            A Titkosírás jelenleg nem kér regisztrációt, és nem gyűjt személyes adatokat. A
-            sorozatod (streak), a trófeáid és a napi haladásod kizárólag a saját eszközöd
-            böngészőjében, helyben tárolódik (ún. localStorage formájában). Ezek az adatok soha
-            nem kerülnek fel a szerverünkre, és más eszközön nem érhetők el.
+            Ha fiókot hozol létre (email címmel és jelszóval, Google-fiókkal, vagy a belépő
+            linkes móddal), a következő adatokat tároljuk: email cím, az általad megadott név
+            (vagy a Google-fiókodból kapott név), és - jelszavas regisztráció esetén - a
+            jelszavad egy visszafejthetetlen, titkosított (hashelt) formában. A jelszavadat
+            magát soha nem tároljuk olvasható formában.
           </p>
         </div>
         <div className="help-block">
-          <h3>Mit látunk a szerveren?</h3>
+          <h3>Bejelentkezés és munkamenet</h3>
           <p>
-            A napi titkosírás megjelenítéséhez és az átlagos tipp-felhasználás kiszámításához
-            névtelen, összesített statisztikákat gyűjtünk (pl. hányan hány tippet használtak egy
-            adott napon). Ezekből egyetlen látogató sem azonosítható.
+            Bejelentkezés után egy biztonságos, titkosított munkamenet-azonosítót (cookie-t)
+            helyezünk el a böngésződben, hogy ne kelljen minden látogatáskor újra
+            bejelentkezned. Ez az azonosító nem tartalmaz olvasható személyes adatot, és
+            kijelentkezéskor törlődik.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Email-visszaigazolás</h3>
+          <p>
+            Jelszavas regisztráció esetén egy megerősítő linket küldünk az email címedre, hogy
+            biztosak legyünk benne, valóban a tiéd. Google-fiókkal vagy belépő linkkel történő
+            bejelentkezés esetén ez nem szükséges, mivel ezek már önmagukban igazolják az email
+            cím tulajdonjogát.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Játék közben gyűjtött adatok</h3>
+          <p>
+            A megoldott rejtvényeid száma, a sorozatod (streak), a trófeáid és a tutorial
+            haladásod bejelentkezés nélkül csak a saját eszközödön/böngésződben (ún.
+            localStorage formájában) tárolódik. Ha bejelentkezel, ugyanezek az adatok a
+            fiókodhoz kötve a szerverünkön is elmentődnek, hogy más eszközön bejelentkezve is
+            megtaláld a haladásodat.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Ranglista</h3>
+          <p>
+            A napi ranglistán - regisztrált és nem regisztrált felhasználók esetén egyaránt -
+            egy véletlenszerűen generált, az igazi neveddel semmilyen kapcsolatban nem álló
+            azonosító (pl. "GyorsRóka#A1B2") jelenik meg, nem a valódi neved vagy email címed.
+            Ez az azonosító az eszközödön tárolódik, és a ranglista éjfélkor nullázódik.
           </p>
         </div>
         <div className="help-block">
           <h3>Fanmade rejtvény beküldése</h3>
           <p>
-            Ha rejtvényt küldesz be, az általad megadott becenevet és a rejtvény szövegét
-            eltároljuk, hogy elbírálhassuk. Ha nem adsz meg becenevet, a beküldés névtelenként
-            kerül rögzítésre.
+            A rejtvény-beküldés bejelentkezést és megerősített email címet igényel. Beküldéskor
+            a fiókod nevét (vagy email címét, ha nem adtál meg nevet) eltároljuk a beküldött
+            rejtvénnyel együtt, hogy - ha a rejtvényed bekerül a napi titkosírások közé - a
+            neved feltüntethessük mellette.
           </p>
           <p>
             A beküldéssel hozzájárulsz ahhoz, hogy az általad beküldött rejtvényt (annak
             szövegét, megfejtését és tippjeit) szabadon felhasználhassuk - beleértve a napi
-            titkosírások közé való bekerülést, szerkesztését, közzétételét, a beküldő nevének
-            feltüntetésével, amennyiben becenevet adott meg.
+            titkosírások közé való bekerülést, szerkesztését és közzétételét is.
           </p>
         </div>
         <div className="help-block">
-          <h3>A jövőben: regisztráció</h3>
+          <h3>Sütik (cookie-k)</h3>
           <p>
-            Ha a jövőben lehetőség lesz regisztrálni (pl. hogy a sorozatod és a trófeáid eszközök
-            között is átvihetők legyenek), ezt a tájékoztatót frissítjük, és pontosan leírjuk,
-            milyen adatokat kezelünk, meddig, és hogyan törölheted őket.
+            A bejelentkezési munkameneten kívül nem használunk követő vagy hirdetési célú
+            sütiket. A látogatottsági statisztikákat (Vercel Web Analytics) anonim, összesített
+            formában gyűjtjük, egyetlen látogató sem azonosítható belőle.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Adataid törlése</h3>
+          <p>
+            Ha szeretnéd, hogy töröljük a fiókodat és a hozzá tartozó adatokat, írj nekünk a
+            lenti email címre - ezt a kérésedre belátható időn belül teljesítjük.
           </p>
         </div>
         <div className="help-block">

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { enumerationFor } from '../../lib/format';
-import { loadProgress } from '../../lib/progress';
+import { loadProgress, saveProgress } from '../../lib/progress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
 
 const HU_MONTHS = [
@@ -13,6 +13,7 @@ export default function ArchivePage() {
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState({});
+  const [archiveSolved, setArchiveSolved] = useState([]);
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
   const [playingId, setPlayingId] = useState(null);
@@ -20,11 +21,26 @@ export default function ArchivePage() {
   useEffect(() => {
     const prog = loadProgress();
     setHistory(prog.history || {});
+    setArchiveSolved(prog.archiveSolved || []);
     fetch('/api/archive')
       .then((r) => r.json())
       .then((data) => setItems(data.archive || []))
       .catch(() => setError('Nem sikerült betölteni az archívumot.'));
   }, []);
+
+  function isSolved(it) {
+    return !!history[it.shownDate]?.correct || archiveSolved.includes(it.id);
+  }
+
+  function handleSolved(id) {
+    const prog = loadProgress();
+    if (!prog.archiveSolved) prog.archiveSolved = [];
+    if (!prog.archiveSolved.includes(id)) {
+      prog.archiveSolved.push(id);
+      saveProgress(prog);
+    }
+    setArchiveSolved(prog.archiveSolved);
+  }
 
   const grouped = useMemo(() => {
     if (!items) return {};
@@ -40,7 +56,7 @@ export default function ArchivePage() {
   }, [items]);
 
   function solvedCount(list) {
-    return list.filter((it) => history[it.shownDate]?.correct).length;
+    return list.filter((it) => isSolved(it)).length;
   }
   function allYearItems(months) {
     return Object.values(months).flat();
@@ -53,7 +69,8 @@ export default function ArchivePage() {
       <h1 className="page-title">Korábbi titkosírások</h1>
       <div className="card">
         <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
-          A "megfejtve" jelzés csak ezen az eszközön/böngészőn számolja a saját teljesítményedet.
+          A "megfejtve" jelzés csak ezen az eszközön/böngészőn (illetve bejelentkezve a
+          fiókodhoz kötve) számolja a saját teljesítményedet.
         </p>
         {error && <p style={{ color: 'var(--bad)' }}>{error}</p>}
         {items === null && !error && <p>Betöltés…</p>}
@@ -106,7 +123,7 @@ export default function ArchivePage() {
                               {monthItems
                                 .sort((a, b) => b.shownDate.localeCompare(a.shownDate))
                                 .map((it, i) => {
-                                  const solved = !!history[it.shownDate]?.correct;
+                                  const solved = isSolved(it);
                                   const itemKey = it.id + i;
                                   const isPlaying = playingId === itemKey;
                                   return (
@@ -114,7 +131,7 @@ export default function ArchivePage() {
                                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
                                         <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{it.shownDate}</span>
                                         <span style={{ fontSize: 12.5, color: solved ? 'var(--good)' : 'var(--ink-soft)' }}>
-                                          {solved ? '✓ megfejtve' : '– nem oldottad meg'}
+                                          {solved ? '✓ megfejtetted' : '– nem oldottad meg'}
                                         </span>
                                       </div>
 
@@ -129,7 +146,11 @@ export default function ArchivePage() {
 
                                       {isPlaying && (
                                         <>
-                                          <PuzzlePlayer puzzle={it} />
+                                          <PuzzlePlayer
+                                            puzzle={it}
+                                            initiallySolved={solved}
+                                            onSolved={() => handleSolved(it.id)}
+                                          />
                                           <div style={{ marginTop: 10 }}>
                                             <button className="ghost small" onClick={() => setPlayingId(null)}>
                                               Bezárás

@@ -23,7 +23,7 @@ export default function AchievementsModal() {
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+        <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Trofeak.png" size={24} /> Trófeák
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

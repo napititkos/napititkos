@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { getIdentity } from '../lib/identity';
 import Icon from './Icon';
 
@@ -11,13 +12,14 @@ function formatTime(ms) {
 }
 
 export default function LeaderboardModal() {
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState(null);
   const [myName, setMyName] = useState('');
 
   useEffect(() => {
     function handleOpen() {
-      setMyName(getIdentity().name);
+      setMyName(session?.user ? session.user.name || session.user.email : getIdentity().name);
       setEntries(null);
       fetch('/api/leaderboard')
         .then((r) => r.json())
@@ -27,14 +29,14 @@ export default function LeaderboardModal() {
     }
     window.addEventListener('open-leaderboard', handleOpen);
     return () => window.removeEventListener('open-leaderboard', handleOpen);
-  }, []);
+  }, [session]);
 
   if (!open) return null;
 
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+        <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Ranglista.png" size={24} /> Mai ranglista
         </h2>
         <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: -6 }}>
