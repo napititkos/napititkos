@@ -50,6 +50,21 @@ export default function Nav() {
         <a href="/" style={{ textDecoration: 'none' }}>
           <div className="brand">Titkos<span>írás</span></div>
         </a>
+        <div style={{ marginLeft: 'auto' }}>
+          {status !== 'loading' && (
+            session?.user ? (
+              <a href="#" onClick={handleLogout} className="account-badge" title="Kijelentkezés">
+                <Icon src="/icons/Fiok.png" size={16} />
+                <span className="account-badge-name">{session.user.name || session.user.email}</span>
+              </a>
+            ) : (
+              <a href="/login" className="account-badge" title="Bejelentkezés">
+                <Icon src="/icons/Fiok.png" size={16} />
+                <span className="account-badge-name">Belépés</span>
+              </a>
+            )
+          )}
+        </div>
       </nav>
 
       {open && <div className="drawer-overlay" onClick={() => setOpen(false)} />}
@@ -74,6 +89,9 @@ export default function Nav() {
           </a>
           <a href="#" onClick={handleLeaderboardClick}>
             <Icon src="/icons/Ranglista.png" /> Ranglista
+          </a>
+          <a href="/stats" onClick={() => setOpen(false)}>
+            📊 Statisztikáim
           </a>
           <a href="#" onClick={handleAchievementsClick}>
             <Icon src="/icons/Trofeak.png" /> Trófeák

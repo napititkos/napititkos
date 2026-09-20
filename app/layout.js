@@ -6,6 +6,7 @@ import LeaderboardModal from '../components/LeaderboardModal';
 import TutorialModal from '../components/TutorialModal';
 import AuthProvider from '../components/AuthProvider';
 import ProgressSync from '../components/ProgressSync';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
           <LeaderboardModal />
           <TutorialModal />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );

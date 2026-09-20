@@ -536,7 +536,24 @@ export default function AdminPage() {
     <div className="wrap">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 className="page-title">Admin - titkosírások kezelése</h1>
-        <button className="ghost small" onClick={logout}>Kijelentkezés</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="ghost small"
+            onClick={async () => {
+              if (!confirm('Eltávolítja az üres és a duplikált bejegyzéseket az archívumból. Folytatod?')) return;
+              const res = await fetch('/api/admin/clean-history', { method: 'POST' });
+              const data = await res.json();
+              if (res.ok) {
+                alert(`Kész! ${data.removedEmpty} üres és ${data.removedDuplicate} duplikált bejegyzés eltávolítva.`);
+              } else {
+                alert('Nem sikerült a tisztítás.');
+              }
+            }}
+          >
+            🧹 Archívum tisztítása
+          </button>
+          <button className="ghost small" onClick={logout}>Kijelentkezés</button>
+        </div>
       </div>
 
       <div className="card">

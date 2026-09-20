@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { enumerationFor } from '../../lib/format';
 import { loadProgress } from '../../lib/progress';
+import PuzzlePlayer from '../../components/PuzzlePlayer';
 
 const HU_MONTHS = [
   'Január', 'Február', 'Március', 'Április', 'Május', 'Június',
@@ -14,6 +15,7 @@ export default function ArchivePage() {
   const [history, setHistory] = useState({});
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
+  const [playingId, setPlayingId] = useState(null);
 
   useEffect(() => {
     const prog = loadProgress();
@@ -105,20 +107,36 @@ export default function ArchivePage() {
                                 .sort((a, b) => b.shownDate.localeCompare(a.shownDate))
                                 .map((it, i) => {
                                   const solved = !!history[it.shownDate]?.correct;
+                                  const itemKey = it.id + i;
+                                  const isPlaying = playingId === itemKey;
                                   return (
-                                    <div className="sub-item" key={it.id + i}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                                    <div className="sub-item" key={itemKey}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
                                         <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{it.shownDate}</span>
                                         <span style={{ fontSize: 12.5, color: solved ? 'var(--good)' : 'var(--ink-soft)' }}>
                                           {solved ? '✓ megfejtve' : '– nem oldottad meg'}
                                         </span>
                                       </div>
-                                      <div style={{ margin: '6px 0' }}>
-                                        {it.clue} {enumerationFor(it.answer)}
-                                      </div>
-                                      <div>
-                                        Válasz: <b>{it.answer}</b>
-                                      </div>
+
+                                      {!isPlaying && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, gap: 8 }}>
+                                          <div>{it.clue} {enumerationFor(it.answer)}</div>
+                                          <button className="ghost small" onClick={() => setPlayingId(itemKey)}>
+                                            ▶ Játssz
+                                          </button>
+                                        </div>
+                                      )}
+
+                                      {isPlaying && (
+                                        <>
+                                          <PuzzlePlayer puzzle={it} />
+                                          <div style={{ marginTop: 10 }}>
+                                            <button className="ghost small" onClick={() => setPlayingId(null)}>
+                                              Bezárás
+                                            </button>
+                                          </div>
+                                        </>
+                                      )}
                                     </div>
                                   );
                                 })}
