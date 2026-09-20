@@ -17,6 +17,8 @@ export default function SubmitPage() {
   const [status, setStatus] = useState(null);
   const [sending, setSending] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState(null);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -113,8 +115,31 @@ export default function SubmitPage() {
         <div className="card">
           <p style={{ fontSize: 14.5 }}>
             Már bejelentkeztél, de az email címed még nincs megerősítve. Nézd meg a postaládádat -
-            küldtünk egy megerősítő linket, amikor regisztráltál.
+            küldtünk egy megerősítő linket, amikor regisztráltál. Ha nem találod (pl. mert régebben
+            regisztráltál, mielőtt ezt bevezettük), kérhetsz egy újat:
           </p>
+          <button
+            className="primary"
+            disabled={resending}
+            onClick={async () => {
+              setResending(true);
+              setResendMsg(null);
+              const res = await fetch('/api/auth/resend-verification', { method: 'POST' });
+              setResending(false);
+              setResendMsg(
+                res.ok
+                  ? { ok: true, msg: 'Elküldtük az új megerősítő linket! Nézd meg a postaládádat.' }
+                  : { ok: false, msg: 'Nem sikerült elküldeni. Próbáld újra kicsit később.' }
+              );
+            }}
+          >
+            {resending ? 'Küldés…' : 'Megerősítő email újraküldése'}
+          </button>
+          {resendMsg && (
+            <div className={`feedback ${resendMsg.ok ? 'good' : 'hint'}`} style={{ marginLeft: 0, marginTop: 14 }}>
+              {resendMsg.msg}
+            </div>
+          )}
         </div>
       </div>
     );

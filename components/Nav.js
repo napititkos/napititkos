@@ -94,7 +94,9 @@ export default function Nav() {
           <a href="/contact" onClick={() => setOpen(false)}>
             <Icon src="/icons/Kapcsolat.png" /> Kapcsolat
           </a>
-          <a href="/privacy" onClick={() => setOpen(false)}>🔒 Adatvédelem</a>
+          <a href="/privacy" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Adatvedelem.png" /> Adatvédelem
+          </a>
           <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0' }} />
           {status !== 'loading' && (
             session?.user ? (
@@ -103,7 +105,9 @@ export default function Nav() {
                   <Icon src="/icons/Fiok.png" size={16} />
                   Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{session.user.name || session.user.email}</b>
                 </div>
-                <a href="#" onClick={handleLogout}>🚪 Kijelentkezés</a>
+                <a href="#" onClick={handleLogout}>
+                  <Icon src="/icons/Kijelentkezes.png" /> Kijelentkezés
+                </a>
               </>
             ) : (
               <a href="/login" onClick={() => setOpen(false)}>

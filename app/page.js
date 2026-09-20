@@ -741,11 +741,16 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          <div className="actions" style={{ marginTop: 12 }}>
-            <button className="primary" onClick={share} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, lineHeight: 1.2 }}>
+          <div className="actions" style={{ marginTop: 12, flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <button
+              className="primary"
+              onClick={share}
+              style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+              aria-label="Eredmény másolása"
+            >
               <Icon src="/icons/Megosztas.png" size={22} className="icon-on-accent" />
-              <span>Eredmény másolása</span>
             </button>
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Eredmény másolása</span>
           </div>
           {countdown && (
             <div style={{ marginTop: 12, fontSize: 13.5, color: 'var(--ink-soft)' }}>
