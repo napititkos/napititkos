@@ -157,6 +157,21 @@ input[type=text], input[type=password], textarea{
   width: 100%;
 }
 input[type=text]{ text-transform: uppercase; flex:1; width:auto; min-width:140px;}
+.form-input{
+  text-transform: none !important;
+  width: 100% !important;
+  flex: none !important;
+  min-width: 0 !important;
+  padding: 11px 14px !important;
+  font-size: 15.5px !important;
+  border-radius: 12px !important;
+  border: 2px solid var(--line) !important;
+  transition: border-color 0.15s ease;
+}
+.form-input:focus{
+  outline: none;
+  border-color: var(--accent) !important;
+}
 input.letter-box{
   width: 34px !important;
   min-width: 34px !important;

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
@@ -9,6 +9,24 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [status, setStatus] = useState(null);
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verify = params.get('verify');
+    if (verify === 'ok') {
+      setStatus({ ok: true, msg: 'Sikeresen megerősítetted az email címed!' });
+    } else if (verify === 'expired') {
+      setStatus({ ok: false, msg: 'A megerősítő link lejárt vagy már felhasználtad.' });
+    } else if (verify === 'missing') {
+      setStatus({ ok: false, msg: 'Hiányzó vagy hibás megerősítő link.' });
+    }
+    const error = params.get('error');
+    if (error === 'expired') {
+      setStatus({ ok: false, msg: 'A belépő link lejárt vagy már felhasználtad. Kérj egy újat.' });
+    } else if (error === 'missing_token') {
+      setStatus({ ok: false, msg: 'Hiányzó vagy hibás belépő link.' });
+    }
+  }, []);
 
   async function submitLogin(e) {
     e.preventDefault();
@@ -105,9 +123,9 @@ export default function LoginPage() {
         {mode === 'login' && (
           <form onSubmit={submitLogin}>
             <label className="field-label">Email cím</label>
-            <input type="email" style={{ textTransform: 'none' }} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <label className="field-label">Jelszó</label>
-            <input type="password" style={{ textTransform: 'none' }} value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <div style={{ marginTop: 16 }}>
               <button className="primary" type="submit" disabled={sending}>
                 {sending ? 'Belépés…' : 'Belépés'}
@@ -119,11 +137,11 @@ export default function LoginPage() {
         {mode === 'register' && (
           <form onSubmit={submitRegister}>
             <label className="field-label">Neved (opcionális)</label>
-            <input type="text" style={{ textTransform: 'none' }} value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="form-input" type="text" value={name} onChange={(e) => setName(e.target.value)} />
             <label className="field-label">Email cím</label>
-            <input type="email" style={{ textTransform: 'none' }} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <label className="field-label">Jelszó (legalább 8 karakter)</label>
-            <input type="password" style={{ textTransform: 'none' }} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+            <input className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
             <div style={{ marginTop: 16 }}>
               <button className="primary" type="submit" disabled={sending}>
                 {sending ? 'Regisztráció…' : 'Regisztráció'}
@@ -138,7 +156,7 @@ export default function LoginPage() {
               Nincs szükséged jelszóra - küldünk egy belépő linket emailben.
             </p>
             <label className="field-label">Email cím</label>
-            <input type="email" style={{ textTransform: 'none' }} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <div style={{ marginTop: 16 }}>
               <button className="primary" type="submit" disabled={sending}>
                 {sending ? 'Küldés…' : 'Belépő link kérése'}

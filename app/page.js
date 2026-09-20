@@ -728,18 +728,10 @@ export default function HomePage() {
           <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
           <div style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Idő: {formatTime(elapsed)}</div>
           <div className="stats">
-            <div className="stat">
-              <b>{progress.streak}</b>
-              <span>napos sorozat</span>
-            </div>
-            <div className="stat">
-              <b>{progress.best}</b>
-              <span>legjobb sorozat</span>
-            </div>
-            {puzzle.parHints != null && (
+            {solverCount !== null && (
               <div className="stat">
-                <b>{puzzle.parHints}</b>
-                <span>nehézség (ennyi tipp kell hozzá)</span>
+                <b>{solverCount}</b>
+                <span>megfejtő ma</span>
               </div>
             )}
             {avgHints !== null && (
@@ -748,26 +740,15 @@ export default function HomePage() {
                 <span>átlag tipp / játékos</span>
               </div>
             )}
-            {solverCount !== null && (
-              <div className="stat">
-                <b>{solverCount}</b>
-                <span>megfejtő ma</span>
-              </div>
-            )}
           </div>
-          {puzzle.parHints != null && (
-            <div className="feedback hint" style={{ marginLeft: 0, display: 'inline-block' }}>
-              {difficultyText(hintsUsed(), puzzle.parHints, correct)}
-            </div>
-          )}
-          <div className="actions" style={{ marginTop: 16 }}>
+          <div className="actions" style={{ marginTop: 12 }}>
             <button className="primary" onClick={share} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, lineHeight: 1.2 }}>
               <span style={{ fontSize: 20 }}>📤</span>
               <span>Eredmény másolása</span>
             </button>
           </div>
           {countdown && (
-            <div style={{ marginTop: 18, fontSize: 13.5, color: 'var(--ink-soft)' }}>
+            <div style={{ marginTop: 12, fontSize: 13.5, color: 'var(--ink-soft)' }}>
               ⏳ Következő titkosírás:{' '}
               <b style={{ color: 'var(--accent2)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
             </div>

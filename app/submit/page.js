@@ -1,11 +1,12 @@
 'use client';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import { computeNewAchievements } from '../../lib/achievements';
 
 export default function SubmitPage() {
+  const { data: session, status: authStatus } = useSession();
   const [form, setForm] = useState({
-    name: '',
     clue: '',
     answer: '',
     fodder: '',
@@ -37,7 +38,6 @@ export default function SubmitPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.name,
           clue: form.clue,
           answer: form.answer,
           hints: {
@@ -68,15 +68,56 @@ export default function SubmitPage() {
           if (newly.includes('submitted_puzzle')) extra = ' 🏆 Új eredmény: Beküldő!';
         }
         setStatus({ ok: true, msg: 'Köszönjük! Megkaptuk a rejtvényedet, hamarosan átnézzük.' + extra });
-        setForm({ name: '', clue: '', answer: '', fodder: '', indikator: '', definicio: '', alternativ: '' });
+        setForm({ clue: '', answer: '', fodder: '', indikator: '', definicio: '', alternativ: '' });
         setConsent(false);
       } else {
-        setStatus({ ok: false, msg: 'Valami nem sikerült. Próbáld újra kicsit később.' });
+        const data = await res.json().catch(() => ({}));
+        setStatus({ ok: false, msg: data.message || 'Valami nem sikerült. Próbáld újra kicsit később.' });
       }
     } catch {
       setStatus({ ok: false, msg: 'Nem sikerült elküldeni. Ellenőrizd az internetkapcsolatot.' });
     }
     setSending(false);
+  }
+
+  if (authStatus === 'loading') {
+    return (
+      <div className="wrap">
+        <h1 className="page-title">Fanmade rejtvény beküldése</h1>
+        <div className="card">Betöltés…</div>
+      </div>
+    );
+  }
+
+  if (!session?.user) {
+    return (
+      <div className="wrap">
+        <h1 className="page-title">Fanmade rejtvény beküldése</h1>
+        <div className="card">
+          <p style={{ fontSize: 14.5 }}>
+            A rejtvények beküldéséhez be kell jelentkezned - így tudjuk feltüntetni a nevedet a
+            rejtvényed mellett, ha bekerül a napi titkosírások közé.
+          </p>
+          <a href="/login">
+            <button className="primary">Bejelentkezés</button>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session.user.verified) {
+    return (
+      <div className="wrap">
+        <h1 className="page-title">Fanmade rejtvény beküldése</h1>
+        <div className="card">
+          <p style={{ fontSize: 14.5 }}>
+            Már bejelentkeztél, de az email címed még nincs megerősítve. Nézd meg a postaládádat -
+            küldtünk egy megerősítő linket, amikor regisztráltál.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -85,18 +126,9 @@ export default function SubmitPage() {
       <div className="card">
         <p style={{ fontSize: 14.5, color: 'var(--ink-soft)', marginTop: 0 }}>
           Van egy jó ötleted egy kriptikus rejtvényhez? Küldd be, és ha beválik, bekerülhet a napi
-          rejtvények közé!
+          rejtvények közé! Beküldőként ez fog megjelenni: <b>{session.user.name || session.user.email}</b>
         </p>
         <form onSubmit={submit}>
-          <label className="field-label">Beceneved (opcionális)</label>
-          <input
-            type="text"
-            style={{ textTransform: 'none' }}
-            value={form.name}
-            onChange={(e) => update('name', e.target.value)}
-            placeholder="Pl. RejtvényRajongó"
-          />
-
           <label className="field-label">A rejtvény szövege *</label>
           <textarea
             value={form.clue}

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../lib/kv';
 import { isAdminRequest } from '../../../lib/adminAuth';
+import { auth } from '../../../auth';
 
 export async function GET(req) {
   if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -10,6 +11,17 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const session = await auth();
+  if (!session?.user) {
+    return Response.json({ error: 'unauthenticated', message: 'A beküldéshez be kell jelentkezned.' }, { status: 401 });
+  }
+  if (!session.user.verified) {
+    return Response.json(
+      { error: 'unverified', message: 'A beküldéshez meg kell erősítened az email címedet.' },
+      { status: 403 }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   if (!body.clue || !body.answer) {
     return Response.json({ error: 'missing-fields' }, { status: 400 });
@@ -17,7 +29,8 @@ export async function POST(req) {
   const list = (await kv.get('submissions:list')) || [];
   const entry = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-    name: (body.name || 'Névtelen').toString().slice(0, 60),
+    name: (session.user.name || session.user.email || 'Névtelen').toString().slice(0, 60),
+    submitterEmail: session.user.email,
     clue: body.clue.toString().slice(0, 400),
     answer: body.answer.toString().slice(0, 60),
     hints: {

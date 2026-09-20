@@ -48,7 +48,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user || !user.passwordHash) return null;
         const valid = verifyPassword(password, user.passwordHash);
         if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name, role: user.role || 'user' };
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role || 'user',
+          emailVerified: user.emailVerified || null,
+        };
       },
     }),
   ],
@@ -57,6 +63,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role || 'user';
         token.uid = user.id;
+        token.verified = !!user.emailVerified;
       }
       return token;
     },
@@ -64,6 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.role = token.role || 'user';
         session.user.id = token.uid;
+        session.user.verified = !!token.verified;
       }
       return session;
     },
