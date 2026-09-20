@@ -5,6 +5,7 @@ import AchievementsModal from '../components/AchievementsModal';
 import LeaderboardModal from '../components/LeaderboardModal';
 import TutorialModal from '../components/TutorialModal';
 import AuthProvider from '../components/AuthProvider';
+import ProgressSync from '../components/ProgressSync';
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
@@ -38,6 +39,7 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AuthProvider>
+          <ProgressSync />
           <Nav />
           {children}
           <Footer />

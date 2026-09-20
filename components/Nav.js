@@ -19,11 +19,6 @@ export default function Nav() {
     await signOut({ callbackUrl: '/' });
   }
 
-  function handleArchiveClick(e) {
-    e.preventDefault();
-    setOpen(false);
-    alert('Hamarosan érkezik! Dolgozunk rajta. 🚧');
-  }
   function handleTutorialClick(e) {
     e.preventDefault();
     setOpen(false);
@@ -67,9 +62,8 @@ export default function Nav() {
           <a href="/" onClick={() => setOpen(false)}>
             <Icon src="/icons/Kezdolap.png" /> Kezdőlap
           </a>
-          <a href="/archive" onClick={handleArchiveClick} className="drawer-link-disabled">
-            <Icon src="/icons/Korabbi_titkosirasok.png" /> Korábbi titkosírások{' '}
-            <span className="soon-badge">Hamarosan!</span>
+          <a href="/archive" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Korabbi_titkosirasok.png" /> Korábbi titkosírások
           </a>
           <a href="/help" onClick={() => setOpen(false)}>
             <Icon src="/icons/Sugo.png" /> Súgó

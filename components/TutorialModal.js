@@ -36,7 +36,7 @@ export default function TutorialModal() {
               <div key={s.id} style={{ border: '2px solid var(--line)', borderRadius: 12, padding: '10px 12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <b>
-                    {s.emoji} {s.title}
+                    <Icon src={s.icon} size={18} /> {s.title}
                   </b>
                   <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
                     {done}/{s.totalTasks}

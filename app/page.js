@@ -503,7 +503,7 @@ export default function HomePage() {
         <div className="modal-overlay" onClick={dismissIntro}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
-              Üdv a Titkosírásban! 🔐
+              Üdv a Titkosírásban! <Icon src="/icons/Udvozlo_uzenet.png" size={22} />
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
               A Titkosírás a találós kérdések egy különleges formája, ahol a gyakorlott szem
@@ -533,7 +533,7 @@ export default function HomePage() {
         >
           <Icon src="/icons/Ranglista.png" size={16} /> Ranglista
         </button>
-        <span className="pill">🔥 {progress.streak} napos sorozat</span>
+        <span className="pill"><Icon src="/icons/Streak.png" size={15} /> {progress.streak} napos sorozat</span>
       </div>
 
       <div className="card">
@@ -576,7 +576,7 @@ export default function HomePage() {
                   onClick={shuffleGuess}
                   title="A beírt betűk véletlenszerű összekeverése"
                 >
-                  🌀 Keverés
+                  <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> Keverés
                 </button>
                 <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
                   Ellenőrzés
@@ -588,7 +588,7 @@ export default function HomePage() {
               {availableHints.length > 0 && (
                 <div className="hintbar">
                   <button className="ghost small" onClick={() => setShowHintModal(true)}>
-                    💡 Tippek ({hintsUsed()} felhasználva)
+                    <Icon src="/icons/Rejtveny_tippek.png" size={16} /> Tippek ({hintsUsed()} felhasználva)
                   </button>
                 </div>
               )}
@@ -626,7 +626,7 @@ export default function HomePage() {
             >
               <div className="modal-card" onClick={(e) => e.stopPropagation()}>
                 <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
-                  💡 Melyik tippet kéred?
+                  <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Melyik tippet kéred?
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {availableHints.map((t) => {
@@ -717,7 +717,7 @@ export default function HomePage() {
 
           {puzzleMeta?.date && (
             <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 12, marginLeft: 8 }}>
-              📅 {formatHuDate(puzzleMeta.date)}
+              <Icon src="/icons/Rejtveny_datum.png" size={14} /> {formatHuDate(puzzleMeta.date)}
             </div>
           )}
         </div>
@@ -754,7 +754,7 @@ export default function HomePage() {
           </div>
           {countdown && (
             <div style={{ marginTop: 12, fontSize: 13.5, color: 'var(--ink-soft)' }}>
-              ⏳ Következő titkosírás:{' '}
+              <Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Következő titkosírás:{' '}
               <b style={{ color: 'var(--accent2)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
             </div>
           )}

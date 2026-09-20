@@ -59,6 +59,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // A Google (és az email-linkes) bejelentkezés már önmagában igazolja az
+      // email-cím tulajdonjogát, ezért ezeknél sosem kérünk külön visszaigazolást -
+      // akkor sem, ha a fiók korábban (ennek a logikának a bevezetése előtt) jött létre.
+      if ((account?.provider === 'google' || account?.provider === 'email') && user?.email) {
+        const id = await kv.get(`au:userByEmail:${user.email}`);
+        if (id) {
+          const existing = await kv.get(`au:user:${id}`);
+          if (existing && !existing.emailVerified) {
+            existing.emailVerified = new Date().toISOString();
+            await kv.set(`au:user:${id}`, existing);
+          }
+          if (existing?.emailVerified) {
+            // Azonnal frissítjük az aktuális bejelentkezési kérés user objektumát is,
+            // hogy már ugyanebben a lépésben, ne csak a következő belépéskor
+            // érvényesüljön a megerősített állapot.
+            user.emailVerified = existing.emailVerified;
+          }
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role || 'user';

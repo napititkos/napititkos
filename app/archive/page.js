@@ -1,14 +1,137 @@
-export const metadata = { title: 'Korábbi titkosírások - Titkosírás' };
+'use client';
+import { useEffect, useMemo, useState } from 'react';
+import { enumerationFor } from '../../lib/format';
+import { loadProgress } from '../../lib/progress';
+
+const HU_MONTHS = [
+  'Január', 'Február', 'Március', 'Április', 'Május', 'Június',
+  'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December',
+];
 
 export default function ArchivePage() {
+  const [items, setItems] = useState(null);
+  const [error, setError] = useState(null);
+  const [history, setHistory] = useState({});
+  const [openYears, setOpenYears] = useState({});
+  const [openMonths, setOpenMonths] = useState({});
+
+  useEffect(() => {
+    const prog = loadProgress();
+    setHistory(prog.history || {});
+    fetch('/api/archive')
+      .then((r) => r.json())
+      .then((data) => setItems(data.archive || []))
+      .catch(() => setError('Nem sikerült betölteni az archívumot.'));
+  }, []);
+
+  const grouped = useMemo(() => {
+    if (!items) return {};
+    const byYear = {};
+    for (const it of items) {
+      const [y, m] = (it.shownDate || '').split('-');
+      if (!y || !m) continue;
+      if (!byYear[y]) byYear[y] = {};
+      if (!byYear[y][m]) byYear[y][m] = [];
+      byYear[y][m].push(it);
+    }
+    return byYear;
+  }, [items]);
+
+  function solvedCount(list) {
+    return list.filter((it) => history[it.shownDate]?.correct).length;
+  }
+  function allYearItems(months) {
+    return Object.values(months).flat();
+  }
+
+  const years = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
   return (
     <div className="wrap">
       <h1 className="page-title">Korábbi titkosírások</h1>
       <div className="card">
-        <p style={{ fontSize: 15, lineHeight: 1.6 }}>
-          🚧 Ez a funkció hamarosan érkezik - dolgozunk rajta! Addig is nézz vissza a napi
-          titkosírásért a kezdőlapon.
+        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
+          A "megfejtve" jelzés csak ezen az eszközön/böngészőn számolja a saját teljesítményedet.
         </p>
+        {error && <p style={{ color: 'var(--bad)' }}>{error}</p>}
+        {items === null && !error && <p>Betöltés…</p>}
+        {items && items.length === 0 && (
+          <p style={{ color: 'var(--ink-soft)' }}>
+            Még nincs egyetlen lezárt titkosírás sem - nézz vissza holnap!
+          </p>
+        )}
+
+        {years.map((year) => {
+          const months = grouped[year];
+          const yearItems = allYearItems(months);
+          const yearOpen = !!openYears[year];
+          return (
+            <div className="puzzle-editor" key={year}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                onClick={() => setOpenYears((prev) => ({ ...prev, [year]: !prev[year] }))}
+              >
+                <b>{yearOpen ? '▾' : '▸'} {year}</b>
+                <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                  {solvedCount(yearItems)}/{yearItems.length} megfejtve
+                </span>
+              </div>
+
+              {yearOpen && (
+                <div style={{ marginTop: 12 }}>
+                  {Object.keys(months)
+                    .sort((a, b) => b.localeCompare(a))
+                    .map((month) => {
+                      const monthItems = months[month];
+                      const key = `${year}-${month}`;
+                      const monthOpen = !!openMonths[key];
+                      return (
+                        <div key={key} style={{ borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 10 }}>
+                          <div
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                            onClick={() => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }))}
+                          >
+                            <b style={{ fontSize: 14.5 }}>
+                              {monthOpen ? '▾' : '▸'} {HU_MONTHS[parseInt(month, 10) - 1]}
+                            </b>
+                            <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                              {solvedCount(monthItems)}/{monthItems.length} megfejtve
+                            </span>
+                          </div>
+
+                          {monthOpen && (
+                            <div style={{ marginTop: 10 }}>
+                              {monthItems
+                                .sort((a, b) => b.shownDate.localeCompare(a.shownDate))
+                                .map((it, i) => {
+                                  const solved = !!history[it.shownDate]?.correct;
+                                  return (
+                                    <div className="sub-item" key={it.id + i}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                                        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{it.shownDate}</span>
+                                        <span style={{ fontSize: 12.5, color: solved ? 'var(--good)' : 'var(--ink-soft)' }}>
+                                          {solved ? '✓ megfejtve' : '– nem oldottad meg'}
+                                        </span>
+                                      </div>
+                                      <div style={{ margin: '6px 0' }}>
+                                        {it.clue} {enumerationFor(it.answer)}
+                                      </div>
+                                      <div>
+                                        Válasz: <b>{it.answer}</b>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
