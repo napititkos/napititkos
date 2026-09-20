@@ -21,7 +21,7 @@ export default function TutorialModal() {
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+        <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Tutorial.png" size={24} /> Tutorial
         </h2>
         <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: -6 }}>

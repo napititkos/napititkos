@@ -6,13 +6,19 @@ import { fireConfetti } from './Confetti';
 import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked } from '../lib/puzzleLogic';
 import { enumerationFor } from '../lib/format';
 
-export default function PuzzlePlayer({ puzzle }) {
-  const [guess, setGuess] = useState(() => emptyGuess(puzzle.answer));
-  const [lockedLetters, setLockedLetters] = useState(() => emptyLocked(puzzle.answer));
+export default function PuzzlePlayer({ puzzle, onSolved, initiallySolved = false }) {
+  const [guess, setGuess] = useState(() =>
+    initiallySolved
+      ? Array.from(puzzle.answer).map((ch) => (ch === ' ' ? ' ' : ch.toUpperCase()))
+      : emptyGuess(puzzle.answer)
+  );
+  const [lockedLetters, setLockedLetters] = useState(() =>
+    initiallySolved ? Array.from(puzzle.answer).map(() => true) : emptyLocked(puzzle.answer)
+  );
   const [revealed, setRevealed] = useState([]);
   const [betuCount, setBetuCount] = useState(0);
-  const [answered, setAnswered] = useState(false);
-  const [correct, setCorrect] = useState(false);
+  const [answered, setAnswered] = useState(initiallySolved);
+  const [correct, setCorrect] = useState(initiallySolved);
   const [showHintModal, setShowHintModal] = useState(false);
   const [toast, setToast] = useState('');
 
@@ -26,6 +32,7 @@ export default function PuzzlePlayer({ puzzle }) {
       setCorrect(true);
       setAnswered(true);
       fireConfetti();
+      onSolved && onSolved();
     } else {
       showToast('Ez még nem az.');
     }
@@ -163,9 +170,20 @@ export default function PuzzlePlayer({ puzzle }) {
       {showHintModal && (
         <div className="modal-overlay hint-modal-overlay" onClick={() => setShowHintModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
-              <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Melyik tippet kéred?
+            <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+              <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Tippek
             </h2>
+            {availableHints.some((t) => t !== 'betu' && !revealed.includes(t)) && (
+              <button
+                className="primary small"
+                style={{ marginBottom: 12 }}
+                onClick={() =>
+                  setRevealed((prev) => Array.from(new Set([...prev, ...availableHints.filter((t) => t !== 'betu')])))
+                }
+              >
+                Összes szöveges tipp megjelenítése
+              </button>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {availableHints.map((t) => {
                 const isBetu = t === 'betu';
@@ -183,6 +201,16 @@ export default function PuzzlePlayer({ puzzle }) {
                         {isBetu ? (exhausted ? 'Nincs több betű' : 'Kérek egy betűt') : used ? 'Felhasználva ✓' : 'Ezt kérem'}
                       </button>
                     </div>
+                    {!isBetu && used && (
+                      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
+                        {puzzle.hints[t].text}
+                      </p>
+                    )}
+                    {isBetu && betuCount > 0 && (
+                      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
+                        Eddig {betuCount} betűt fedtünk fel.
+                      </p>
+                    )}
                   </div>
                 );
               })}
