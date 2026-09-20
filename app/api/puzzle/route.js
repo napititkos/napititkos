@@ -43,7 +43,8 @@ function lastBudapestRotation(now) {
 }
 
 export async function GET() {
-  const puzzles = (await kv.get('puzzles:list')) || [];
+  const rawPuzzles = (await kv.get('puzzles:list')) || [];
+  const puzzles = rawPuzzles.filter((p) => p.clue?.trim() && p.answer?.trim());
   if (!puzzles.length) {
     return Response.json({ error: 'no-puzzles' }, { status: 404 });
   }
@@ -92,6 +93,8 @@ export async function GET() {
         clue: currentPuzzle.clue,
         answer: currentPuzzle.answer,
         parHints: currentPuzzle.parHints,
+        hints: currentPuzzle.hints,
+        submittedBy: currentPuzzle.submittedBy || '',
         shownDate: todayStr(),
       },
     ];
