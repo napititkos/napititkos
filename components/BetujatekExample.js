@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LetterBoxes from './LetterBoxes';
 import { fireConfetti } from './Confetti';
 import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
@@ -25,14 +25,26 @@ export default function BetujatekExample({ onProgress }) {
   const [solved2, setSolved2] = useState(false);
   const [wrongTried2, setWrongTried2] = useState(false);
 
+  useEffect(() => {
+    const progress = loadTutorialProgress();
+    if (progress.betujatek_1) setSolved(true);
+    if (progress.betujatek_2) setSolved2(true);
+  }, []);
+
+  function saveExerciseDone(which) {
+    const progress = loadTutorialProgress();
+    if (which === 1) progress.betujatek_1 = 1;
+    if (which === 2) progress.betujatek_2 = 1;
+    progress.betujatek = (progress.betujatek_1 || 0) + (progress.betujatek_2 || 0);
+    saveTutorialProgress(progress);
+    onProgress && onProgress(progress);
+  }
+
   function checkAnswer() {
     if (norm(guess.join('')) === ANSWER) {
       setSolved(true);
       fireConfetti();
-      const progress = loadTutorialProgress();
-      progress.betujatek = 1;
-      saveTutorialProgress(progress);
-      onProgress && onProgress(progress);
+      saveExerciseDone(1);
     } else {
       setWrongTried(true);
       if (stage < 1) setStage(1);
@@ -43,10 +55,7 @@ export default function BetujatekExample({ onProgress }) {
     if (norm(guess2.join('')) === norm(ANAGRAM_ANSWER)) {
       setSolved2(true);
       fireConfetti();
-      const progress = loadTutorialProgress();
-      progress.betujatek = 1;
-      saveTutorialProgress(progress);
-      onProgress && onProgress(progress);
+      saveExerciseDone(2);
     } else {
       setWrongTried2(true);
     }
