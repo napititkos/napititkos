@@ -60,7 +60,7 @@ a{ color: inherit; }
 .brand span{ color: var(--accent); }
 nav.topnav{
   display:flex; align-items:center; gap: 12px;
-  max-width: 640px; margin: 0 auto; padding: 18px 14px 10px;
+  max-width: 640px; margin: 0 auto; padding: 18px 14px 0;
 }
 .hamburger-btn{
   display: flex; flex-direction: column; justify-content: center; gap: 4px;

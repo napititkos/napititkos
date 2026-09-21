@@ -116,13 +116,19 @@ export default function PuzzlePlayer({ puzzle, onSolved, initiallySolved = false
       {!answered && (
         <>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, maxWidth: '100%', minWidth: 0 }}>
+            <div style={{ position: 'relative', display: 'inline-flex', maxWidth: 'calc(100% - 104px)', minWidth: 0 }}>
               <button
                 className="ghost small"
                 disabled={!isRowFull()}
                 onClick={shuffleGuess}
                 title="A beírt betűk véletlenszerű összekeverése"
-                style={{ padding: '9px 11px', flexShrink: 0 }}
+                style={{
+                  position: 'absolute',
+                  right: 'calc(100% + 8px)',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  padding: '9px 11px',
+                }}
               >
                 <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
               </button>

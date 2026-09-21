@@ -368,9 +368,10 @@ export default function HomePage() {
     }).catch(() => {});
 
     if (wasCorrect) {
-      const displayName = session?.user
-        ? session.user.name || session.user.email
-        : getIdentity().name;
+      // Soha nem tesszük ki az email címet a ranglistára - ha van fiókhoz tartozó
+      // név (pl. Google-lal automatikusan kapott), azt használjuk, egyébként
+      // ugyanaz a véletlenszerűen generált azonosító jár, mint a vendégeknek.
+      const displayName = session?.user?.name || getIdentity().name;
       fetch('/api/leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -503,13 +504,19 @@ export default function HomePage() {
           {!answered && (
             <>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, maxWidth: '100%', minWidth: 0 }}>
+                <div style={{ position: 'relative', display: 'inline-flex', maxWidth: 'calc(100% - 104px)', minWidth: 0 }}>
                   <button
                     className="ghost small"
                     disabled={!isRowFull()}
                     onClick={shuffleGuess}
                     title="A beírt betűk véletlenszerű összekeverése"
-                    style={{ padding: '9px 11px', flexShrink: 0 }}
+                    style={{
+                      position: 'absolute',
+                      right: 'calc(100% + 8px)',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      padding: '9px 11px',
+                    }}
                   >
                     <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
                   </button>
