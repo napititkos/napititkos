@@ -260,6 +260,8 @@ button{
   font-family:'Nunito', sans-serif; font-weight:700; font-size: 14px; border-radius: 999px;
   border: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 9px 16px; cursor:pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  white-space: nowrap;
 }
 button:hover:not(:disabled){ transform: translateY(-1px) scale(1.03); }
 button:active:not(:disabled){ transform: translateY(0) scale(0.98); }
