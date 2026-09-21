@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { TUTORIAL_SECTIONS, loadTutorialProgress } from '../lib/tutorial';
 import Icon from './Icon';
 import BetujatekExample from './BetujatekExample';
+import SzojatekExample from './SzojatekExample';
+import JokerExample from './JokerExample';
 
 export default function TutorialModal() {
   const [open, setOpen] = useState(false);
@@ -34,7 +36,7 @@ export default function TutorialModal() {
           {TUTORIAL_SECTIONS.map((s) => {
             const done = progress[s.id] || 0;
             const pct = Math.round((done / s.totalTasks) * 100);
-            const hasExample = s.id === 'betujatek';
+            const hasExample = s.id === 'betujatek' || s.id === 'szojatek' || s.id === 'joker';
             const isExpanded = expandedSection === s.id;
             return (
               <div key={s.id} style={{ border: '2px solid var(--line)', borderRadius: 12, padding: '10px 12px' }}>
@@ -54,7 +56,13 @@ export default function TutorialModal() {
                 </div>
                 {hasExample ? (
                   isExpanded ? (
-                    <BetujatekExample onProgress={setProgress} />
+                    s.id === 'betujatek' ? (
+                      <BetujatekExample onProgress={setProgress} />
+                    ) : s.id === 'szojatek' ? (
+                      <SzojatekExample onProgress={setProgress} />
+                    ) : (
+                      <JokerExample onProgress={setProgress} />
+                    )
                   ) : (
                     <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6, cursor: 'pointer' }} onClick={() => setExpandedSection(s.id)}>
                       Kattints ide a példáért →

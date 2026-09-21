@@ -107,39 +107,54 @@ export default function PuzzlePlayer({ puzzle, onSolved, initiallySolved = false
 
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
-      <div style={{ fontWeight: 600, marginBottom: 8 }}>
-        {puzzle.clue} {enumerationFor(puzzle.answer)}
+      <div className="clue-box" style={{ marginBottom: 10 }}>
+        <div className="clue-text">
+          {puzzle.clue} {enumerationFor(puzzle.answer)}
+        </div>
       </div>
 
       {!answered && (
         <>
-          <div className="answer-row">
-            <LetterBoxes
-              answer={puzzle.answer}
-              value={guess}
-              locked={lockedLetters}
-              onChange={setGuess}
-              disabled={answered}
-              onEnter={() => checkAnswer(guess.join(''))}
-            />
-            <button className="ghost small" disabled={!isRowFull()} onClick={shuffleGuess}>
-              <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> Keverés
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 8 }}>
+            <button
+              className="ghost small"
+              disabled={!isRowFull()}
+              onClick={shuffleGuess}
+              title="A beírt betűk véletlenszerű összekeverése"
+              style={{ padding: '9px 11px' }}
+            >
+              <Icon src="/icons/Rejtveny_Keveres.png" size={16} />
             </button>
+            <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+              <LetterBoxes
+                answer={puzzle.answer}
+                value={guess}
+                locked={lockedLetters}
+                onChange={setGuess}
+                disabled={answered}
+                onEnter={() => checkAnswer(guess.join(''))}
+              />
+            </div>
+            <button className="ghost small" style={{ visibility: 'hidden', padding: '9px 11px' }} aria-hidden="true" tabIndex={-1}>
+              <Icon src="/icons/Rejtveny_Keveres.png" size={16} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
             <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
               Ellenőrzés
             </button>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+            {availableHints.length > 0 && (
+              <button className="ghost small" onClick={() => setShowHintModal(true)}>
+                <Icon src="/icons/Rejtveny_tippek.png" size={16} /> Tippek ({hintsUsed()} felhasználva)
+              </button>
+            )}
             <button className="ghost small" onClick={giveUp}>
               Feladom
             </button>
           </div>
 
-          {availableHints.length > 0 && (
-            <div className="hintbar">
-              <button className="ghost small" onClick={() => setShowHintModal(true)}>
-                <Icon src="/icons/Rejtveny_tippek.png" size={16} /> Tippek ({hintsUsed()} felhasználva)
-              </button>
-            </div>
-          )}
           {revealed.map((t) => (
             <div className="hint-box" key={t}>
               {t === 'betu' ? (

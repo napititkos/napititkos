@@ -7,6 +7,9 @@ import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
 const ANSWER = 'MAJOM';
 const CLUE = 'A malom középső tengelye elgörbült - ma ki oldja ezt meg?';
 
+const ANAGRAM_ANSWER = 'TORNÁDÓ';
+const ANAGRAM_CLUE = 'Zavaros ortó dán gyorsan forog.';
+
 function norm(s) {
   return (s || '').trim().toUpperCase();
 }
@@ -16,6 +19,11 @@ export default function BetujatekExample({ onProgress }) {
   const [stage, setStage] = useState(0); // 0: alap, 1: kiemelt szó, 2: mutató is látszik
   const [solved, setSolved] = useState(false);
   const [wrongTried, setWrongTried] = useState(false);
+
+  const [guess2, setGuess2] = useState(Array(ANAGRAM_ANSWER.length).fill(''));
+  const [showHelp2, setShowHelp2] = useState(false);
+  const [solved2, setSolved2] = useState(false);
+  const [wrongTried2, setWrongTried2] = useState(false);
 
   function checkAnswer() {
     if (norm(guess.join('')) === ANSWER) {
@@ -28,6 +36,19 @@ export default function BetujatekExample({ onProgress }) {
     } else {
       setWrongTried(true);
       if (stage < 1) setStage(1);
+    }
+  }
+
+  function checkAnswer2() {
+    if (norm(guess2.join('')) === norm(ANAGRAM_ANSWER)) {
+      setSolved2(true);
+      fireConfetti();
+      const progress = loadTutorialProgress();
+      progress.betujatek = 1;
+      saveTutorialProgress(progress);
+      onProgress && onProgress(progress);
+    } else {
+      setWrongTried2(true);
     }
   }
 
@@ -45,17 +66,33 @@ export default function BetujatekExample({ onProgress }) {
     );
   }
 
+  function renderAnagramClueWithHighlight() {
+    if (!showHelp2) return ANAGRAM_CLUE;
+    const parts = ANAGRAM_CLUE.split(/(ortó|dán)/i);
+    return parts.map((part, i) =>
+      /^(ortó|dán)$/i.test(part) ? (
+        <mark className="clue-highlight" key={i}>
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  }
+
   return (
     <div style={{ marginTop: 10 }}>
       <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 10px' }}>
         Betűjátéknál egyes betűket kell megváltoztatni, pakolgatni, formálni - próbáld ki ezen a
         példán!
       </p>
-      <div style={{ fontWeight: 700, marginBottom: 10 }}>{renderClueWithHighlight()}</div>
+      <div className="clue-box" style={{ marginBottom: 10 }}>
+        <div className="clue-text">{renderClueWithHighlight()}</div>
+      </div>
 
       {!solved && (
         <>
-          <div className="answer-row" style={{ marginLeft: 0 }}>
+          <div className="answer-row" style={{ marginLeft: 0, justifyContent: 'center' }}>
             <LetterBoxes
               answer={ANSWER}
               value={guess}
@@ -64,6 +101,8 @@ export default function BetujatekExample({ onProgress }) {
               disabled={false}
               onEnter={checkAnswer}
             />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
             <button className="primary small" onClick={checkAnswer}>
               Ellenőrzés
             </button>
@@ -76,9 +115,11 @@ export default function BetujatekExample({ onProgress }) {
           )}
 
           {stage < 2 && (
-            <button className="ghost small" style={{ marginTop: 8 }} onClick={() => setStage(2)}>
-              💡 Mutató
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              <button className="ghost small" onClick={() => setStage(2)}>
+                💡 Mutató
+              </button>
+            </div>
           )}
           {stage === 2 && (
             <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
@@ -93,6 +134,62 @@ export default function BetujatekExample({ onProgress }) {
         <div className="feedback good" style={{ marginLeft: 0 }}>
           ✓ Pontosan! A "malom" középső betűje ("l") "elgörbülve" "j"-vé válik, így lesz belőle
           "majom". Pont így működik egy igazi betűjáték-rejtvény!
+        </div>
+      )}
+
+      <div style={{ borderTop: '1px dashed var(--line)', margin: '18px 0 14px' }} />
+
+      <b style={{ fontSize: 14 }}>2. gyakorlat: anagramma</b>
+      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '6px 0 10px' }}>
+        Az "összetörő", "zavaros", "zúzós" szavak mindig anagramma indikátorok. A készlet szavak
+        betűit kell újrarendezve megtalálni a megfejtést, ami passzol a definícióval. Meg tudod
+        találni, hogy mik a készlet szavak?
+      </p>
+      <div className="clue-box" style={{ marginBottom: 10 }}>
+        <div className="clue-text">{renderAnagramClueWithHighlight()}</div>
+      </div>
+
+      {!solved2 && (
+        <>
+          <div className="answer-row" style={{ marginLeft: 0, justifyContent: 'center' }}>
+            <LetterBoxes
+              answer={ANAGRAM_ANSWER}
+              value={guess2}
+              locked={ANAGRAM_ANSWER.split('').map(() => false)}
+              onChange={setGuess2}
+              disabled={false}
+              onEnter={checkAnswer2}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 10 }}>
+            <button className="primary small" onClick={checkAnswer2}>
+              Ellenőrzés
+            </button>
+            {!showHelp2 && (
+              <button className="ghost small" onClick={() => setShowHelp2(true)}>
+                Segítség kérése
+              </button>
+            )}
+          </div>
+
+          {wrongTried2 && (
+            <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
+              Még nem ez az - keresd meg a készlet szavakat a rejtvényben!
+            </div>
+          )}
+          {showHelp2 && (
+            <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
+              Az "ortó" és a "dán" a készlet szavak. Ezeket összerakva (és a betűiket
+              újrarendezve) találsz egy olyan szót, ami gyorsan forog!
+            </div>
+          )}
+        </>
+      )}
+
+      {solved2 && (
+        <div className="feedback good" style={{ marginLeft: 0 }}>
+          ✓ Pontosan! Az "ortó" + "dán" betűi összekeverve ("zavaros") kiadják a "tornádó" szót -
+          ami tényleg gyorsan forog. Ez az anagramma-rejtvény lényege!
         </div>
       )}
     </div>

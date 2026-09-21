@@ -185,6 +185,18 @@ nav.topnav{
 .num.h2{ background: var(--warn); color:#fff; }
 .num.h3{ background: var(--bad); color:#fff; }
 .clue-text{ flex:1; font-size: 16px; line-height:1.55; padding-top: 3px; font-weight: 600; }
+.clue-box{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.clue-box .clue-text{ padding-top: 0; }
 .answer-row{ display:flex; gap:8px; margin-top:10px; margin-left: 8px; flex-wrap:wrap; align-items:center; justify-content:center; max-width: calc(100% - 8px); }
 input[type=text], input[type=password], textarea{
   font-family:'Nunito', sans-serif; font-size: 15px; padding: 9px 12px;
