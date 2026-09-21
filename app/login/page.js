@@ -14,7 +14,9 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const verify = params.get('verify');
     if (verify === 'ok') {
-      setStatus({ ok: true, msg: 'Sikeresen megerősítetted az email címed!' });
+      setStatus({ ok: true, msg: 'Sikeresen megerősítetted az email címed! Most már bejelentkezhetsz.' });
+    } else if (verify === 'exists') {
+      setStatus({ ok: false, msg: 'Ehhez az email címhez már van fiók. Lépj be Google-lal vagy belépő linkkel.' });
     } else if (verify === 'expired') {
       setStatus({ ok: false, msg: 'A megerősítő link lejárt vagy már felhasználtad.' });
     } else if (verify === 'missing') {
@@ -54,20 +56,17 @@ export default function LoginPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    setSending(false);
     if (!res.ok) {
       setStatus({ ok: false, msg: data.error || 'Nem sikerült a regisztráció.' });
-      setSending(false);
       return;
     }
-    const signInRes = await signIn('credentials', { email, password, redirect: false });
-    setSending(false);
-    if (signInRes?.error) {
-      setStatus({ ok: true, msg: 'Sikeres regisztráció! Most már bejelentkezhetsz.' });
-      setMode('login');
-    } else {
-      window.location.href = '/';
-    }
+    // A fiók csak az emailben küldött link megerősítése után jön létre.
+    setStatus({
+      ok: true,
+      msg: 'Elküldtük a megerősítő linket az email címedre (a spam mappát is nézd meg). Kattints rá, utána be tudsz lépni. Ha ehhez a címhez már van fiók, lépj be Google-lal vagy belépő linkkel.',
+    });
   }
 
   async function submitMagicLink(e) {
