@@ -1,29 +1,40 @@
 export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../lib/kv';
-import { todayStr } from '../../../lib/date';
+import { todayStr, isValidDateStr } from '../../../lib/date';
 
-export async function POST(req) {
-  const body = await req.json().catch(() => ({}));
-  const date = body.date || todayStr();
-  const key = `stats:${date}`;
-  const current = (await kv.get(key)) || { completions: 0, totalHints: 0, correctCount: 0 };
-  current.completions += 1;
-  current.totalHints += Number(body.hintsUsed || 0);
-  if (body.correct) current.correctCount = (current.correctCount || 0) + 1;
-  await kv.set(key, current);
-  return Response.json({ ok: true });
+// A statisztikát a szerver rögzíti a játék végén (/api/game/guess és /api/game/giveup),
+// ezért a régi, kliens által küldött POST már nem hat semmire. (A már megnyitott, régi
+// oldalak hibamentesen kapnak választ.)
+export async function POST() {
+  return Response.json({ ok: false, error: 'deprecated' }, { status: 410 });
 }
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const date = searchParams.get('date') || todayStr();
-  const key = `stats:${date}`;
-  const current = (await kv.get(key)) || { completions: 0, totalHints: 0, correctCount: 0 };
-  const average = current.completions ? current.totalHints / current.completions : 0;
-  return Response.json({
-    completions: current.completions,
-    average,
-    correctCount: current.correctCount || 0,
-  });
+  const requested = searchParams.get('date');
+  const date = requested && isValidDateStr(requested) ? requested : todayStr();
+
+  let completions = 0;
+  let totalHints = 0;
+  let correctCount = 0;
+  const h = await kv.raw().hgetall(`stats:h:${date}`);
+  if (h && h.completions) {
+    completions = Number(h.completions) || 0;
+    totalHints = Number(h.totalHints) || 0;
+    correctCount = Number(h.correctCount) || 0;
+  } else {
+    // Átmenet: a korábbi (JSON) formátumú statisztika.
+    const legacy = await kv.get(`stats:${date}`);
+    if (legacy) {
+      completions = legacy.completions || 0;
+      totalHints = legacy.totalHints || 0;
+      correctCount = legacy.correctCount || 0;
+    }
+  }
+  const average = completions ? totalHints / completions : 0;
+  return Response.json(
+    { completions, average, correctCount },
+    { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' } }
+  );
 }
