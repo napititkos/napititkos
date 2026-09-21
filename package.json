@@ -1,12 +1,13 @@
 {
-  "name": "perctalany",
+  "name": "napititkos",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test"
+    "test": "node --test",
+    "test:e2e": "node tests/e2e/run.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
