@@ -68,6 +68,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (id) {
           const existing = await kv.get(`au:user:${id}`);
           if (existing && !existing.emailVerified) {
+            // Megerősítetlen fiókon lévő jelszót a címet nem birtokló is beállíthatta
+            // (előre-regisztráció), ezért amint a valódi tulajdonos belép, töröljük.
+            delete existing.passwordHash;
             existing.emailVerified = new Date().toISOString();
             await kv.set(`au:user:${id}`, existing);
           }
