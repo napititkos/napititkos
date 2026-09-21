@@ -19,7 +19,7 @@ export default function LeaderboardModal() {
 
   useEffect(() => {
     function handleOpen() {
-      setMyName(session?.user ? session.user.name || String(session.user.email || '').split('@')[0] : getIdentity().name);
+      setMyName(session?.user?.name || getIdentity().name);
       setEntries(null);
       fetch('/api/leaderboard')
         .then((r) => r.json())

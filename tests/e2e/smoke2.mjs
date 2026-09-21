@@ -158,18 +158,18 @@ lb = await lbGet();
 check('a név a fiókból jön, nem a kliensből; az e-mail nem jelenik meg', lb.entries.some((e) => e.name === 'Teszt Elek') && !JSON.stringify(lb).includes('example.hu') && !JSON.stringify(lb).includes('Hamis Név'), JSON.stringify(lb));
 const noName = await seedUser('nevtelen@example.hu', 'Nevtelen-Jelszo-1', { name: null });
 const lg2 = await credLogin('nevtelen@example.hu', 'Nevtelen-Jelszo-1');
-await post('/api/leaderboard', { name: 'X', hintsUsed: 4, elapsed: 3000 }, { cookie: lg2.jar.header() });
+await post('/api/leaderboard', { name: 'GyorsBagoly#XY12', hintsUsed: 4, elapsed: 3000 }, { cookie: lg2.jar.header() });
 lb = await lbGet();
-check('név nélküli fióknál az e-mail helyi része látszik (nem a teljes cím)', lb.entries.some((e) => e.name === 'nevtelen') && !JSON.stringify(lb).includes('@'), JSON.stringify(lb));
+check('név nélküli fióknál a vendégnév látszik, az e-mail (vagy annak része) soha', lb.entries.some((e) => e.name === 'GyorsBagoly#XY12') && !JSON.stringify(lb).includes('nevtelen') && !JSON.stringify(lb).includes('@'), JSON.stringify(lb));
 
 r = await post('/api/account/progress', { streak: 3 }); check('haladás mentése bejelentkezés nélkül: 401', r.status === 401);
 r = await post('/api/account/progress', {
-  streak: 5, best: 1e15, isAdmin: true, role: 'admin', __proto__: { x: 1 }, lastDate: budapestToday,
+  streak: 5, best: 1e15, tutorialDone: true, sharedResult: true, isAdmin: true, role: 'admin', __proto__: { x: 1 }, lastDate: budapestToday,
   history: { [budapestToday]: { guess: ['A'], lockedLetters: [true], revealed: ['definicio', 'kamu'], betuCount: 1, correct: true, gaveUp: false, elapsed: 5000, junk: 'x' }, 'leaderboard:*': { guess: [] } },
 }, cookie);
 check('haladás mentése: 200', r.status === 200);
 const storedProgress = JSON.parse(await redis.get(`progress:${u.id}`));
-check('a tárolt haladás megtisztított (nincs idegen mező, korlátozott számok)', storedProgress.isAdmin === undefined && storedProgress.role === undefined && storedProgress.best === 100000 && Object.keys(storedProgress.history).length === 1 && storedProgress.history[budapestToday].junk === undefined && storedProgress.history[budapestToday].revealed.length === 1, JSON.stringify(storedProgress).slice(0, 200));
+check('a tárolt haladás megtisztított (nincs idegen mező, korlátozott számok)', storedProgress.isAdmin === undefined && storedProgress.tutorialDone === true && storedProgress.sharedResult === true && storedProgress.role === undefined && storedProgress.best === 100000 && Object.keys(storedProgress.history).length === 1 && storedProgress.history[budapestToday].junk === undefined && storedProgress.history[budapestToday].revealed.length === 1, JSON.stringify(storedProgress).slice(0, 200));
 r = await post('/api/account/progress', '{"streak":"' + 'x'.repeat(70000) + '"}', cookie); check('túl nagy haladás-törzs: 400', r.status === 400);
 r = await post('/api/account/progress', 'nem json', cookie); check('hibás JSON: 400', r.status === 400);
 r = await post('/api/account/tutorial', { szojatek: 99, betujatek: 1, hack: 1 }, cookie); check('tutorial mentése: 200', r.status === 200);

@@ -183,8 +183,8 @@ export default function HomePage() {
           setCorrect(saved.correct);
           setGaveUp(saved.gaveUp);
           setElapsed(saved.elapsed);
-          fetchStats(data.date);
         }
+        fetchStats(data.date);
         setLoading(false);
       })
       .catch(() => {
@@ -370,9 +370,10 @@ export default function HomePage() {
     }).catch(() => {});
 
     if (wasCorrect) {
-      const displayName = session?.user
-        ? session.user.name || session.user.email
-        : getIdentity().name;
+      // Soha nem tesszük ki az email címet a ranglistára - ha van fiókhoz tartozó
+      // név (pl. Google-lal automatikusan kapott), azt használjuk, egyébként
+      // ugyanaz a véletlenszerűen generált azonosító jár, mint a vendégeknek.
+      const displayName = session?.user?.name || getIdentity().name;
       fetch('/api/leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -413,6 +414,27 @@ export default function HomePage() {
     } else {
       showToast(text);
     }
+    const prog = loadProgress();
+    if (!prog.sharedResult) {
+      prog.sharedResult = true;
+      const { unlocked, newly } = computeNewAchievements(
+        {
+          totalSolved: prog.totalSolved || 0,
+          streak: prog.streak,
+          fastestTime: prog.fastestTime,
+          noHintSolves: prog.noHintSolves || 0,
+          submittedPuzzle: prog.submittedPuzzle || false,
+          readHelp: prog.readHelp || false,
+          tutorialDone: prog.tutorialDone || false,
+          sharedResult: true,
+        },
+        prog.unlocked
+      );
+      prog.unlocked = unlocked;
+      saveProgress(prog);
+      setUnlockedAchievements(unlocked);
+      setTimeout(() => announceAchievements(newly), 1200);
+    }
   }
 
   if (loading) {
@@ -441,7 +463,7 @@ export default function HomePage() {
       : [];
 
   return (
-    <div className="wrap">
+    <div className="wrap" style={{ paddingTop: 10 }}>
       {showIntro && (
         <div className="modal-overlay" onClick={dismissIntro}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -504,17 +526,23 @@ export default function HomePage() {
 
           {!answered && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-                <button
-                  className="ghost small"
-                  disabled={!isRowFull()}
-                  onClick={shuffleGuess}
-                  title="A beírt betűk véletlenszerű összekeverése"
-                  style={{ padding: '9px 11px' }}
-                >
-                  <Icon src="/icons/Rejtveny_Keveres.png" size={16} />
-                </button>
-                <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+                <div style={{ position: 'relative', display: 'inline-flex', maxWidth: 'calc(100% - 104px)', minWidth: 0 }}>
+                  <button
+                    className="ghost small"
+                    disabled={!isRowFull()}
+                    onClick={shuffleGuess}
+                    title="A beírt betűk véletlenszerű összekeverése"
+                    style={{
+                      position: 'absolute',
+                      right: 'calc(100% + 8px)',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      padding: '9px 11px',
+                    }}
+                  >
+                    <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
+                  </button>
                   <LetterBoxes
                     answer={puzzle.answer}
                     value={guess}
@@ -524,14 +552,6 @@ export default function HomePage() {
                     onEnter={() => checkAnswer(guess.join(''))}
                   />
                 </div>
-                <button
-                  className="ghost small"
-                  style={{ visibility: 'hidden', padding: '9px 11px' }}
-                  aria-hidden="true"
-                  tabIndex={-1}
-                >
-                  <Icon src="/icons/Rejtveny_Keveres.png" size={16} />
-                </button>
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
                 <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
@@ -682,7 +702,7 @@ export default function HomePage() {
       {answered && (
         <div className="card result">
           <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
-          <div style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Idő: {formatTime(elapsed)}</div>
+          <div style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Idő: {formatTime(elapsed)}</div>
           <div className="stats">
             {solverCount !== null && (
               <div className="stat">
@@ -697,19 +717,19 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          <div className="actions" style={{ marginTop: 12, flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <div className="actions" style={{ marginTop: 8, flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <button
               className="primary"
               onClick={share}
-              style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+              style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
               aria-label="Eredmény másolása"
             >
-              <Icon src="/icons/Megosztas.png" size={22} className="icon-on-accent" />
+              <Icon src="/icons/Megosztas.png" size={20} className="icon-on-accent" />
             </button>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Eredmény másolása</span>
+            <span style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontWeight: 600 }}>Eredmény másolása</span>
           </div>
           {countdown && (
-            <div style={{ marginTop: 12, fontSize: 13.5, color: 'var(--ink-soft)' }}>
+            <div style={{ marginTop: 8, fontSize: 13, color: 'var(--ink-soft)' }}>
               <Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Következő titkosírás:{' '}
               <b style={{ color: 'var(--accent2)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
             </div>

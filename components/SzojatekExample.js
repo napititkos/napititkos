@@ -5,7 +5,7 @@ import { fireConfetti } from './Confetti';
 import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
 
 const ANSWER = 'BORZALMAS';
-const CLUE = 'Háborúban lelt ital, körülötte zavaros határokkal rejtve az alma - milyen ez?';
+const CLUE = 'Háborúban lelt ital, majd zavaros határok közt talált alma. Rettenetes vacsora!';
 
 function norm(s) {
   return (s || '').trim().toUpperCase();
@@ -75,7 +75,8 @@ export default function SzojatekExample({ onProgress }) {
 
           {wrongTried && stage === 1 && (
             <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
-              A "háborúban" szó rejt egy italt - keresd meg, és rakd a megfejtés elejére!
+              A definíció itt a "Rettenetes" - erre keresünk egy szinonimát. A "háborúban" szó
+              pedig rejt egy italt - keresd meg, és rakd a megfejtés elejére!
             </div>
           )}
 
@@ -98,9 +99,10 @@ export default function SzojatekExample({ onProgress }) {
 
       {solved && (
         <div className="feedback good" style={{ marginLeft: 0 }}>
-          ✓ Pontosan! "Háborúban" → BOR, majd Z + ALMA + S következik - együtt: BORZALMAS. Pont
-          így épül fel egy szójáték-rejtvény: apró darabokból összerakva egy egészen más szót
-          kapunk!
+          ✓ Pontosan! "Háborúban" → BOR, majd Z + ALMA + S következik - együtt: BORZALMAS, ami
+          pontosan szinonimája a "Rettenetes" definíciónak. Pont így épül fel egy
+          szójáték-rejtvény: apró darabokból összerakva egy egészen más szót kapunk, ami
+          passzol a definícióval!
         </div>
       )}
     </div>

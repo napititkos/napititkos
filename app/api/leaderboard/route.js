@@ -27,14 +27,16 @@ export async function POST(req) {
     return Response.json({ ok: false, error: 'invalid-body' }, { status: 400 });
   }
 
-  // Bejelentkezett játékosnál a név a fiókból jön (a kliens nem adhatja ki magát másnak),
-  // és az e-mail-cím sosem jelenik meg: nevet vagy az e-mail helyi részét mutatjuk.
+  // Ha a fiókhoz tartozik név (pl. Google-lal kapott), az jelenik meg, és azt a szerver a
+  // fiókból veszi (a kliens nem adhatja ki magát másnak). Név nélküli fióknál - és
+  // vendégnél - a kliens által generált vendégnév jár. Az e-mail-cím (vagy annak bármely
+  // része) sosem jelenik meg a ranglistán.
   const session = await auth();
   let playerKey;
   let name;
-  if (session?.user) {
+  if (session?.user?.name) {
     playerKey = `u:${session.user.id || session.user.email}`;
-    name = cleanName(session.user.name || String(session.user.email || '').split('@')[0]);
+    name = cleanName(session.user.name);
   } else {
     name = cleanName(body.name);
     playerKey = `g:${name}`;

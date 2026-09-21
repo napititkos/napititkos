@@ -46,11 +46,12 @@ export default function PrivacyPage() {
         <div className="help-block">
           <h3>Ranglista</h3>
           <p>
-            Ha bejelentkezve oldasz meg egy titkosírást, a napi ranglistán a fiókodhoz tartozó
-            nevet (vagy ha nem adtál meg nevet, az email címed @ előtti részét) tüntetjük fel. Ha nem vagy
-            bejelentkezve, egy véletlenszerűen generált, az eszközödön tárolt azonosító jelenik
-            meg helyette (pl. "GyorsRóka#A1B2"), ami semmilyen kapcsolatban nincs a valódi
-            kilétededdel. A ranglista mindkét esetben minden nap éjfélkor nullázódik.
+            Ha bejelentkezve oldasz meg egy titkosírást, és a fiókodhoz tartozik név (pl.
+            Google-fiókkal bejelentkezve automatikusan kapott név), azt tüntetjük fel a napi
+            ranglistán. Ha nincs ilyen neved, ugyanúgy egy véletlenszerűen generált, az
+            eszközödön tárolt azonosítót kapsz, mint a nem bejelentkezett felhasználók (pl.
+            "GyorsRóka#A1B2"). Az email címedet soha nem tesszük közzé a ranglistán. A
+            ranglista minden nap éjfélkor nullázódik.
           </p>
         </div>
         <div className="help-block">

@@ -76,6 +76,16 @@ test('haladás: ismeretlen kulcsok, rossz típusok és rossz dátumok kiszűrve'
   assert.equal(p.isAdmin, undefined);
 });
 
+test('haladás: a tutorial- és megosztás-jelvény mezői megmaradnak, csak logikai értékként', () => {
+  const p = sanitizeProgress({ tutorialDone: true, sharedResult: true });
+  assert.equal(p.tutorialDone, true);
+  assert.equal(p.sharedResult, true);
+  const q = sanitizeProgress({ tutorialDone: 'igen', sharedResult: 1 });
+  assert.equal(q.tutorialDone, false);
+  assert.equal(q.sharedResult, false);
+  assert.equal(sanitizeProgress({}).tutorialDone, false);
+});
+
 test('haladás: nem objektum bemenet elutasítva', () => {
   for (const bad of [null, undefined, 'x', 5, [], true]) assert.equal(sanitizeProgress(bad), null);
 });
