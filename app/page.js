@@ -439,7 +439,7 @@ export default function HomePage() {
       : [];
 
   return (
-    <div className="wrap">
+    <div className="wrap" style={{ paddingTop: 10 }}>
       {showIntro && (
         <div className="modal-overlay" onClick={dismissIntro}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -502,17 +502,17 @@ export default function HomePage() {
 
           {!answered && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-                <button
-                  className="ghost small"
-                  disabled={!isRowFull()}
-                  onClick={shuffleGuess}
-                  title="A beírt betűk véletlenszerű összekeverése"
-                  style={{ padding: '9px 11px' }}
-                >
-                  <Icon src="/icons/Rejtveny_Keveres.png" size={16} />
-                </button>
-                <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, maxWidth: '100%', minWidth: 0 }}>
+                  <button
+                    className="ghost small"
+                    disabled={!isRowFull()}
+                    onClick={shuffleGuess}
+                    title="A beírt betűk véletlenszerű összekeverése"
+                    style={{ padding: '9px 11px', flexShrink: 0 }}
+                  >
+                    <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
+                  </button>
                   <LetterBoxes
                     answer={puzzle.answer}
                     value={guess}
@@ -522,14 +522,6 @@ export default function HomePage() {
                     onEnter={() => checkAnswer(guess.join(''))}
                   />
                 </div>
-                <button
-                  className="ghost small"
-                  style={{ visibility: 'hidden', padding: '9px 11px' }}
-                  aria-hidden="true"
-                  tabIndex={-1}
-                >
-                  <Icon src="/icons/Rejtveny_Keveres.png" size={16} />
-                </button>
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
                 <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
