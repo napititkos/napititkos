@@ -19,7 +19,7 @@ export default function LeaderboardModal() {
 
   useEffect(() => {
     function handleOpen() {
-      setMyName(session?.user ? session.user.name || String(session.user.email || '').split('@')[0] : getIdentity().name);
+      setMyName(session?.user ? session.user.name || session.user.email : getIdentity().name);
       setEntries(null);
       fetch('/api/leaderboard')
         .then((r) => r.json())
@@ -36,7 +36,7 @@ export default function LeaderboardModal() {
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+        <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Ranglista.png" size={24} /> Mai ranglista
         </h2>
         <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: -6 }}>

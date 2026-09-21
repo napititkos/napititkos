@@ -3,7 +3,20 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../lib/kv';
 import { todayStr } from '../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../lib/rateLimit';
-import { issueGameToken, publicPuzzle } from '../../../lib/game';
+
+// Amit a kliens megkap a rejtvényből. Szándékosan névsor (nem a teljes rekord), hogy a
+// beküldő e-mail-címe és az admin által megadott időzítés ne kerüljön ki a látogatókhoz.
+function clientPuzzle(p) {
+  return {
+    id: p.id,
+    clue: p.clue,
+    answer: p.answer,
+    answerWords: p.answerWords,
+    parHints: p.parHints,
+    submittedBy: p.submittedBy || '',
+    hints: p.hints,
+  };
+}
 
 const ROTATION_MS = 24 * 60 * 60 * 1000;
 const ROTATION_HOUR = 0; // hányadik órában (budapesti idő szerint) váltson naponta
@@ -152,10 +165,7 @@ export async function GET(req) {
   const date = todayStr(now);
   return Response.json(
     {
-      // A megfejtés és a tipp-szövegek nem kerülnek ki: az ellenőrzést és a tippeket
-      // a /api/game/* végpontok végzik. A token a játék azonosítója és kezdési ideje.
-      puzzle: publicPuzzle(currentPuzzle),
-      token: issueGameToken(currentPuzzle.id, date),
+      puzzle: clientPuzzle(currentPuzzle),
       index: puzzles.findIndex((p) => p.id === currentPuzzle.id),
       total: puzzles.length,
       date,

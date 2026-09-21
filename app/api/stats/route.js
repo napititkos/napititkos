@@ -2,12 +2,23 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../lib/kv';
 import { todayStr, isValidDateStr } from '../../../lib/date';
+import { clientIp, isLimited, tooMany } from '../../../lib/rateLimit';
+import { readJson } from '../../../lib/validate';
+import { recordResult } from '../../../lib/stats';
 
-// A statisztikát a szerver rögzíti a játék végén (/api/game/guess és /api/game/giveup),
-// ezért a régi, kliens által küldött POST már nem hat semmire. (A már megnyitott, régi
-// oldalak hibamentesen kapnak választ.)
-export async function POST() {
-  return Response.json({ ok: false, error: 'deprecated' }, { status: 410 });
+const MAX_HINTS = 20;
+
+// A játék végén a kliens küldi. Ellenőrzött bemenet: a dátum mindig a szerver mai napja
+// (a kliens nem hozhat létre tetszőleges kulcsot), a tippszám korlátos egész szám.
+export async function POST(req) {
+  if (await isLimited('stats:ip', clientIp(req), 60, 3600)) return tooMany(3600);
+  const body = await readJson(req, 1000);
+  const hintsUsed = Number(body?.hintsUsed);
+  if (!body || !Number.isInteger(hintsUsed) || hintsUsed < 0 || hintsUsed > MAX_HINTS) {
+    return Response.json({ ok: false, error: 'invalid-body' }, { status: 400 });
+  }
+  await recordResult(todayStr(), { hintsUsed, correct: body.correct === true });
+  return Response.json({ ok: true });
 }
 
 export async function GET(req) {

@@ -18,6 +18,7 @@ const HINT_LABELS = {
 };
 const HINT_ORDER = ['definicio', 'indikator', 'fodder', 'alternativ', 'betu'];
 
+const norm = (s) => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
 
 function formatTime(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -120,12 +121,6 @@ export default function HomePage() {
   const [answered, setAnswered] = useState(false);
   const [correct, setCorrect] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
-  // A megfejtés a szerveren van: a játék tokenje azonosítja a játékot, a válasz szövege
-  // csak a játék vége után kerül ide.
-  const [token, setToken] = useState(null);
-  const [answerText, setAnswerText] = useState('');
-  const [noMoreLetters, setNoMoreLetters] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [startTime] = useState(Date.now());
   const [progress, setProgress] = useState({ streak: 0, best: 0 });
@@ -165,7 +160,6 @@ export default function HomePage() {
           return;
         }
         setPuzzle(data.puzzle);
-        setToken(data.token);
         setPuzzleMeta({
           index: data.index,
           total: data.total,
@@ -173,8 +167,8 @@ export default function HomePage() {
           nextRotationAt: data.nextRotationAt,
           dayNumber: data.dayNumber,
         });
-        setGuess(emptyGuess(data.puzzle.mask));
-        setLockedLetters(emptyLocked(data.puzzle.mask));
+        setGuess(emptyGuess(data.puzzle.answer));
+        setLockedLetters(emptyLocked(data.puzzle.answer));
 
         const prog = loadProgress();
         setProgress({ streak: prog.streak, best: prog.best });
@@ -189,8 +183,6 @@ export default function HomePage() {
           setCorrect(saved.correct);
           setGaveUp(saved.gaveUp);
           setElapsed(saved.elapsed);
-          setAnswerText((saved.guess || []).join(''));
-          restoreHintTexts(data.token, saved.revealed || []);
           fetchStats(data.date);
         }
         setLoading(false);
@@ -236,110 +228,55 @@ export default function HomePage() {
     return otherCount + betuCount + (gaveUp ? 1 : 0);
   }
 
-  // A szerver ellenőrzi a megfejtést, és a helyes válasznál ő méri az időt és számolja a tippeket.
-  async function postGame(path, payload) {
-    const res = await fetch(`/api/game/${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, ...payload }),
-    });
-    if (!res.ok) throw new Error(`game-${path}-${res.status}`);
-    return res.json();
-  }
-
-  async function checkAnswer(value) {
-    if (busy || answered || !token) return;
-    setBusy(true);
-    try {
-      const data = await postGame('guess', { guess: value });
-      if (data.correct) {
-        setAnswerText(data.answer);
-        setCorrect(true);
-        setAnswered(true);
-        finishGame({ correct: true, gaveUp: false, serverElapsed: data.elapsed, serverHints: data.hintsUsed });
-      } else {
-        showToast('Ez még nem az. Próbálj egy tippet, ha elakadtál!');
-      }
-    } catch {
-      showToast('Nem sikerült ellenőrizni a választ. Próbáld újra!');
-    } finally {
-      setBusy(false);
+  function checkAnswer(value) {
+    if (norm(value) === norm(puzzle.answer)) {
+      setCorrect(true);
+      setAnswered(true);
+      finishGame({ correct: true, gaveUp: false });
+    } else {
+      showToast('Ez még nem az. Próbálj egy tippet, ha elakadtál!');
     }
   }
 
-  // A tipp szövegét a szerver adja ki; a kiválasztott tipp azonnal kiemelésre kerül.
-  async function revealHint(type) {
+  function revealHint(type) {
     if (!revealed.includes(type)) {
-      if (busy || !token) return;
-      setBusy(true);
-      try {
-        const data = await postGame('hint', { type });
-        setPuzzle((p) => ({ ...p, hints: { ...p.hints, [type]: { ...p.hints[type], text: data.text } } }));
-        setRevealed((prev) => [...prev, type]);
-      } catch {
-        showToast('Nem sikerült lekérni a tippet. Próbáld újra!');
-        return;
-      } finally {
-        setBusy(false);
-      }
+      setRevealed((prev) => [...prev, type]);
     }
     setHighlightedHintType(type);
   }
 
-  // Betöltéskor a már megtekintett tippek szövegének visszaállítása egy korábbi játékból
-  // (csak a megjelenítéshez; az új játék számlálóját ez nem befolyásolja az eredményben).
-  async function restoreHintTexts(tk, types) {
-    for (const type of types.filter((t) => t !== 'betu')) {
-      try {
-        const res = await fetch('/api/game/hint', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: tk, type }),
-        });
-        if (!res.ok) continue;
-        const data = await res.json();
-        setPuzzle((p) => (p ? { ...p, hints: { ...p.hints, [type]: { ...p.hints[type], text: data.text } } } : p));
-      } catch {}
-    }
-  }
-
-  // Betű-tipp: a szerver választ egy még hibás/üres pozíciót, és kiadja a helyes betűt.
-  async function revealLetterHint() {
-    if (busy || !token) return;
-    setBusy(true);
-    try {
-      const data = await postGame('hint', { type: 'betu', guess });
-      if (data.pos == null) {
-        setNoMoreLetters(true);
-        return;
-      }
-      const guessNext = [...guess];
-      const locked = [...lockedLetters];
-      guessNext[data.pos] = data.letter;
-      locked[data.pos] = true;
-      setGuess(guessNext);
-      setLockedLetters(locked);
-      setBetuCount((c) => c + 1);
-      if (!revealed.includes('betu')) setRevealed((prev) => [...prev, 'betu']);
-    } catch {
-      showToast('Nem sikerült lekérni a betűt. Próbáld újra!');
-    } finally {
-      setBusy(false);
-    }
+  function revealLetterHint() {
+    const clue = puzzle;
+    const answerChars = Array.from(clue.answer);
+    const guessNext = [...guess];
+    const locked = [...lockedLetters];
+    const candidates = [];
+    answerChars.forEach((ch, pos) => {
+      if (ch !== ' ' && norm(guessNext[pos]) !== norm(ch)) candidates.push(pos);
+    });
+    if (candidates.length === 0) return;
+    const idx = candidates[Math.floor(Math.random() * candidates.length)];
+    guessNext[idx] = answerChars[idx].toUpperCase();
+    locked[idx] = true;
+    setGuess(guessNext);
+    setLockedLetters(locked);
+    setBetuCount((c) => c + 1);
+    if (!revealed.includes('betu')) setRevealed((prev) => [...prev, 'betu']);
   }
 
   function noMoreLettersToReveal() {
-    return noMoreLetters;
+    const answerChars = Array.from(puzzle.answer);
+    return !answerChars.some((ch, pos) => ch !== ' ' && norm(guess[pos]) !== norm(ch));
   }
 
   function isRowFull() {
-    const answerChars = Array.from(puzzle.mask);
+    const answerChars = Array.from(puzzle.answer);
     return answerChars.every((ch, pos) => ch === ' ' || !!guess[pos]);
   }
 
   function shuffleGuess() {
     if (!isRowFull()) return;
-    const answerChars = Array.from(puzzle.mask);
+    const answerChars = Array.from(puzzle.answer);
     const movableIdx = answerChars
       .map((ch, pos) => (ch !== ' ' && !lockedLetters[pos] ? pos : null))
       .filter((v) => v !== null);
@@ -362,37 +299,26 @@ export default function HomePage() {
     if (titles.length) showToast(`🏆 Új trófea: ${titles.join(', ')}`);
   }
 
-  async function giveUp() {
-    if (busy || answered || !token) return;
-    setBusy(true);
-    try {
-      const data = await postGame('giveup', {});
-      const fullGuess = Array.from(data.answer).map((ch) => (ch === ' ' ? ' ' : ch.toUpperCase()));
-      const fullLocked = fullGuess.map(() => true);
-      setAnswerText(data.answer);
-      setGuess(fullGuess);
-      setLockedLetters(fullLocked);
-      setAnswered(true);
-      setGaveUp(true);
-      setCorrect(false);
-      finishGame({ correct: false, gaveUp: true, guessOverride: fullGuess, lockedOverride: fullLocked });
-    } catch {
-      showToast('Nem sikerült a feladás. Próbáld újra!');
-    } finally {
-      setBusy(false);
-    }
+  function giveUp() {
+    const fullGuess = Array.from(puzzle.answer).map((ch) => (ch === ' ' ? ' ' : ch.toUpperCase()));
+    const fullLocked = fullGuess.map(() => true);
+    setGuess(fullGuess);
+    setLockedLetters(fullLocked);
+    setAnswered(true);
+    setGaveUp(true);
+    setCorrect(false);
+    finishGame({ correct: false, gaveUp: true, guessOverride: fullGuess, lockedOverride: fullLocked });
   }
 
-  function finishGame({ correct: wasCorrect, gaveUp: didGiveUp, guessOverride, lockedOverride, serverElapsed, serverHints }) {
+  function finishGame({ correct: wasCorrect, gaveUp: didGiveUp, guessOverride, lockedOverride }) {
     const finalGuess = guessOverride || guess;
     const finalLocked = lockedOverride || lockedLetters;
-    // Helyes megfejtésnél a szerver által mért idő és tippszám a mérvadó.
-    const finalElapsed = serverElapsed ?? Date.now() - startTime;
+    const finalElapsed = Date.now() - startTime;
     setElapsed(finalElapsed);
     clearInterval(timerRef.current);
     fireConfetti();
 
-    const totalHints = serverHints ?? revealed.filter((t) => t !== 'betu').length + betuCount + (didGiveUp ? 1 : 0);
+    const totalHints = revealed.filter((t) => t !== 'betu').length + betuCount + (didGiveUp ? 1 : 0);
 
     const prog = loadProgress();
     const today = puzzleMeta.date;
@@ -435,8 +361,14 @@ export default function HomePage() {
     setUnlockedAchievements(unlocked);
     announceAchievements(newly);
 
-    // A statisztikát a szerver rögzíti a játék végén; a ranglistára a szerver által
-    // igazolt (helyesen megfejtett) játék tokenjével lehet felkerülni.
+    // A statisztikát csak a küldés befejezése után kérjük le (frissen, a gyorsítótárat
+    // megkerülve), különben a saját eredményünk nélkül jelenne meg.
+    const statsSent = fetch('/api/stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: today, hintsUsed: totalHints, correct: wasCorrect }),
+    }).catch(() => {});
+
     if (wasCorrect) {
       const displayName = session?.user
         ? session.user.name || session.user.email
@@ -444,15 +376,15 @@ export default function HomePage() {
       fetch('/api/leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, name: displayName }),
+        body: JSON.stringify({ date: today, name: displayName, hintsUsed: totalHints, elapsed: finalElapsed }),
       }).catch(() => {});
     }
 
-    fetchStats(today);
+    statsSent.then(() => fetchStats(today, true));
   }
 
-  function fetchStats(date) {
-    fetch(`/api/stats?date=${date}`)
+  function fetchStats(date, fresh = false) {
+    fetch(`/api/stats?date=${date}${fresh ? `&t=${Date.now()}` : ''}`)
       .then((r) => r.json())
       .then((d) => {
         setAvgHints(d.average);
@@ -466,7 +398,7 @@ export default function HomePage() {
     const lines = [
       `Titkosírás · ${puzzleMeta?.date || ''}`,
       `"${puzzle.clue}"`,
-      correct ? feedbackText(true, totalHints) : feedbackText(false, 0, answerText),
+      correct ? feedbackText(true, totalHints) : feedbackText(false, 0, puzzle.answer),
       `Idő: ${formatTime(elapsed)}`,
       `Eddigi megfejtők száma ma: ${solverCount ?? 0}`,
       'napititkos.hu',
@@ -500,7 +432,7 @@ export default function HomePage() {
   }
 
   const availableHints = HINT_ORDER.filter(
-    (t) => t === 'betu' ? puzzle.hints?.betu?.enabled !== false : !!puzzle.hints?.[t]?.enabled
+    (t) => t === 'betu' || (puzzle.hints?.[t]?.enabled && puzzle.hints[t].text)
   );
 
   const activeHighlightWords =
@@ -584,7 +516,7 @@ export default function HomePage() {
                 </button>
                 <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
                   <LetterBoxes
-                    answer={puzzle.mask}
+                    answer={puzzle.answer}
                     value={guess}
                     locked={lockedLetters}
                     onChange={setGuess}
@@ -724,7 +656,7 @@ export default function HomePage() {
           {answered && (
             <div className="answer-row">
               <LetterBoxes
-                answer={puzzle.mask}
+                answer={puzzle.answer}
                 value={guess}
                 locked={lockedLetters}
                 onChange={() => {}}
@@ -735,7 +667,7 @@ export default function HomePage() {
 
           {answered && (
             <div className={`feedback ${correct ? 'good' : 'hint'}`}>
-              {correct ? `✓ ${feedbackText(true, hintsUsed())}` : feedbackText(false, 0, answerText)}
+              {correct ? `✓ ${feedbackText(true, hintsUsed())}` : feedbackText(false, 0, puzzle.answer)}
             </div>
           )}
 

@@ -1,4 +1,5 @@
-// Helyi végpontok közötti próba II.: játékmenet, ranglista, statisztika, validáció, fiókkezelés, korlátok. (futtatás: npm run test:e2e)
+// Helyi végpontok közötti próba II.: rejtvény-kiadás, rotáció, ranglista, statisztika, validáció,
+// fiókkezelés, korlátok. (futtatás: npm run test:e2e)
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 
@@ -45,13 +46,14 @@ const seedUser = async (email, pw, extra = {}) => {
   return user;
 };
 const getPuzzle = async () => (await fetch(BASE + '/api/puzzle')).json();
-const game = (path, body) => post(`/api/game/${path}`, body);
+const lbGet = async (q = '') => (await fetch(BASE + `/api/leaderboard${q}`)).json();
+const stGet = async (q = `?date=${budapestToday}`) => (await fetch(BASE + `/api/stats${q}`)).json();
 
 // ---------------------------------------------------------------- előkészítés
 const allKeys = await redis.keys('*'); if (allKeys.length) await redis.del(...allKeys);
 const puzzles = [
   { id: 'pz1', clue: 'Szamár kalandozás közben üdítőre szomjazik.', answer: 'MÁRKA', answerWords: ['MÁRKA'], parHints: 2, submittedBy: 'Anna', submittedByEmail: 'szerzo@example.hu', scheduledDate: '',
-    hints: { definicio: { enabled: true, text: 'TITKOS-DEFINÍCIÓ-SZÖVEG' }, indikator: { enabled: true, text: 'TITKOS-MUTATÓ' }, fodder: { enabled: false, text: '' }, alternativ: { enabled: false, text: '' }, betu: { enabled: true } } },
+    hints: { definicio: { enabled: true, text: 'A definíció az üdítő.' }, indikator: { enabled: true, text: 'A mutató a közben.' }, fodder: { enabled: false, text: '' }, alternativ: { enabled: false, text: '' }, betu: { enabled: true } } },
   { id: 'pz2', clue: 'Második rejtvény.', answer: 'ALMA FA', parHints: 1, hints: { betu: { enabled: true } } },
 ];
 await redis.set('puzzles:list', JSON.stringify(puzzles));
@@ -64,7 +66,7 @@ check('X-Content-Type-Options: nosniff', h('x-content-type-options') === 'nosnif
 check('X-Frame-Options: DENY', h('x-frame-options') === 'DENY');
 check('Referrer-Policy beállítva', h('referrer-policy') === 'strict-origin-when-cross-origin');
 check('Permissions-Policy beállítva', h('permissions-policy').includes('camera=()'));
-check("CSP: frame-ancestors 'none', object-src 'none', nincs külső script", /frame-ancestors 'none'/.test(h('content-security-policy')) && /object-src 'none'/.test(h('content-security-policy')) && !/script-src[^;]*https:/.test(h('content-security-policy')));
+check("CSP: frame-ancestors 'none', object-src 'none', worker-src blob, nincs külső script", /frame-ancestors 'none'/.test(h('content-security-policy')) && /object-src 'none'/.test(h('content-security-policy')) && /worker-src 'self' blob:/.test(h('content-security-policy')) && !/script-src[^;]*https:/.test(h('content-security-policy')));
 check('nincs X-Powered-By', !h('x-powered-by'));
 const html = await r.text();
 check('az oldal nem tölt külső (Google) betűtípust', !html.includes('fonts.googleapis.com') && !html.includes('fonts.gstatic.com'));
@@ -72,16 +74,14 @@ r = await fetch(BASE + '/admin'); check('/admin: X-Robots-Tag noindex', /noindex
 r = await fetch(BASE + '/api/puzzle'); check('/api/*: X-Robots-Tag noindex', /noindex/.test(h('x-robots-tag')));
 
 // ---------------------------------------------------------------- RÉJTVÉNY KIADÁSA, ROTÁCIÓ
-section('Rejtvény kiadása: a megfejtés nem szivárog');
+section('Rejtvény kiadása');
 let p = await getPuzzle();
 const body = JSON.stringify(p);
-check('200 és van token, mask, dátum', !!p.token && p.puzzle?.mask === '_____' && p.date === budapestToday, JSON.stringify(p).slice(0, 200));
-check('a válasz nem tartalmazza a megfejtést', !/MÁRKA|márka/i.test(body));
-check('a válasz nem tartalmazza a tipp-szövegeket', !body.includes('TITKOS'));
-check('a válasz nem tartalmazza a beküldő e-mailjét és az időzítést', !body.includes('szerzo@example.hu') && !body.includes('scheduledDate'));
-check('a tipp-jelzők megvannak (definicio be, fodder ki)', p.puzzle.hints.definicio.enabled === true && p.puzzle.hints.fodder.enabled === false);
+check('200, a játékhoz szükséges mezők megvannak (clue, answer, hints, dátum)', p.puzzle?.answer === 'MÁRKA' && p.puzzle?.clue?.startsWith('Szamár') && p.puzzle?.hints?.definicio?.text === 'A definíció az üdítő.' && p.date === budapestToday, body.slice(0, 200));
+check('a beküldő e-mail-címe nem kerül ki a látogatókhoz', !body.includes('szerzo@example.hu') && p.puzzle.submittedByEmail === undefined);
+check('az admin időzítése (scheduledDate) nem kerül ki', p.puzzle.scheduledDate === undefined && !body.includes('scheduledDate'));
+check('a szerző neve megjelenik (Beküldte: ...)', p.puzzle.submittedBy === 'Anna');
 r = await fetch(BASE + '/api/puzzle'); check('Cache-Control: no-store', h('cache-control') === 'no-store');
-check('a token szerver oldali aláírású (két lekérés két token)', (await getPuzzle()).token !== p.token);
 
 section('Rotáció: párhuzamos kérések nem duplázzák az előzményt');
 await redis.del('rotation:state', 'rotation:usedIds', 'rotation:history');
@@ -95,63 +95,55 @@ check('nincs megmaradt zár', (await redis.keys('lock:*')).length === 0);
 const archive = await (await fetch(BASE + '/api/archive')).json();
 r = await fetch(BASE + '/api/archive');
 check('archívum: az aktív rejtvény nincs benne, gyorsítótár-fejléc van', archive.archive.length === 0 && /s-maxage=60/.test(h('cache-control')));
+check('az archívum nem tartalmaz e-mail-címet', !JSON.stringify(archive).includes('example.hu'));
 
-// ---------------------------------------------------------------- JÁTÉKMENET
-section('Tippek és ellenőrzés a szerveren');
-p = await getPuzzle();
-const T = p.token;
-r = await game('hint', { token: 'hamis.token', type: 'definicio' }); check('hamis token: 400', r.status === 400);
-r = await game('hint', { token: T, type: 'valami' }); check('ismeretlen tipptípus: 400', r.status === 400);
-r = await game('hint', { token: T, type: 'fodder' }); check('kikapcsolt tipp: 403', r.status === 403);
-r = await game('hint', { token: T, type: 'definicio' });
-let d = await r.json();
-check('szöveges tipp: a szerver adja ki a szöveget', r.status === 200 && d.text === 'TITKOS-DEFINÍCIÓ-SZÖVEG');
-await game('hint', { token: T, type: 'definicio' });
-const empty = ['', '', '', '', ''];
-r = await game('hint', { token: T, type: 'betu', guess: empty });
-d = await r.json();
-check('betű-tipp: pozíció és a helyes betű', d.pos >= 0 && d.pos < 5 && d.letter === 'MÁRKA'[d.pos], JSON.stringify(d));
-const full = ['M', 'Á', 'R', 'K', 'A'];
-r = await game('hint', { token: T, type: 'betu', guess: full });
-d = await r.json();
-check('kész megfejtésnél nincs több betű (pos: null)', d.pos === null);
-r = await game('guess', { token: T, guess: 'ALMA' }); d = await r.json();
-check('rossz válasz: correct=false, nem szivárog a megoldás', d.correct === false && !JSON.stringify(d).includes('MÁRKA'));
-r = await game('guess', { token: T, guess: 'márka' }); d = await r.json();
-check('helyes válasz (kisbetűvel is): correct + megfejtés + szerver mérte adatok', d.correct === true && d.answer === 'MÁRKA' && d.hintsUsed === 2 && d.elapsed >= 0 && d.elapsed < 60000, JSON.stringify(d));
-const solved = d;
-r = await game('guess', { token: T, guess: 'márka' }); d = await r.json();
-check('másodszori helyes válasz ugyanazt adja (idempotens)', d.correct === true && d.hintsUsed === solved.hintsUsed && d.elapsed === solved.elapsed);
-r = await game('hint', { token: T, type: 'indikator' }); check('befejezett játékban tipp: 409', r.status === 409);
-let st = await (await fetch(BASE + `/api/stats?date=${budapestToday}`)).json();
-check('statisztika: 1 megfejtő, átlag = a szerver számolt tippek', st.completions === 1 && st.correctCount === 1 && st.average === 2, JSON.stringify(st));
+// ---------------------------------------------------------------- STATISZTIKA
+section('Statisztika: ellenőrzött bemenet, Redis-számlálók');
+r = await post('/api/stats', { hintsUsed: 2, correct: true }); check('érvényes küldés: 200', r.status === 200);
+r = await post('/api/stats', { hintsUsed: 2, correct: false }); check('feladott játék: 200', r.status === 200);
+let st = await stGet();
+check('2 játék, 1 helyes, átlag 2', st.completions === 2 && st.correctCount === 1 && st.average === 2, JSON.stringify(st));
+for (const bad of [{ hintsUsed: -1 }, { hintsUsed: 999 }, { hintsUsed: 'x' }, { hintsUsed: 1.5 }, {}, { correct: true }]) {
+  r = await post('/api/stats', bad); check(`hibás bemenet elutasítva: ${JSON.stringify(bad)}`, r.status === 400, `(${r.status})`);
+}
+r = await post('/api/stats', 'nem json'); check('hibás JSON: 400', r.status === 400);
+r = await post('/api/stats', { date: 'leaderboard:*', hintsUsed: 0, correct: true });
+check('a kliens dátuma figyelmen kívül marad (nem hoz létre tetszőleges kulcsot)', r.status === 200 && (await redis.keys('stats:h:*')).join() === `stats:h:${budapestToday}`, (await redis.keys('stats:h:*')).join());
+check('a statisztika-kulcsnak van lejárata (TTL)', (await redis.ttl(`stats:h:${budapestToday}`)) > 0);
+const par = await Promise.all(Array.from({ length: 20 }, () => post('/api/stats', { hintsUsed: 1, correct: true })));
+st = await stGet();
+check('20 párhuzamos küldés közül egy sem vész el (natív számláló)', par.every((x) => x.status === 200) && st.completions === 23, JSON.stringify(st));
+await redis.set('stats:2026-01-01', JSON.stringify({ completions: 4, totalHints: 8, correctCount: 3 }));
+st = await stGet('?date=2026-01-01');
+check('régi formátumú statisztika még olvasható', st.completions === 4 && st.correctCount === 3 && st.average === 2, JSON.stringify(st));
+st = await stGet('?date=stats:*');
+check('érvénytelen dátum a mai napra esik vissza', st.completions === 23);
 
-section('Feladás');
-const G = (await getPuzzle()).token;
-await game('hint', { token: G, type: 'indikator' });
-r = await game('giveup', { token: G }); d = await r.json();
-check('feladás: a szerver kiadja a megfejtést', r.status === 200 && d.answer === 'MÁRKA');
-r = await game('guess', { token: G, guess: 'MÁRKA' }); check('feladás után tipp: 409', r.status === 409);
-st = await (await fetch(BASE + `/api/stats?date=${budapestToday}`)).json();
-check('statisztika: 2 játék, 1 helyes, átlag (2+2)/2', st.completions === 2 && st.correctCount === 1 && st.average === 2, JSON.stringify(st));
-r = await post('/api/leaderboard', { token: G, name: 'Csaló' }); check('feladott játékkal nem lehet ranglistára kerülni: 400', r.status === 400);
-
-section('Ranglista: hamisíthatatlan');
-r = await post('/api/leaderboard', { date: budapestToday, name: 'Csaló', hintsUsed: 0, elapsed: 1 }); check('token nélküli (régi típusú) küldés: 400', r.status === 400);
-r = await post('/api/leaderboard', { token: 'hamis.token', name: 'X' }); check('hamis token: 400', r.status === 400);
-const U = (await getPuzzle()).token;
-r = await post('/api/leaderboard', { token: U, name: 'X' }); check('megfejtetlen játék: 400', r.status === 400);
-r = await post('/api/leaderboard', { token: T, name: 'Gyors\u200bRóka#AB12\u0001' }); check('megfejtett játék: 200', r.status === 200);
-r = await post('/api/leaderboard', { token: T, name: 'Másik' }); check('ugyanaz a játék másodszor: 200, de nem kerül fel újra', r.status === 200);
-let lb = await (await fetch(BASE + '/api/leaderboard')).json();
-check('a ranglistán egy bejegyzés van, tisztított névvel és a szerver adataival', lb.entries.length === 1 && lb.entries[0].name === 'GyorsRóka#AB12' && lb.entries[0].hintsUsed === 2 && lb.entries[0].elapsed === solved.elapsed, JSON.stringify(lb));
-lb = await (await fetch(BASE + '/api/leaderboard?date=leaderboard:*')).json();
-check('érvénytelen dátum nem hoz létre tetszőleges kulcsot', Array.isArray(lb.entries) && (await redis.keys('leaderboard:z:leaderboard*')).length === 0);
+// ---------------------------------------------------------------- RANGLISTA
+section('Ranglista: ellenőrzött bemenet, hamisítás ellen');
+const guest = 'Gyors' + String.fromCharCode(0x200b) + 'Róka#AB12' + String.fromCharCode(1);
+r = await post('/api/leaderboard', { name: guest, hintsUsed: 2, elapsed: 5000 }); check('érvényes küldés: 200', r.status === 200);
+for (const bad of [{ hintsUsed: 'x', elapsed: 1 }, { hintsUsed: -1, elapsed: 1 }, { hintsUsed: 21, elapsed: 1 }, { hintsUsed: 1, elapsed: -5 }, { hintsUsed: 1 }, { elapsed: 1 }, {}]) {
+  r = await post('/api/leaderboard', { name: 'X', ...bad }); check(`hibás bemenet elutasítva: ${JSON.stringify(bad)}`, r.status === 400, `(${r.status})`);
+}
+r = await post('/api/leaderboard', 'nem json'); check('hibás JSON: 400', r.status === 400);
+r = await post('/api/leaderboard', 'x'.repeat(5000)); check('túl nagy törzs: 400', r.status === 400);
+r = await post('/api/leaderboard', { name: guest, hintsUsed: 0, elapsed: 1 });
+check('ugyanaz a név másodszor: nem javíthatja az eredményét (NX)', r.status === 200);
+r = await post('/api/leaderboard', { date: 'leaderboard:*', name: 'Másik Játékos', hintsUsed: 1, elapsed: 90000 });
+check('a kliens dátuma figyelmen kívül marad', r.status === 200 && (await redis.keys('leaderboard:z:*')).join() === `leaderboard:z:${budapestToday}`, (await redis.keys('leaderboard:z:*')).join());
+let lb = await lbGet();
+check('a ranglista rendezett: kevesebb tipp előre, a névből a láthatatlan karakterek kiestek', lb.entries.length === 2 && lb.entries[0].name === 'Másik Játékos' && lb.entries[0].hintsUsed === 1 && lb.entries[1].name === 'GyorsRóka#AB12' && lb.entries[1].hintsUsed === 2 && lb.entries[1].elapsed === 5000, JSON.stringify(lb));
+await post('/api/leaderboard', { name: 'x'.repeat(200), hintsUsed: 3, elapsed: 1000 });
+lb = await lbGet();
+check('a név legfeljebb 30 karakter', lb.entries.every((e) => e.name.length <= 30));
+lb = await lbGet('?date=leaderboard:*');
+check('érvénytelen dátum a mai napra esik vissza, nem hoz létre kulcsot', Array.isArray(lb.entries) && (await redis.keys('leaderboard:z:leaderboard*')).length === 0);
 const zk = await redis.keys('leaderboard:z:*');
 check('a ranglista kulcsának van lejárata (TTL)', (await redis.ttl(zk[0])) > 0);
-r = await post('/api/stats', { date: 'x', hintsUsed: 0, correct: true }); check('régi kliens statisztika-küldése: 410, hatástalan', r.status === 410);
-st = await (await fetch(BASE + `/api/stats?date=${budapestToday}`)).json();
-check('a statisztika nem változott', st.completions === 2);
+await redis.set('leaderboard:2026-01-01', JSON.stringify([{ name: 'Régi B', hintsUsed: 1, elapsed: 9000 }, { name: 'Régi A', hintsUsed: 0, elapsed: 8000 }]));
+lb = await lbGet('?date=2026-01-01');
+check('régi formátumú ranglista még olvasható, rendezve', lb.entries.length === 2 && lb.entries[0].name === 'Régi A', JSON.stringify(lb));
 
 // ---------------------------------------------------------------- FIÓKOK
 section('Bejelentkezett játékos a ranglistán, haladás, export, törlés');
@@ -161,11 +153,14 @@ const u = await seedUser(UEMAIL, PW);
 const lg = await credLogin(UEMAIL, PW);
 check('belépés', lg.ok && lg.session.user.verified === true);
 const cookie = { cookie: lg.jar.header() };
-const T2 = (await getPuzzle()).token;
-await game('guess', { token: T2, guess: 'MÁRKA' });
-r = await post('/api/leaderboard', { token: T2, name: 'Hamis Név' }, cookie); check('ranglista: 200', r.status === 200);
-lb = await (await fetch(BASE + '/api/leaderboard')).json();
+r = await post('/api/leaderboard', { name: 'Hamis Név', hintsUsed: 0, elapsed: 4000 }, cookie); check('ranglista: 200', r.status === 200);
+lb = await lbGet();
 check('a név a fiókból jön, nem a kliensből; az e-mail nem jelenik meg', lb.entries.some((e) => e.name === 'Teszt Elek') && !JSON.stringify(lb).includes('example.hu') && !JSON.stringify(lb).includes('Hamis Név'), JSON.stringify(lb));
+const noName = await seedUser('nevtelen@example.hu', 'Nevtelen-Jelszo-1', { name: null });
+const lg2 = await credLogin('nevtelen@example.hu', 'Nevtelen-Jelszo-1');
+await post('/api/leaderboard', { name: 'X', hintsUsed: 4, elapsed: 3000 }, { cookie: lg2.jar.header() });
+lb = await lbGet();
+check('név nélküli fióknál az e-mail helyi része látszik (nem a teljes cím)', lb.entries.some((e) => e.name === 'nevtelen') && !JSON.stringify(lb).includes('@'), JSON.stringify(lb));
 
 r = await post('/api/account/progress', { streak: 3 }); check('haladás mentése bejelentkezés nélkül: 401', r.status === 401);
 r = await post('/api/account/progress', {
@@ -205,7 +200,7 @@ check('a fiók, az e-mail-index, a haladás és a tutorial törölve', !(await r
 check('a beküldései törölve', JSON.parse((await redis.get('submissions:list')) || '[]').length === 0);
 const pl2 = JSON.parse(await redis.get('puzzles:list'));
 check('a közzétett rejtvényen nincs név és e-mail, a szöveg megmaradt', pl2[0].submittedBy === '' && pl2[0].submittedByEmail === '' && pl2[0].clue.startsWith('Szamár'));
-lb = await (await fetch(BASE + '/api/leaderboard')).json();
+lb = await lbGet();
 check('a ranglista-bejegyzései törölve', !lb.entries.some((e) => e.name === 'Teszt Elek'), JSON.stringify(lb));
 check('törlés után nem lehet belépni', !(await credLogin(UEMAIL, PW)).ok);
 
@@ -224,7 +219,7 @@ check('a mentett lista megtisztított (nincs idegen mező)', saved[0].evil === u
 let bk = await (await fetch(BASE + '/api/admin/puzzles?backups=1', { headers: adm })).json();
 check('mentés előtt biztonsági másolat készült', bk.backups.length === 1, JSON.stringify(bk));
 const old = await (await fetch(BASE + `/api/admin/puzzles?backup=${bk.backups[0]}`, { headers: adm })).json();
-check('a biztonsági másolat a régi tartalmat adja vissza', old.puzzles.length === 2 && old.puzzles[0].hints.definicio.text === 'TITKOS-DEFINÍCIÓ-SZÖVEG');
+check('a biztonsági másolat a régi tartalmat adja vissza', old.puzzles.length === 2 && old.puzzles[0].hints.definicio.text === 'A definíció az üdítő.');
 r = await fetch(BASE + '/api/admin/puzzles?backup=../../x', { headers: adm }); check('hibás másolat-azonosító: 400', r.status === 400);
 r = await fetch(BASE + '/api/admin/puzzles?backups=1'); check('másolatok admin süti nélkül: 401', r.status === 401);
 r = await fetch(BASE + '/api/admin/users', { headers: adm });
@@ -238,18 +233,19 @@ for (let i = 0; i < 4; i++) limited.push((await post('/api/auth/register', { ema
 check('regisztráció: címenként a 4. kérés 429', limited.slice(0, 3).every((s) => s === 200) && limited[3] === 429, JSON.stringify(limited));
 const V = 'zarolt@example.hu';
 await seedUser(V, 'Helyes-Jelszo-123');
-let last;
-for (let i = 0; i < 10; i++) last = await credLogin(V, 'rossz-jelszo-' + i);
+for (let i = 0; i < 10; i++) await credLogin(V, 'rossz-jelszo-' + i);
 check('10 hibás jelszó után a HELYES jelszó sem enged be (zárolt)', !(await credLogin(V, 'Helyes-Jelszo-123')).ok);
 const V2 = 'masik@example.hu';
 await seedUser(V2, 'Masik-Jelszo-123');
 check('egy másik fiók belépése nem érintett', (await credLogin(V2, 'Masik-Jelszo-123')).ok);
 await redis.del(`rl:login:email:${V}`);
 check('a zárolás feloldása után (számláló törlése) a helyes jelszó működik', (await credLogin(V, 'Helyes-Jelszo-123')).ok);
-const gs = [];
-for (let i = 0; i < 22; i++) gs.push((await game('giveup', { token: (await getPuzzle()).token })).status);
-// A korábbi feladással (G) együtt összesen 20 engedélyezett naponta.
-check('feladás: címenként napi 20 után 429', gs.slice(0, 19).every((s) => s === 200) && gs.slice(19).every((s) => s === 429), JSON.stringify(gs));
+// A ranglista-küldés címenként óránként 30: a korábbi küldésekkel együtt számoljuk.
+const lbKeys = await redis.keys('rl:lb:ip:*');
+const before = lbKeys.length ? Number(await redis.get(lbKeys[0])) : 0;
+const lbs = [];
+for (let i = 0; i < 35; i++) lbs.push((await post('/api/leaderboard', { name: `Spam ${i}`, hintsUsed: 1, elapsed: 1000 + i })).status);
+check('ranglista: a címenkénti óránkénti 30 küldés után 429', lbs.filter((s) => s === 200).length === 30 - before && lbs.filter((s) => s === 429).length === 35 - (30 - before), `(${before}) ${JSON.stringify(lbs)}`);
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

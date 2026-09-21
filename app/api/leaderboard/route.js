@@ -5,32 +5,34 @@ import { auth } from '../../../auth';
 import { todayStr, isValidDateStr } from '../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../lib/rateLimit';
 import { cleanName, readJson } from '../../../lib/validate';
-import { LEADERBOARD_TTL_SECONDS, gameKey, readGameToken } from '../../../lib/game';
 
-// Az eredmény a szerver által mért adatokból áll össze: egy helyesen megfejtett játék
-// tokenjével lehet ranglistára kerülni, az idő és a tippszám nem a kliens állítása.
-// Rendezés: kevesebb tipp, azon belül gyorsabb idő. Pontszám = tippek * 1e9 + idő (ms).
+// Redis ZSET: rendezés kevesebb tipp, azon belül gyorsabb idő szerint.
+// Pontszám = tippek * 1e9 + idő (ms). A neveket külön hash tárolja.
 const SCORE_BASE = 1e9;
+const MAX_HINTS = 20;
+const MAX_ELAPSED_MS = 24 * 3600 * 1000;
+const LEADERBOARD_TTL_SECONDS = 45 * 24 * 3600;
 
 export async function POST(req) {
-  if (await isLimited('lb:ip', clientIp(req), 30, 60)) return tooMany(60);
+  // Címenként óránként legfeljebb 30 beküldés (spam ellen).
+  if (await isLimited('lb:ip', clientIp(req), 30, 3600)) return tooMany(3600);
   const body = await readJson(req, 2000);
-  const tok = readGameToken(body?.token);
-  if (!tok) return Response.json({ ok: false, error: 'invalid-token' }, { status: 400 });
+  const hintsUsed = Number(body?.hintsUsed);
+  const elapsed = Number(body?.elapsed);
+  if (
+    !body ||
+    !Number.isInteger(hintsUsed) || hintsUsed < 0 || hintsUsed > MAX_HINTS ||
+    !Number.isFinite(elapsed) || elapsed < 0
+  ) {
+    return Response.json({ ok: false, error: 'invalid-body' }, { status: 400 });
+  }
 
-  const key = gameKey(body.token);
-  const r = kv.raw();
-  const state = await r.hgetall(key);
-  if (state.status !== 'solved') return Response.json({ ok: false, error: 'not-solved' }, { status: 400 });
-  // Egy játék egyszer kerülhet a ranglistára.
-  if ((await r.hsetnx(key, 'lb', '1')) !== 1) return Response.json({ ok: true });
-
+  // Bejelentkezett játékosnál a név a fiókból jön (a kliens nem adhatja ki magát másnak),
+  // és az e-mail-cím sosem jelenik meg: nevet vagy az e-mail helyi részét mutatjuk.
   const session = await auth();
   let playerKey;
   let name;
   if (session?.user) {
-    // Bejelentkezett játékosnál a név a fiókból jön (a kliens nem hamisíthatja),
-    // és az e-mail-cím sosem jelenik meg: nevet vagy az e-mail helyi részét mutatjuk.
     playerKey = `u:${session.user.id || session.user.email}`;
     name = cleanName(session.user.name || String(session.user.email || '').split('@')[0]);
   } else {
@@ -38,10 +40,13 @@ export async function POST(req) {
     playerKey = `g:${name}`;
   }
 
-  const score = Number(state.hintsUsed) * SCORE_BASE + Math.min(Number(state.elapsed) || 0, SCORE_BASE - 1);
-  const zKey = `leaderboard:z:${tok.d}`;
-  const nKey = `leaderboard:n:${tok.d}`;
-  // NX: játékosonként csak az első megfejtés számít.
+  // A dátum mindig a szerver mai napja, a kliens nem választhat kulcsot.
+  const date = todayStr();
+  const score = hintsUsed * SCORE_BASE + Math.min(Math.floor(elapsed), MAX_ELAPSED_MS);
+  const r = kv.raw();
+  const zKey = `leaderboard:z:${date}`;
+  const nKey = `leaderboard:n:${date}`;
+  // NX: játékosonként csak az első eredmény számít.
   await r.zadd(zKey, 'NX', score, playerKey);
   await r.hset(nKey, playerKey, name);
   await r.expire(zKey, LEADERBOARD_TTL_SECONDS);
@@ -73,5 +78,5 @@ export async function GET(req) {
       .slice(0, 20)
       .map((e) => ({ name: cleanName(e.name), hintsUsed: e.hintsUsed, elapsed: e.elapsed }));
   }
-  return Response.json({ entries }, { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } });
+  return Response.json({ entries }, { headers: { 'Cache-Control': 'no-store' } });
 }
