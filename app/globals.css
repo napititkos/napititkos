@@ -191,8 +191,6 @@ nav.topnav{
   border-radius: 14px;
   padding: 14px 16px;
   width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
   text-align: left;
 }
 .clue-box .clue-text{ padding-top: 0; }
