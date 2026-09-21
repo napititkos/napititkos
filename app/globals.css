@@ -98,7 +98,16 @@ nav.topnav{
   transition: transform 0.25s ease;
   padding: 18px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
 }
+.drawer-panel::-webkit-scrollbar{ width: 8px; }
+.drawer-panel::-webkit-scrollbar-track{ background: transparent; }
+.drawer-panel::-webkit-scrollbar-thumb{
+  background: var(--accent-soft);
+  border-radius: 999px;
+}
+.drawer-panel::-webkit-scrollbar-thumb:hover{ background: var(--accent); }
 .drawer-panel.open{ transform: translateX(0); }
 .drawer-header{
   display: flex; justify-content: space-between; align-items: center;
@@ -157,7 +166,7 @@ nav.topnav{
   box-shadow: var(--shadow); padding: 20px; margin-bottom: 18px; max-width: 100%;
 }
 .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; flex-wrap:wrap; gap:8px;}
-.puzzle-title{ font-family:'Fredoka', sans-serif; font-size: 22px; font-weight:700; color: var(--accent); letter-spacing: 0.015em; }
+.puzzle-title{ font-family:'Baloo 2', sans-serif; font-size: 22px; font-weight:700; color: var(--accent); letter-spacing: 0.015em; }
 .timer, .pill{
   font-variant-numeric: tabular-nums; background: var(--accent2-soft); color: var(--accent2);
   padding: 6px 14px; border-radius: 999px; font-weight:700; font-size:13.5px;
@@ -176,7 +185,19 @@ nav.topnav{
 .num.h2{ background: var(--warn); color:#fff; }
 .num.h3{ background: var(--bad); color:#fff; }
 .clue-text{ flex:1; font-size: 16px; line-height:1.55; padding-top: 3px; font-weight: 600; }
-.answer-row{ display:flex; gap:8px; margin-top:10px; margin-left: 8px; flex-wrap:wrap; align-items:center; max-width: calc(100% - 8px); }
+.clue-box{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.clue-box .clue-text{ padding-top: 0; }
+.answer-row{ display:flex; gap:8px; margin-top:10px; margin-left: 8px; flex-wrap:wrap; align-items:center; justify-content:center; max-width: calc(100% - 8px); }
 input[type=text], input[type=password], textarea{
   font-family:'Nunito', sans-serif; font-size: 15px; padding: 9px 12px;
   border-radius: 12px; border: 2px solid var(--line); background: var(--paper); color: var(--ink);
@@ -199,31 +220,38 @@ input[type=text]{ text-transform: uppercase; flex:1; width:auto; min-width:140px
   border-color: var(--accent) !important;
 }
 input.letter-box{
-  width: 34px !important;
-  min-width: 34px !important;
-  height: 40px;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px;
   flex: none !important;
   padding: 0 !important;
   text-align: center;
   font-size: 18px;
   font-weight: 800;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 input.letter-box.locked{
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
 }
+input.letter-box:focus{
+  outline: none;
+  background: var(--accent3-soft);
+  border-color: var(--accent3);
+  box-shadow: 0 0 0 3px var(--accent3-soft);
+}
 .letterbox-row{
   display: flex;
-  gap: 6px;
+  gap: 2px;
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 4px;
   max-width: 100%;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
+  justify-content: center;
   scrollbar-width: thin;
 }
 textarea{ min-height: 64px; font-family:'Nunito',sans-serif; resize:vertical; text-transform:none;}
@@ -250,10 +278,10 @@ button:disabled{ opacity:0.4; cursor:default; }
 .feedback.hint{ background: var(--warn-soft); color: var(--warn); }
 .locked-note{ font-size: 13.5px; color: var(--ink-soft); font-style: italic; }
 .result{ text-align:center; }
-.result h2{ font-family:'Fredoka', sans-serif; font-size: 26px; margin: 0 0 6px; color: var(--accent); letter-spacing: 0.015em; }
+.result h2{ font-family:'Baloo 2', sans-serif; font-size: 26px; margin: 0 0 6px; color: var(--accent); letter-spacing: 0.015em; }
 .squares{ font-size: 26px; letter-spacing: 4px; margin: 14px 0; }
 .stats{ display:flex; justify-content:center; gap: 22px; margin: 16px 0 20px; flex-wrap:wrap; }
-.stat b{ display:block; font-size: 22px; font-family:'Fredoka', sans-serif; color: var(--accent); letter-spacing: 0.015em; }
+.stat b{ display:block; font-size: 22px; font-family:'Baloo 2', sans-serif; color: var(--accent); letter-spacing: 0.015em; }
 .stat span{ font-size: 12px; color: var(--ink-soft); }
 .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px; margin-top: 20px; }
@@ -271,9 +299,9 @@ footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px
   z-index: 50; max-width: 90vw;
 }
 .toast.show{ opacity:1; }
-h1.page-title{ font-family:'Fredoka', sans-serif; font-size: 26px; margin: 4px 0 18px; color: var(--accent); letter-spacing: 0.015em; }
+h1.page-title{ font-family:'Baloo 2', sans-serif; font-size: 26px; margin: 4px 0 18px; color: var(--accent); letter-spacing: 0.015em; }
 .help-block{ margin-bottom: 18px; }
-.help-block h3{ font-family:'Fredoka', sans-serif; font-size: 17px; margin: 0 0 6px; color: var(--accent); letter-spacing: 0.015em; }
+.help-block h3{ font-family:'Baloo 2', sans-serif; font-size: 17px; margin: 0 0 6px; color: var(--accent); letter-spacing: 0.015em; }
 .help-block p{ font-size: 14.5px; line-height:1.6; color: var(--ink); margin:0; }
 label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margin: 12px 0 6px; }
 .checkbox-row{ display:flex; align-items:center; gap:8px; margin: 8px 0; font-size: 14px; }
@@ -312,7 +340,7 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
   .wrap{ padding-left: 10px; padding-right: 10px; }
   .card{ padding: 14px; }
   .answer-row, .hintbar, .hint-box, .feedback{ margin-left: 4px; max-width: calc(100% - 4px); }
-  input.letter-box{ width: 30px !important; min-width: 30px !important; height: 36px; font-size: 16px; }
+  input.letter-box{ width: 32px !important; min-width: 32px !important; height: 32px; font-size: 16px; }
   .clue-text{ font-size: 15px; }
   .puzzle-title{ font-size: 19px; }
   .modal-card{ padding: 18px; max-height: 90vh; }

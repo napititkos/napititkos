@@ -25,6 +25,8 @@ function emptyEntry() {
     answerWords: [''],
     parHints: 3,
     submittedBy: '',
+    submittedByEmail: '',
+    scheduledDate: '',
     hints: {
       definicio: { enabled: false, text: '' },
       indikator: { enabled: false, text: '' },
@@ -289,6 +291,7 @@ export default function AdminPage() {
       answerWords: splitAnswerWords((s.answer || '').toUpperCase()),
       parHints: 3,
       submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
+      submittedByEmail: s.submitterEmail || '',
       hints: {
         definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || '') },
         indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || '') },
@@ -332,7 +335,7 @@ export default function AdminPage() {
                   {e.answer ? (
                     answerShown ? (
                       <span
-                        style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', display: 'inline-block', minWidth: 100 }}
                         onClick={(ev) => {
                           ev.stopPropagation();
                           setRevealedAnswers((prev) => ({ ...prev, [e.id]: false }));
@@ -344,16 +347,22 @@ export default function AdminPage() {
                     ) : (
                       <button
                         className="ghost small"
+                        style={{ minWidth: 100 }}
                         onClick={(ev) => {
                           ev.stopPropagation();
                           setRevealedAnswers((prev) => ({ ...prev, [e.id]: true }));
                         }}
                       >
-                        👁️ Megoldás
+                        Megoldás
                       </button>
                     )
                   ) : (
-                    <span style={{ color: 'var(--ink-soft)', fontSize: 13 }}>(nincs még válasz)</span>
+                    <span style={{ color: 'var(--ink-soft)', fontSize: 13, display: 'inline-block', minWidth: 100 }}>(nincs válasz)</span>
+                  )}
+                  {e.scheduledDate && (
+                    <span className="progress-badge" title="Beütemezve">
+                      📅 {e.scheduledDate}
+                    </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }} onClick={(ev) => ev.stopPropagation()}>
@@ -444,6 +453,26 @@ export default function AdminPage() {
                     onChange={(ev) => updateEntry(ei, (en) => ({ ...en, submittedBy: ev.target.value }))}
                     placeholder="pl. saját, vagy egy beküldő beceneve"
                   />
+
+                  <label className="field-label">
+                    Ütemezve (opcionális - ha kitöltöd, pontosan azon a napon fog megjelenni; üresen hagyva automatikusan, a sorban következve kerül sorra)
+                  </label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="date"
+                      style={{ width: 170, textTransform: 'none' }}
+                      value={e.scheduledDate || ''}
+                      onChange={(ev) => updateEntry(ei, (en) => ({ ...en, scheduledDate: ev.target.value }))}
+                    />
+                    {e.scheduledDate && (
+                      <button
+                        className="ghost small"
+                        onClick={() => updateEntry(ei, (en) => ({ ...en, scheduledDate: '' }))}
+                      >
+                        Ütemezés törlése
+                      </button>
+                    )}
+                  </div>
 
                   {HINT_TYPES.map((h) => (
                     <div key={h.key} style={{ marginTop: 10 }}>
