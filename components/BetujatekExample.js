@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import LetterBoxes from './LetterBoxes';
+import Icon from './Icon';
 import { fireConfetti } from './Confetti';
 import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
 
@@ -8,7 +9,7 @@ const ANSWER = 'MAJOM';
 const CLUE = 'A malom középső tengelye elgörbült - ma ki oldja ezt meg?';
 
 const ANAGRAM_ANSWER = 'TORNÁDÓ';
-const ANAGRAM_CLUE = 'Zavaros ortó dán gyorsan forog.';
+const ANAGRAM_CLUE = 'Ez az ortó dán még összetöri magát, ha ilyen gyorsan forog.';
 
 function norm(s) {
   return (s || '').trim().toUpperCase();
@@ -24,12 +25,38 @@ export default function BetujatekExample({ onProgress }) {
   const [showHelp2, setShowHelp2] = useState(false);
   const [solved2, setSolved2] = useState(false);
   const [wrongTried2, setWrongTried2] = useState(false);
+  const [flashShuffle, setFlashShuffle] = useState(false);
 
   useEffect(() => {
     const progress = loadTutorialProgress();
     if (progress.betujatek_1) setSolved(true);
     if (progress.betujatek_2) setSolved2(true);
   }, []);
+
+  useEffect(() => {
+    if (solved && !solved2) {
+      const t = setTimeout(() => setFlashShuffle(true), 400);
+      const t2 = setTimeout(() => setFlashShuffle(false), 1900);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(t2);
+      };
+    }
+  }, [solved, solved2]);
+
+  function isRowFull2() {
+    return ANAGRAM_ANSWER.split('').every((ch, pos) => ch === ' ' || !!guess2[pos]);
+  }
+
+  function shuffleGuess2() {
+    if (!isRowFull2()) return;
+    const letters = [...guess2];
+    for (let i = letters.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [letters[i], letters[j]] = [letters[j], letters[i]];
+    }
+    setGuess2(letters);
+  }
 
   function saveExerciseDone(which) {
     const progress = loadTutorialProgress();
@@ -156,21 +183,43 @@ export default function BetujatekExample({ onProgress }) {
             szavak betűit kell újrarendezve megtalálni a megfejtést, ami passzol a
             definícióval. Meg tudod találni, hogy mik a készlet szavak?
           </p>
+          <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 10px' }}>
+            Anagramma próbálgatásához van egy <b>Keverés</b> gombunk is - ez összekeveri a már
+            beírt betűidet, hátha úgy könnyebben kiugrik a megoldás. Csak akkor használható, ha
+            már teleírtad betűkkel a megoldást.
+          </p>
           <div className="clue-box" style={{ marginBottom: 10 }}>
             <div className="clue-text">{renderAnagramClueWithHighlight()}</div>
           </div>
 
           {!solved2 && (
             <>
-              <div className="answer-row" style={{ marginLeft: 0, justifyContent: 'center' }}>
-                <LetterBoxes
-                  answer={ANAGRAM_ANSWER}
-                  value={guess2}
-                  locked={ANAGRAM_ANSWER.split('').map(() => false)}
-                  onChange={setGuess2}
-                  disabled={false}
-                  onEnter={checkAnswer2}
-                />
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{ position: 'relative', display: 'inline-flex', maxWidth: 'calc(100% - 104px)', minWidth: 0 }}>
+                  <button
+                    className={`ghost small${flashShuffle ? ' flash-once' : ''}`}
+                    disabled={!isRowFull2()}
+                    onClick={shuffleGuess2}
+                    title="A beírt betűk véletlenszerű összekeverése"
+                    style={{
+                      position: 'absolute',
+                      right: 'calc(100% + 8px)',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      padding: '9px 11px',
+                    }}
+                  >
+                    <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
+                  </button>
+                  <LetterBoxes
+                    answer={ANAGRAM_ANSWER}
+                    value={guess2}
+                    locked={ANAGRAM_ANSWER.split('').map(() => false)}
+                    onChange={setGuess2}
+                    disabled={false}
+                    onEnter={checkAnswer2}
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 10 }}>
                 <button className="primary small" onClick={checkAnswer2}>
@@ -199,8 +248,8 @@ export default function BetujatekExample({ onProgress }) {
 
           {solved2 && (
             <div className="feedback good" style={{ marginLeft: 0 }}>
-              ✓ Pontosan! Az "ortó" + "dán" betűi összekeverve ("zavaros") kiadják a "tornádó"
-              szót - ami tényleg gyorsan forog. Ez az anagramma-rejtvény lényege!
+              ✓ Pontosan! Az "ortó" + "dán" betűi összekeverve ("összetöri magát") kiadják a
+              "tornádó" szót - ami tényleg gyorsan forog. Ez az anagramma-rejtvény lényege!
             </div>
           )}
         </>

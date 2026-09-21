@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { TUTORIAL_SECTIONS, loadTutorialProgress } from '../lib/tutorial';
+import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
+import { loadProgress, saveProgress } from '../lib/progress';
+import { computeNewAchievements, ACHIEVEMENTS } from '../lib/achievements';
 import Icon from './Icon';
 import BetujatekExample from './BetujatekExample';
 import SzojatekExample from './SzojatekExample';
@@ -10,6 +12,7 @@ export default function TutorialModal() {
   const [open, setOpen] = useState(false);
   const [progress, setProgress] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
+  const [newAchievementToast, setNewAchievementToast] = useState('');
 
   useEffect(() => {
     function handleOpen() {
@@ -19,6 +22,36 @@ export default function TutorialModal() {
     window.addEventListener('open-tutorial', handleOpen);
     return () => window.removeEventListener('open-tutorial', handleOpen);
   }, []);
+
+  function handleTutorialProgress(newTutorialProgress) {
+    setProgress(newTutorialProgress);
+    if (completedSectionsCount(newTutorialProgress) === TUTORIAL_SECTIONS.length) {
+      const mainProgress = loadProgress();
+      if (!mainProgress.tutorialDone) {
+        mainProgress.tutorialDone = true;
+        const { unlocked, newly } = computeNewAchievements(
+          {
+            totalSolved: mainProgress.totalSolved || 0,
+            streak: mainProgress.streak,
+            fastestTime: mainProgress.fastestTime,
+            noHintSolves: mainProgress.noHintSolves || 0,
+            submittedPuzzle: mainProgress.submittedPuzzle || false,
+            readHelp: mainProgress.readHelp || false,
+            tutorialDone: true,
+            sharedResult: mainProgress.sharedResult || false,
+          },
+          mainProgress.unlocked
+        );
+        mainProgress.unlocked = unlocked;
+        saveProgress(mainProgress);
+        if (newly.includes('tutorial_done')) {
+          const title = ACHIEVEMENTS.find((a) => a.id === 'tutorial_done')?.title;
+          setNewAchievementToast(`🏆 Új trófea: ${title}`);
+          setTimeout(() => setNewAchievementToast(''), 3000);
+        }
+      }
+    }
+  }
 
   if (!open || !progress) return null;
 
@@ -57,11 +90,11 @@ export default function TutorialModal() {
                 {hasExample ? (
                   isExpanded ? (
                     s.id === 'betujatek' ? (
-                      <BetujatekExample onProgress={setProgress} />
+                      <BetujatekExample onProgress={handleTutorialProgress} />
                     ) : s.id === 'szojatek' ? (
-                      <SzojatekExample onProgress={setProgress} />
+                      <SzojatekExample onProgress={handleTutorialProgress} />
                     ) : (
-                      <JokerExample onProgress={setProgress} />
+                      <JokerExample onProgress={handleTutorialProgress} />
                     )
                   ) : (
                     <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6, cursor: 'pointer' }} onClick={() => setExpandedSection(s.id)}>
@@ -80,6 +113,11 @@ export default function TutorialModal() {
             Bezárás
           </button>
         </div>
+        {newAchievementToast && (
+          <div className="feedback good" style={{ marginLeft: 0, marginTop: 12 }}>
+            {newAchievementToast}
+          </div>
+        )}
       </div>
     </div>
   );

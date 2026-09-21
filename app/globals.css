@@ -280,9 +280,12 @@ button:disabled{ opacity:0.4; cursor:default; }
 .feedback.hint{ background: var(--warn-soft); color: var(--warn); }
 .locked-note{ font-size: 13.5px; color: var(--ink-soft); font-style: italic; }
 .result{ text-align:center; }
-.result h2{ font-family:'Baloo 2', sans-serif; font-size: 26px; margin: 0 0 6px; color: var(--accent); letter-spacing: 0.015em; }
+.card.result{ padding: 16px; margin-bottom: 14px; }
+.result h2{ font-family:'Baloo 2', sans-serif; font-size: 21px; margin: 0 0 4px; color: var(--accent); letter-spacing: 0.015em; }
 .squares{ font-size: 26px; letter-spacing: 4px; margin: 14px 0; }
 .stats{ display:flex; justify-content:center; gap: 22px; margin: 16px 0 20px; flex-wrap:wrap; }
+.result .stats{ gap: 16px; margin: 10px 0 12px; }
+.result .stat b{ font-size: 19px; }
 .stat b{ display:block; font-size: 22px; font-family:'Baloo 2', sans-serif; color: var(--accent); letter-spacing: 0.015em; }
 .stat span{ font-size: 12px; color: var(--ink-soft); }
 .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
@@ -351,4 +354,14 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
   .brand{ font-size: 22px; }
   .tutorial-badge{ font-size: 12px; padding: 3px 8px; }
   .sub-nav .links{ gap: 10px; font-size: 12.5px; }
+}
+
+@keyframes flashOnceAnim{
+  0%{ box-shadow: 0 0 0 0 var(--accent3-soft); border-color: var(--line); }
+  30%{ box-shadow: 0 0 0 8px var(--accent3-soft); border-color: var(--accent3); }
+  60%{ box-shadow: 0 0 0 0 var(--accent3-soft); border-color: var(--accent3); }
+  100%{ box-shadow: 0 0 0 0 transparent; border-color: var(--line); }
+}
+.flash-once{
+  animation: flashOnceAnim 1.4s ease-in-out 2;
 }
