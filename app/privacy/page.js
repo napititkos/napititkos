@@ -47,7 +47,7 @@ export default function PrivacyPage() {
           <h3>Ranglista</h3>
           <p>
             Ha bejelentkezve oldasz meg egy titkosírást, a napi ranglistán a fiókodhoz tartozó
-            nevet (vagy ha nem adtál meg nevet, az email címedet) tüntetjük fel. Ha nem vagy
+            nevet (vagy ha nem adtál meg nevet, az email címed @ előtti részét) tüntetjük fel. Ha nem vagy
             bejelentkezve, egy véletlenszerűen generált, az eszközödön tárolt azonosító jelenik
             meg helyette (pl. "GyorsRóka#A1B2"), ami semmilyen kapcsolatban nincs a valódi
             kilétededdel. A ranglista mindkét esetben minden nap éjfélkor nullázódik.
@@ -78,8 +78,40 @@ export default function PrivacyPage() {
         <div className="help-block">
           <h3>Adataid törlése</h3>
           <p>
-            Ha szeretnéd, hogy töröljük a fiókodat és a hozzá tartozó adatokat, írj nekünk a
-            lenti email címre - ezt a kérésedre belátható időn belül teljesítjük.
+            A fiókodat és a hozzá tartozó adatokat bármikor magad is törölheted, illetve
+            letöltheted a <a className="mail-link" href="/account">Fiókom és adataim</a> oldalon
+            (bejelentkezve). Ha ez nem megoldható, írj nekünk a lenti email címre - a kérésedet
+            belátható időn belül teljesítjük. A törlés a fiókot, a haladást és a ranglista-bejegyzéseket
+            érinti; a már közzétett rejtvényed szövege megmarad, de a nevedet és az email címedet
+            eltávolítjuk mellőle.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Adatkezelő és adatfeldolgozók</h3>
+          <p>
+            Az adatkezelő az oldal üzemeltetője (elérhetősége lent). Az adatok kezelésében a
+            következő szolgáltatók működnek közre: a Vercel (tárhely és névtelen látogatottsági
+            statisztika), egy adatbázis-szolgáltató (a fiókok és a játékadatok tárolása), a Resend
+            (a megerősítő és belépő emailek küldése), valamint a Google (kizárólag akkor, ha
+            Google-fiókkal lépsz be). Az oldal betűtípusait a saját szerverünkről szolgáljuk ki,
+            ezért a látogatók IP-címe emiatt nem kerül a Google-hoz.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Meddig őrizzük az adatokat?</h3>
+          <p>
+            A fiókot és a haladást a fiók törléséig őrizzük. A napi ranglisták legfeljebb 45 napig,
+            a napi összesített statisztikák legfeljebb 120 napig maradnak meg. A megerősítő és
+            belépő linkek 15 perc, illetve 24 óra után lejárnak. A visszaélések elleni védelemhez
+            használt ideiglenes számlálók legfeljebb egy napig tárolódnak.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Jogaid</h3>
+          <p>
+            Jogod van a hozzáféréshez, a helyesbítéshez, a törléshez és az adathordozhatósághoz. Ha
+            úgy érzed, hogy adataidat nem megfelelően kezeljük, panaszt tehetsz a Nemzeti
+            Adatvédelmi és Információszabadság Hatóságnál (NAIH).
           </p>
         </div>
         <div className="help-block">
