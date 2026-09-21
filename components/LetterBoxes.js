@@ -1,9 +1,19 @@
 'use client';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function LetterBoxes({ answer, value, locked, onChange, disabled, onEnter }) {
   const refs = useRef([]);
   const chars = Array.from(answer);
+
+  useEffect(() => {
+    if (disabled) return;
+    const firstEditable = chars.findIndex((ch, idx) => ch !== ' ' && !locked[idx] && !value[idx]);
+    const target = firstEditable === -1 ? chars.findIndex((ch, idx) => ch !== ' ' && !locked[idx]) : firstEditable;
+    if (target !== -1 && refs.current[target]) {
+      refs.current[target].focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function focusIndex(idx) {
     const el = refs.current[idx];

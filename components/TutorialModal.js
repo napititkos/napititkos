@@ -2,10 +2,12 @@
 import { useEffect, useState } from 'react';
 import { TUTORIAL_SECTIONS, loadTutorialProgress } from '../lib/tutorial';
 import Icon from './Icon';
+import BetujatekExample from './BetujatekExample';
 
 export default function TutorialModal() {
   const [open, setOpen] = useState(false);
   const [progress, setProgress] = useState(null);
+  const [expandedSection, setExpandedSection] = useState(null);
 
   useEffect(() => {
     function handleOpen() {
@@ -25,16 +27,21 @@ export default function TutorialModal() {
           <Icon src="/icons/Tutorial.png" size={24} /> Tutorial
         </h2>
         <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: -6 }}>
-          Három rész segít felkészülni a kriptikus rejtvényekre. A tartalom hamarosan érkezik -
-          a haladásod (vendégként is) itt fog megjelenni.
+          Három rész segít felkészülni a kriptikus rejtvényekre. A haladásod (vendégként is) itt
+          fog megjelenni.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {TUTORIAL_SECTIONS.map((s) => {
             const done = progress[s.id] || 0;
             const pct = Math.round((done / s.totalTasks) * 100);
+            const hasExample = s.id === 'betujatek';
+            const isExpanded = expandedSection === s.id;
             return (
               <div key={s.id} style={{ border: '2px solid var(--line)', borderRadius: 12, padding: '10px 12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: hasExample ? 'pointer' : 'default' }}
+                  onClick={() => hasExample && setExpandedSection(isExpanded ? null : s.id)}
+                >
                   <b>
                     <Icon src={s.icon} size={18} /> {s.title}
                   </b>
@@ -45,7 +52,17 @@ export default function TutorialModal() {
                 <div style={{ background: 'var(--line)', borderRadius: 999, height: 8, marginTop: 8, overflow: 'hidden' }}>
                   <div style={{ background: 'var(--accent)', height: '100%', width: `${pct}%`, transition: 'width 0.3s ease' }} />
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 6 }}>Hamarosan érkezik.</div>
+                {hasExample ? (
+                  isExpanded ? (
+                    <BetujatekExample onProgress={setProgress} />
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6, cursor: 'pointer' }} onClick={() => setExpandedSection(s.id)}>
+                      Kattints ide a példáért →
+                    </div>
+                  )
+                ) : (
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 6 }}>Hamarosan érkezik.</div>
+                )}
               </div>
             );
           })}

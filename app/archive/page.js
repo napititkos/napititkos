@@ -136,9 +136,11 @@ export default function ArchivePage() {
                                       </div>
 
                                       {!isPlaying && (
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, gap: 8 }}>
-                                          <div>{it.clue} {enumerationFor(it.answer)}</div>
-                                          <button className="ghost small" onClick={() => setPlayingId(itemKey)}>
+                                        <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, gap: 8 }}>
+                                          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {it.clue} {enumerationFor(it.answer)}
+                                          </div>
+                                          <button className="ghost small" style={{ flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => setPlayingId(itemKey)}>
                                             ▶ Játssz
                                           </button>
                                         </div>
