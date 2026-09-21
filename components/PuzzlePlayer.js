@@ -185,7 +185,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, initiallySolved = false
       {showHintModal && (
         <div className="modal-overlay hint-modal-overlay" onClick={() => setShowHintModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
               <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Tippek
             </h2>
             {availableHints.some((t) => t !== 'betu' && !revealed.includes(t)) && (

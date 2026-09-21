@@ -2,6 +2,21 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../lib/kv';
 import { todayStr } from '../../../lib/date';
+import { clientIp, isLimited, tooMany } from '../../../lib/rateLimit';
+
+// Amit a kliens megkap a rejtvényből. Szándékosan névsor (nem a teljes rekord), hogy a
+// beküldő e-mail-címe és az admin által megadott időzítés ne kerüljön ki a látogatókhoz.
+function clientPuzzle(p) {
+  return {
+    id: p.id,
+    clue: p.clue,
+    answer: p.answer,
+    answerWords: p.answerWords,
+    parHints: p.parHints,
+    submittedBy: p.submittedBy || '',
+    hints: p.hints,
+  };
+}
 
 const ROTATION_MS = 24 * 60 * 60 * 1000;
 const ROTATION_HOUR = 0; // hányadik órában (budapesti idő szerint) váltson naponta
@@ -54,7 +69,54 @@ function budapestDateStr(ms) {
   return fmt.format(new Date(ms));
 }
 
-export async function GET() {
+// Új rejtvény kiválasztása és a rotációs állapot mentése. Csak zár alatt hívható.
+async function rotate(prevState, puzzles, scheduledToday, rotationBoundary, now) {
+  const validIds = new Set(puzzles.map((p) => p.id).filter(Boolean));
+  let usedIds = ((await kv.get('rotation:usedIds')) || []).filter((id) => validIds.has(id));
+
+  let candidates;
+  if (scheduledToday) {
+    candidates = [scheduledToday];
+  } else {
+    candidates = puzzles.filter((p) => p.id && !p.scheduledDate && !usedIds.includes(p.id));
+    if (candidates.length === 0) {
+      usedIds = [];
+      candidates = puzzles.filter((p) => p.id && !p.scheduledDate && p.id !== prevState?.currentId);
+      if (candidates.length === 0) candidates = puzzles.filter((p) => p.id && !p.scheduledDate);
+      if (candidates.length === 0) candidates = puzzles;
+    }
+  }
+  const currentPuzzle = candidates[0];
+  if (!usedIds.includes(currentPuzzle.id)) usedIds.push(currentPuzzle.id);
+
+  await kv.set('rotation:state', {
+    currentId: currentPuzzle.id,
+    since: new Date(rotationBoundary).toISOString(),
+  });
+  await kv.set('rotation:usedIds', usedIds);
+
+  const today = todayStr(now);
+  let history = (await kv.get('rotation:history')) || [];
+  if (!history.some((h) => h.id === currentPuzzle.id && h.shownDate === today)) {
+    history = [
+      ...history,
+      {
+        id: currentPuzzle.id,
+        clue: currentPuzzle.clue,
+        answer: currentPuzzle.answer,
+        parHints: currentPuzzle.parHints,
+        hints: currentPuzzle.hints,
+        submittedBy: currentPuzzle.submittedBy || '',
+        shownDate: today,
+      },
+    ].slice(-500);
+    await kv.set('rotation:history', history);
+  }
+}
+
+export async function GET(req) {
+  if (await isLimited('puzzle:ip', clientIp(req), 120, 60)) return tooMany(60);
+
   const rawPuzzles = (await kv.get('puzzles:list')) || [];
   const puzzles = rawPuzzles.filter((p) => p.clue?.trim() && p.answer?.trim());
   if (!puzzles.length) {
@@ -66,84 +128,51 @@ export async function GET() {
   const rotationBoundary = lastBudapestRotation(now);
   const todayBudapest = budapestDateStr(rotationBoundary);
 
-  let state = (await kv.get('rotation:state')) || null;
-  let usedIds = (await kv.get('rotation:usedIds')) || [];
-  usedIds = usedIds.filter((id) => validIds.has(id));
-
   // Ha van kifejezetten MÁRA beütemezett rejtvény, az mindig felülírja az
   // automatikus választást - akkor is, ha épp más fut.
   const scheduledToday = puzzles.find((p) => p.id && p.scheduledDate === todayBudapest);
 
-  let needNew = false;
-  let currentPuzzle = null;
+  const isCurrent = (s) =>
+    !!s &&
+    !!s.currentId &&
+    validIds.has(s.currentId) &&
+    new Date(s.since).getTime() >= rotationBoundary &&
+    !(scheduledToday && s.currentId !== scheduledToday.id);
 
-  if (scheduledToday && state?.currentId !== scheduledToday.id) {
-    needNew = true;
-  } else if (!state || !state.currentId || !validIds.has(state.currentId)) {
-    needNew = true;
-  } else if (new Date(state.since).getTime() < rotationBoundary) {
-    needNew = true;
-  } else {
-    currentPuzzle = puzzles.find((p) => p.id === state.currentId);
-  }
-
-  let history = (await kv.get('rotation:history')) || [];
-
-  if (needNew) {
-    let candidates;
-    if (scheduledToday) {
-      candidates = [scheduledToday];
-    } else {
-      candidates = puzzles.filter((p) => p.id && !p.scheduledDate && !usedIds.includes(p.id));
-      if (candidates.length === 0) {
-        usedIds = [];
-        candidates = puzzles.filter((p) => p.id && !p.scheduledDate && p.id !== state?.currentId);
-        if (candidates.length === 0) candidates = puzzles.filter((p) => p.id && !p.scheduledDate);
-        if (candidates.length === 0) candidates = puzzles;
-      }
-    }
-    currentPuzzle = candidates[0];
-    if (!usedIds.includes(currentPuzzle.id)) usedIds.push(currentPuzzle.id);
-    state = {
-      currentId: currentPuzzle.id,
-      since: new Date(rotationBoundary).toISOString(),
-    };
-    await kv.set('rotation:state', state);
-    await kv.set('rotation:usedIds', usedIds);
-
-    if (!history.some((h) => h.id === currentPuzzle.id && h.shownDate === todayStr())) {
-      history = [
-        ...history,
-        {
-          id: currentPuzzle.id,
-          clue: currentPuzzle.clue,
-          answer: currentPuzzle.answer,
-          parHints: currentPuzzle.parHints,
-          hints: currentPuzzle.hints,
-          submittedBy: currentPuzzle.submittedBy || '',
-          shownDate: todayStr(),
-        },
-      ];
-      history = history.slice(-500);
-      await kv.set('rotation:history', history);
-    }
+  let state = (await kv.get('rotation:state')) || null;
+  if (!isCurrent(state)) {
+    // A váltás zár alatt történik: a váltás pillanatában érkező párhuzamos kérések
+    // sem választhatnak több rejtvényt, és nem duplázódik az előzmény.
+    await kv.withLock('rotation', async () => {
+      const fresh = (await kv.get('rotation:state')) || null;
+      if (isCurrent(fresh)) return; // közben más kérés már elvégezte
+      await rotate(fresh, puzzles, scheduledToday, rotationBoundary, now);
+    });
+    state = (await kv.get('rotation:state')) || null;
+    if (!isCurrent(state)) return Response.json({ error: 'busy' }, { status: 503 });
   } else if (new Date(state.since).getTime() !== rotationBoundary) {
     // Önjavítás: a tárolt "since" egy korábbi váltási szabály (pl. dél) szerint
-    // állhat, ami időben "később" van, mint a mai helyes határidő, ezért a fenti
-    // ellenőrzés nem cserélte le - itt korrigáljuk, hogy a visszaszámláló is
-    // a valódi, mai határidőhöz igazodjon.
+    // állhat, ami időben "később" van, mint a mai helyes határidő - itt korrigáljuk,
+    // hogy a visszaszámláló is a valódi, mai határidőhöz igazodjon.
     state = { ...state, since: new Date(rotationBoundary).toISOString() };
     await kv.set('rotation:state', state);
   }
 
-  const index = puzzles.findIndex((p) => p.id === currentPuzzle.id);
-  return Response.json({
-    puzzle: currentPuzzle,
-    index,
-    total: puzzles.length,
-    date: todayStr(),
-    activeSince: state.since,
-    nextRotationAt: new Date(rotationBoundary + ROTATION_MS).toISOString(),
-    dayNumber: history.length || 1,
-  });
+  const currentPuzzle = puzzles.find((p) => p.id === state.currentId);
+  if (!currentPuzzle) return Response.json({ error: 'no-puzzles' }, { status: 404 });
+
+  const history = (await kv.get('rotation:history')) || [];
+  const date = todayStr(now);
+  return Response.json(
+    {
+      puzzle: clientPuzzle(currentPuzzle),
+      index: puzzles.findIndex((p) => p.id === currentPuzzle.id),
+      total: puzzles.length,
+      date,
+      activeSince: state.since,
+      nextRotationAt: new Date(rotationBoundary + ROTATION_MS).toISOString(),
+      dayNumber: history.length || 1,
+    },
+    { headers: { 'Cache-Control': 'no-store' } }
+  );
 }

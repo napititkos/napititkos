@@ -117,6 +117,9 @@ export default function Nav() {
                   <Icon src="/icons/Fiok.png" size={16} />
                   Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{session.user.name || session.user.email}</b>
                 </div>
+                <a href="/account" onClick={() => setOpen(false)}>
+                  <Icon src="/icons/Fiok.png" /> Fiókom és adataim
+                </a>
                 <a href="#" onClick={handleLogout}>
                   <Icon src="/icons/Kijelentkezes.png" /> Kijelentkezés
                 </a>

@@ -7,6 +7,14 @@ import TutorialModal from '../components/TutorialModal';
 import AuthProvider from '../components/AuthProvider';
 import ProgressSync from '../components/ProgressSync';
 import { Analytics } from '@vercel/analytics/next';
+import { Baloo_2, Fredoka, Nunito } from 'next/font/google';
+
+// A betűtípusokat a build tölti le és a saját domainünkről szolgáljuk ki, így a
+// látogatók IP-címe nem kerül a Google-hoz (GDPR), és nincs külső, renderblokkoló CSS.
+// A latin-ext kell a magyar ő és ű betűkhöz.
+const fredoka = Fredoka({ subsets: ['latin', 'latin-ext'], weight: ['500', '600', '700'], display: 'swap', variable: '--font-fredoka' });
+const baloo = Baloo_2({ subsets: ['latin', 'latin-ext'], weight: ['500', '600', '700', '800'], display: 'swap', variable: '--font-baloo' });
+const nunito = Nunito({ subsets: ['latin', 'latin-ext'], weight: ['400', '500', '600', '700', '800'], display: 'swap', variable: '--font-nunito' });
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
@@ -29,15 +37,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="hu">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="hu" className={`${fredoka.variable} ${baloo.variable} ${nunito.variable}`}>
       <body>
         <AuthProvider>
           <ProgressSync />

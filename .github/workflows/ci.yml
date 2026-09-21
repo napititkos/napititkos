@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Egységtesztek
+        run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Végponttól végpontig teszt (hamis Redis + build-elt szerver)
+        run: npm run test:e2e
+      - name: Sérülékenység-ellenőrzés (éles függőségek)
+        run: npm audit --omit=dev --audit-level=high

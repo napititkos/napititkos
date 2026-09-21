@@ -5,6 +5,7 @@ import { fireConfetti } from '../components/Confetti';
 import { ACHIEVEMENTS, computeNewAchievements } from '../lib/achievements';
 import { loadProgress, saveProgress } from '../lib/progress';
 import { getIdentity } from '../lib/identity';
+import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
 import LetterBoxes from '../components/LetterBoxes';
 
@@ -321,9 +322,8 @@ export default function HomePage() {
 
     const prog = loadProgress();
     const today = puzzleMeta.date;
-    const y = new Date();
-    y.setDate(y.getDate() - 1);
-    const yesterday = y.toISOString().slice(0, 10);
+    // A szerver (budapesti) dátumából számoljuk az előző napot, nem a böngésző UTC idejéből.
+    const yesterday = previousDay(today);
     if (prog.lastDate === yesterday) prog.streak += 1;
     else if (prog.lastDate !== today) prog.streak = 1;
     prog.best = Math.max(prog.best, prog.streak);
@@ -361,7 +361,9 @@ export default function HomePage() {
     setUnlockedAchievements(unlocked);
     announceAchievements(newly);
 
-    fetch('/api/stats', {
+    // A statisztikát csak a küldés befejezése után kérjük le (frissen, a gyorsítótárat
+    // megkerülve), különben a saját eredményünk nélkül jelenne meg.
+    const statsSent = fetch('/api/stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ date: today, hintsUsed: totalHints, correct: wasCorrect }),
@@ -378,11 +380,11 @@ export default function HomePage() {
       }).catch(() => {});
     }
 
-    fetchStats(today);
+    statsSent.then(() => fetchStats(today, true));
   }
 
-  function fetchStats(date) {
-    fetch(`/api/stats?date=${date}`)
+  function fetchStats(date, fresh = false) {
+    fetch(`/api/stats?date=${date}${fresh ? `&t=${Date.now()}` : ''}`)
       .then((r) => r.json())
       .then((d) => {
         setAvgHints(d.average);
@@ -443,7 +445,7 @@ export default function HomePage() {
       {showIntro && (
         <div className="modal-overlay" onClick={dismissIntro}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
               Üdv a Titkosírásban! <Icon src="/icons/Udvozlo_uzenet.png" size={22} />
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
@@ -579,7 +581,7 @@ export default function HomePage() {
               onClick={() => setShowHintModal(false)}
             >
               <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-                <h2 style={{ fontFamily: 'Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+                <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
                   <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Melyik tippet kéred?
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
