@@ -5,10 +5,10 @@ import { isAdminRequest } from '../../../../lib/adminAuth';
 
 export async function GET(req) {
   if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
-  const keys = await kv.keys('au:user:*');
+  const keys = await kv.scan('au:user:*');
+  const records = await kv.mget(keys);
   const users = [];
-  for (const key of keys) {
-    const user = await kv.get(key);
+  for (const user of records) {
     if (user?.email) {
       users.push({
         id: user.id,
@@ -27,7 +27,7 @@ export async function PATCH(req) {
   if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const { id, role } = body;
-  if (!id || !['user', 'admin'].includes(role)) {
+  if (typeof id !== 'string' || !['user', 'admin'].includes(role)) {
     return Response.json({ error: 'invalid-body' }, { status: 400 });
   }
   const user = await kv.get(`au:user:${id}`);
