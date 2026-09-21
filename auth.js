@@ -3,7 +3,15 @@ import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { RedisAdapter } from './lib/authAdapter';
 import { kv } from './lib/kv';
-import { verifyPassword } from './lib/password';
+import { MAX_PASSWORD_LENGTH, burnPasswordCheck, verifyPassword } from './lib/password';
+import { clearFailures, clientIp, failures, isLimited, recordFailure } from './lib/rateLimit';
+
+// Jelszavas belépés: sikertelen próbák korlátja 15 percenként, címenként és IP-nként.
+// (A cím szerinti zárolás a jelszavas belépést blokkolja; a Google és a belépő link ettől
+// függetlenül működik.)
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+const LOGIN_EMAIL_LIMIT = 10;
+const LOGIN_IP_LIMIT = 30;
 import { sendMagicLinkEmail } from './lib/mailer';
 
 // Saját e-mail provider a Resend REST API-jával, a Nodemailer/SMTP
@@ -16,6 +24,10 @@ const EmailProvider = {
   maxAge: 15 * 60,
   allowDangerousEmailAccountLinking: true,
   async sendVerificationRequest({ identifier, url }) {
+    // Egy címre óránként legfeljebb 5 belépő link (levélbombázás és költség ellen).
+    if (await isLimited('magic:email', identifier.toLowerCase(), 5, 3600)) {
+      throw new Error('Túl sok belépő link kérés ehhez a címhez.');
+    }
     await sendMagicLinkEmail(identifier, url);
   },
 };
@@ -38,16 +50,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Jelszó', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = (credentials?.email || '').toString().toLowerCase().trim();
         const password = (credentials?.password || '').toString();
-        if (!email || !password) return null;
+        if (!email || !password || password.length > MAX_PASSWORD_LENGTH) return null;
+
+        const ip = clientIp(request);
+        if (
+          (await failures('login:email', email)) >= LOGIN_EMAIL_LIMIT ||
+          (await failures('login:ip', ip)) >= LOGIN_IP_LIMIT
+        ) {
+          return null;
+        }
+        const fail = async () => {
+          await Promise.all([
+            recordFailure('login:email', email, LOGIN_WINDOW_SECONDS),
+            recordFailure('login:ip', ip, LOGIN_WINDOW_SECONDS),
+          ]);
+          return null;
+        };
+
         const id = await kv.get(`au:userByEmail:${email}`);
-        if (!id) return null;
-        const user = await kv.get(`au:user:${id}`);
-        if (!user || !user.passwordHash) return null;
-        const valid = verifyPassword(password, user.passwordHash);
-        if (!valid) return null;
+        const user = id ? await kv.get(`au:user:${id}`) : null;
+        if (!user || !user.passwordHash) {
+          // Ugyanannyi munka, mintha létezne a fiók: a válaszidő nem árulkodik.
+          await burnPasswordCheck(password);
+          return fail();
+        }
+        if (!(await verifyPassword(password, user.passwordHash))) return fail();
+        await clearFailures('login:email', email);
         return {
           id: user.id,
           email: user.email,

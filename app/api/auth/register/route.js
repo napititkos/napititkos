@@ -4,6 +4,7 @@ import { kv } from '../../../../lib/kv';
 import { hashPassword } from '../../../../lib/password';
 import { sendVerificationEmail } from '../../../../lib/mailer';
 import { getSiteUrl } from '../../../../lib/siteUrl';
+import { clientIp, isLimited, tooMany } from '../../../../lib/rateLimit';
 import crypto from 'crypto';
 
 const PENDING_TTL_SECONDS = 60 * 60 * 24; // 24 óra
@@ -33,8 +34,17 @@ export async function POST(req) {
     return Response.json({ ok: false, error: 'A jelszó legfeljebb 200 karakter lehet.' }, { status: 400 });
   }
 
+  // Levélbombázás és költség ellen: címenként 3, IP-nként 10 regisztráció óránként.
+  // (A cím létezésétől függetlenül számolunk, így a korlát sem árul el semmit.)
+  if (
+    (await isLimited('register:email', email, 3, 3600)) ||
+    (await isLimited('register:ip', clientIp(req), 10, 3600))
+  ) {
+    return tooMany(3600);
+  }
+
   // Mindig kiszámoljuk, hogy a válaszidő ne áruljon el semmit a cím létezéséről.
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
 
   const existingId = await kv.get(`au:userByEmail:${email}`);
   if (!existingId) {
