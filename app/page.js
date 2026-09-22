@@ -475,8 +475,23 @@ export default function HomePage() {
               elsőre lehetetlennek tűnő rejtvényeket is meg tud fejteni.
             </p>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
-              Ahhoz, hogy belekezdj, először nézd át a <b>Súgót</b> és a <b>tutorialt</b>{' '}
-              (ez utóbbi hamarosan érkezik).
+              Ahhoz, hogy belekezdj, először nézd át a{' '}
+              <a href="/help" style={{ color: 'var(--accent)', fontWeight: 700 }} onClick={dismissIntro}>
+                Súgót
+              </a>{' '}
+              és a{' '}
+              <a
+                href="#"
+                style={{ color: 'var(--accent)', fontWeight: 700 }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  dismissIntro();
+                  window.dispatchEvent(new Event('open-tutorial'));
+                }}
+              >
+                tutorialt
+              </a>{' '}
+              – kattints rájuk, vagy bármikor megtalálod őket a menüben is.
             </p>
             <div className="actions" style={{ marginTop: 18 }}>
               <a href="/help" style={{ textDecoration: 'none' }} onClick={dismissIntro}>
