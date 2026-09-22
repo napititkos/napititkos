@@ -489,7 +489,7 @@ export default function HomePage() {
                   window.dispatchEvent(new Event('open-tutorial'));
                 }}
               >
-                tutorialt
+                Tutorialt
               </a>{' '}
               – kattints rájuk, vagy bármikor megtalálod őket a menüben is.
             </p>
