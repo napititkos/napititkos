@@ -125,6 +125,7 @@ export default function AdminPage() {
   const [entries, setEntries] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [users, setUsers] = useState([]);
+  const [usersExpanded, setUsersExpanded] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
@@ -179,7 +180,11 @@ export default function AdminPage() {
     }
   }
 
-  async function changeUserRole(id, role) {
+  async function changeUserRole(id, role, name) {
+    if (role === 'admin') {
+      const sure = confirm(`Biztosan admin-jogot adsz ennek a felhasználónak: ${name}?`);
+      if (!sure) return;
+    }
     const res = await fetch('/api/admin/users', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -675,31 +680,40 @@ export default function AdminPage() {
       </div>
 
       <div className="card">
-        <b>Felhasználók ({users.length})</b>
-        {users.length === 0 && (
-          <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még nincs regisztrált felhasználó.</p>
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => setUsersExpanded((v) => !v)}
+        >
+          <b>{usersExpanded ? '▾' : '▸'} Felhasználók ({users.length})</b>
+        </div>
+        {usersExpanded && (
+          <>
+            {users.length === 0 && (
+              <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még nincs regisztrált felhasználó.</p>
+            )}
+            {users.map((u) => (
+              <div className="sub-item" key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                <div>
+                  <div>
+                    <b>{u.name || u.email}</b>{' '}
+                    {u.role === 'admin' && (
+                      <span className="progress-badge" style={{ marginLeft: 6 }}>admin</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+                    {u.email} · {u.emailVerified ? 'megerősítve' : 'nincs megerősítve'}
+                  </div>
+                </div>
+                <button
+                  className="ghost small"
+                  onClick={() => changeUserRole(u.id, u.role === 'admin' ? 'user' : 'admin', u.name || u.email)}
+                >
+                  {u.role === 'admin' ? 'Admin-jog visszavonása' : 'Admin-jog adása'}
+                </button>
+              </div>
+            ))}
+          </>
         )}
-        {users.map((u) => (
-          <div className="sub-item" key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-            <div>
-              <div>
-                <b>{u.name || u.email}</b>{' '}
-                {u.role === 'admin' && (
-                  <span className="progress-badge" style={{ marginLeft: 6 }}>admin</span>
-                )}
-              </div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-                {u.email} · {u.emailVerified ? 'megerősítve' : 'nincs megerősítve'}
-              </div>
-            </div>
-            <button
-              className="ghost small"
-              onClick={() => changeUserRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
-            >
-              {u.role === 'admin' ? 'Admin-jog visszavonása' : 'Admin-jog adása'}
-            </button>
-          </div>
-        ))}
       </div>
 
       <div className="card">

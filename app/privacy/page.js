@@ -55,6 +55,17 @@ export default function PrivacyPage() {
           </p>
         </div>
         <div className="help-block">
+          <h3>Kommentek</h3>
+          <p>
+            Kommentet írni és olvasni csak bejelentkezve lehet, írni csak megerősített fiókkal. A
+            kommented mellett a fiókodhoz tartozó név jelenik meg (név nélküli fióknál
+            "Névtelen") - az e-mail-címed soha. A kommenteket az adott napi titkosírás mellett
+            tároljuk, így a korábbi titkosírásoknál is visszanézhetők. A saját kommentedet
+            bármikor törölheted; a szabályokat sértő kommenteket az üzemeltető eltávolíthatja.
+            Fióktörléskor az összes kommented is törlődik.
+          </p>
+        </div>
+        <div className="help-block">
           <h3>Fanmade rejtvény beküldése</h3>
           <p>
             A rejtvény-beküldés bejelentkezést és megerősített email címet igényel. Beküldéskor
@@ -102,7 +113,9 @@ export default function PrivacyPage() {
           <h3>Meddig őrizzük az adatokat?</h3>
           <p>
             A fiókot és a haladást a fiók törléséig őrizzük. A napi ranglisták legfeljebb 45 napig,
-            a napi összesített statisztikák legfeljebb 120 napig maradnak meg. A megerősítő és
+            a napi összesített statisztikák legfeljebb 120 napig maradnak meg - kivéve az egyes
+            titkosírások összesített, névtelen megfejtőszámát, amit az archívumhoz tartósan
+            megőrzünk. A kommenteket a fiók vagy a komment törléséig őrizzük. A megerősítő és
             belépő linkek 15 perc, illetve 24 óra után lejárnak. A visszaélések elleni védelemhez
             használt ideiglenes számlálók legfeljebb egy napig tárolódnak.
           </p>
