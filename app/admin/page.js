@@ -126,6 +126,9 @@ export default function AdminPage() {
   const [submissions, setSubmissions] = useState([]);
   const [users, setUsers] = useState([]);
   const [usersExpanded, setUsersExpanded] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notifText, setNotifText] = useState('');
+  const [notifSending, setNotifSending] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
@@ -158,6 +161,7 @@ export default function AdminPage() {
       loadSubmissions();
       loadHistory();
       loadUsers();
+      loadNotifications();
       return { ok: true };
     } catch (err) {
       return { ok: false, msg: `Hálózati vagy feldolgozási hiba: ${err.message}` };
@@ -178,6 +182,36 @@ export default function AdminPage() {
       const data = await res.json();
       setUsers(data.users || []);
     }
+  }
+
+  async function loadNotifications() {
+    const res = await fetch('/api/admin/notifications');
+    if (res.ok) setNotifications((await res.json()).notifications || []);
+  }
+
+  async function sendNotification() {
+    if (!notifText.trim()) return;
+    if (!confirm('Kiküldöd ezt az értesítést minden látogatónak?')) return;
+    setNotifSending(true);
+    const res = await fetch('/api/admin/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: notifText }),
+    });
+    setNotifSending(false);
+    if (res.ok) {
+      setNotifications((await res.json()).notifications || []);
+      setNotifText('');
+    } else {
+      alert('Nem sikerült elküldeni az értesítést.');
+    }
+  }
+
+  async function deleteNotification(id) {
+    if (!confirm('Biztosan törlöd ezt az értesítést?')) return;
+    const res = await fetch(`/api/admin/notifications?id=${id}`, { method: 'DELETE' });
+    if (res.ok) setNotifications((await res.json()).notifications || []);
+    else alert('Nem sikerült törölni.');
   }
 
   async function changeUserRole(id, role, name) {
@@ -677,6 +711,38 @@ export default function AdminPage() {
         <button className="primary" onClick={saveAll} disabled={loading}>
           {loading ? 'Mentés…' : 'Összes mentése'}
         </button>
+      </div>
+
+      <div className="card">
+        <b>Értesítések ({notifications.length})</b>
+        <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 8px' }}>
+          Amíg van legalább egy értesítés, a főoldalon a Ranglista mellett megjelenik egy harang ikon.
+          Új értesítésnél a látogatóknak egy pont jelzi, hogy még nem olvasták.
+        </p>
+        <textarea
+          value={notifText}
+          maxLength={1000}
+          onChange={(e) => setNotifText(e.target.value)}
+          placeholder="Értesítés szövege…"
+          style={{ width: '100%' }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{notifText.length}/1000</span>
+          <button className="primary small" disabled={notifSending || !notifText.trim()} onClick={sendNotification}>
+            {notifSending ? 'Küldés…' : 'Értesítés kiküldése'}
+          </button>
+        </div>
+        {notifications.map((n) => (
+          <div className="sub-item" key={n.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{new Date(n.ts).toLocaleString('hu-HU')}</div>
+              <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{n.text}</div>
+            </div>
+            <button className="ghost small" onClick={() => deleteNotification(n.id)}>
+              Törlés
+            </button>
+          </div>
+        ))}
       </div>
 
       <div className="card">

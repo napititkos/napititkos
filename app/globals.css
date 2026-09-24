@@ -166,6 +166,13 @@ nav.topnav{
   box-shadow: var(--shadow); padding: 20px; margin-bottom: 18px; max-width: 100%;
 }
 .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; flex-wrap:wrap; gap:8px;}
+/* Az időzítő a fejléc tetejére kerül; alatta a beküldő neve abszolút pozícióval, így
+   nem növeli a fejléc magasságát és a rejtvénydoboz nem csúszik lejjebb. */
+.topbar-right{ position: relative; align-self: flex-start; }
+.topbar-right .submitted-by{
+  position: absolute; top: calc(100% + 3px); right: 2px; margin: 0;
+  max-width: 200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 .puzzle-title{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 22px; font-weight:700; color: var(--accent); letter-spacing: 0.015em; }
 .timer, .pill{
   font-variant-numeric: tabular-nums; background: var(--accent2-soft); color: var(--accent2);
@@ -389,3 +396,13 @@ button.comment-del{ margin-left:auto; border:none; padding: 2px 6px; font-size: 
 .result-action span{ font-size: 12.5px; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
 button.round-btn{ width:44px; height:44px; border-radius:50%; padding:0; }
 .result .stats{ margin: 10px 0 8px; }
+
+/* Új, még meg nem nézett kommentek jelzése a gomb felirata mellett. */
+.result-action span.has-new{ color: var(--accent); }
+.result-action span.has-new::after{ content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background: var(--accent); margin-left:5px; vertical-align: middle; }
+
+button.notif-btn{ position: relative; padding: 6px 9px; }
+button.notif-btn.has-new::after{
+  content:''; position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%;
+  background: var(--accent-strong); border: 2px solid var(--card);
+}

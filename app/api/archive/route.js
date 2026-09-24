@@ -57,7 +57,23 @@ export async function GET() {
   } catch (err) {
     console.error('Archív megfejtőszám hiba:', err.message);
   }
-  const archive = past.map((p) => ({ ...p, totalSolvers: totals[p.shownDate] ?? null }));
+  let commentCounts = {};
+  try {
+    const dates = [...new Set(past.map((p) => p.shownDate).filter(Boolean))];
+    if (dates.length) {
+      const pl = kv.raw().pipeline();
+      for (const d of dates) pl.llen(`comments:${d}`);
+      const res = await pl.exec();
+      dates.forEach((d, i) => (commentCounts[d] = Number(res[i]?.[1]) || 0));
+    }
+  } catch (err) {
+    console.error('Archív kommentszám hiba:', err.message);
+  }
+  const archive = past.map((p) => ({
+    ...p,
+    totalSolvers: totals[p.shownDate] ?? null,
+    commentCount: commentCounts[p.shownDate] ?? 0,
+  }));
   // Mindenkinek ugyanaz, ezért a CDN rövid ideig gyorsítótárazhatja.
   return Response.json(
     { archive },
