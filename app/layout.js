@@ -7,14 +7,15 @@ import TutorialModal from '../components/TutorialModal';
 import AuthProvider from '../components/AuthProvider';
 import ProgressSync from '../components/ProgressSync';
 import { Analytics } from '@vercel/analytics/next';
-import { Baloo_2, Fredoka, Nunito } from 'next/font/google';
+import localFont from 'next/font/local';
 
-// A betűtípusokat a build tölti le és a saját domainünkről szolgáljuk ki, így a
-// látogatók IP-címe nem kerül a Google-hoz (GDPR), és nincs külső, renderblokkoló CSS.
-// A latin-ext kell a magyar ő és ű betűkhöz.
-const fredoka = Fredoka({ subsets: ['latin', 'latin-ext'], weight: ['500', '600', '700'], display: 'swap', variable: '--font-fredoka' });
-const baloo = Baloo_2({ subsets: ['latin', 'latin-ext'], weight: ['500', '600', '700', '800'], display: 'swap', variable: '--font-baloo' });
-const nunito = Nunito({ subsets: ['latin', 'latin-ext'], weight: ['400', '500', '600', '700', '800'], display: 'swap', variable: '--font-nunito' });
+// A betűtípus-fájlok a repóban vannak (app/fonts, SIL Open Font License), így a build
+// semmilyen külső szervert nem hív (a CI nem bukhat el a Google Fonts elérhetőségén), és
+// a látogatók IP-címe sem kerül a Google-hoz (GDPR). Latin + latin-ext karakterkészlet
+// (a magyar ő és ű betűkhöz), változtatható vastagságú (variable) fájlok.
+const fredoka = localFont({ src: './fonts/fredoka.woff2', weight: '300 700', display: 'swap', variable: '--font-fredoka' });
+const baloo = localFont({ src: './fonts/baloo2.woff2', weight: '400 800', display: 'swap', variable: '--font-baloo' });
+const nunito = localFont({ src: './fonts/nunito.woff2', weight: '200 1000', display: 'swap', variable: '--font-nunito' });
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
