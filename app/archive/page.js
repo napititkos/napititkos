@@ -19,6 +19,7 @@ export default function ArchivePage() {
   const [openMonths, setOpenMonths] = useState({});
   const [playingId, setPlayingId] = useState(null);
   const [gaveUpIds, setGaveUpIds] = useState([]);
+  const [commentCounts, setCommentCounts] = useState({});
 
   useEffect(() => {
     const prog = loadProgress();
@@ -143,6 +144,7 @@ export default function ArchivePage() {
                                         <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
                                           {it.shownDate}
                                           {it.totalSolvers != null && ` · ${it.totalSolvers} megfejtő összesen`}
+                                          {` · ${commentCounts[it.shownDate] ?? it.commentCount ?? 0} komment`}
                                         </span>
                                         <span style={{ fontSize: 12.5, color: solved ? 'var(--good)' : 'var(--ink-soft)' }}>
                                           {solved ? '✓ megfejtetted' : '– nem oldottad meg'}
@@ -170,9 +172,15 @@ export default function ArchivePage() {
                                           />
                                           {(solved || gaveUpIds.includes(it.id)) && (
                                             <div style={{ marginTop: 12 }}>
-                                              <b style={{ fontSize: 14 }}>Kommentek ezen a napon</b>
+                                              <b style={{ fontSize: 14 }}>
+                                                Kommentek ezen a napon ({commentCounts[it.shownDate] ?? it.commentCount ?? 0})
+                                              </b>
                                               <div style={{ marginTop: 6 }}>
-                                                <Comments date={it.shownDate} readOnly />
+                                                <Comments
+                                                  date={it.shownDate}
+                                                  readOnly
+                                                  onCountChange={(n) => setCommentCounts((prev) => ({ ...prev, [it.shownDate]: n }))}
+                                                />
                                               </div>
                                             </div>
                                           )}

@@ -29,11 +29,6 @@ export default function Nav() {
     setOpen(false);
     window.dispatchEvent(new Event('open-achievements'));
   }
-  function handleLeaderboardClick(e) {
-    e.preventDefault();
-    setOpen(false);
-    window.dispatchEvent(new Event('open-leaderboard'));
-  }
 
   return (
     <>
@@ -86,9 +81,6 @@ export default function Nav() {
           <a href="#" onClick={handleTutorialClick} className="tutorial-link">
             <Icon src="/icons/Tutorial.png" /> Tutorial{' '}
             <span className="progress-badge">{tutorialDone}/{TUTORIAL_SECTIONS.length}</span>
-          </a>
-          <a href="#" onClick={handleLeaderboardClick}>
-            <Icon src="/icons/Ranglista.png" /> Ranglista
           </a>
           <a href="/stats" onClick={() => setOpen(false)}>
             📊 Statisztikáim

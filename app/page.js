@@ -9,6 +9,7 @@ import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
 import LetterBoxes from '../components/LetterBoxes';
 import Comments from '../components/Comments';
+import NotificationsButton from '../components/NotificationsButton';
 
 const HINT_LABELS = {
   fodder: 'Készlet',
@@ -566,6 +567,7 @@ export default function HomePage() {
         >
           <Icon src="/icons/Ranglista.png" size={16} /> Ranglista
         </button>
+        <NotificationsButton />
         <span className="pill"><Icon src="/icons/Streak.png" size={15} /> {progress.streak} napos sorozat</span>
       </div>
 
@@ -577,13 +579,13 @@ export default function HomePage() {
             </div>
             <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 2 }}>minden nap új!</div>
           </div>
-          <div className="timer">{formatTime(elapsed)}</div>
+          <div className="topbar-right">
+            <div className="timer">{formatTime(elapsed)}</div>
+            {puzzle.submittedBy && <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>}
+          </div>
         </div>
 
         <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0 }}>
-          {puzzle.submittedBy && (
-            <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>
-          )}
           <div className="clue-box">
             <div className="clue-text">
               {renderClueWithHighlight(puzzle.clue, activeHighlightWords)}
@@ -782,7 +784,7 @@ export default function HomePage() {
                   <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.8A8 8 0 1 1 21 12z" />
                 </svg>
               </button>
-              <span>Kommentek{!commentsSeen && commentCount > 0 ? ` (${commentCount})` : ''}</span>
+              <span className={!commentsSeen && commentCount > 0 ? 'has-new' : ''}>Kommentek ({commentCount})</span>
             </div>
           </div>
           <div className="stats">
@@ -812,7 +814,7 @@ export default function HomePage() {
         <div className="modal-overlay" onClick={() => setShowComments(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
-              Mai kommentek
+              Mai kommentek ({commentCount})
             </h2>
             <Comments date={puzzleMeta.date} onCountChange={setCommentCount} />
             <div className="actions" style={{ marginTop: 14 }}>
