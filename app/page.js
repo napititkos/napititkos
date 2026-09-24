@@ -8,6 +8,7 @@ import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
 import LetterBoxes from '../components/LetterBoxes';
+import Comments from '../components/Comments';
 
 const HINT_LABELS = {
   fodder: 'Készlet',
@@ -122,7 +123,7 @@ export default function HomePage() {
   const [correct, setCorrect] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(null);
   const [progress, setProgress] = useState({ streak: 0, best: 0 });
   const [avgHints, setAvgHints] = useState(null);
   const [solverCount, setSolverCount] = useState(null);
@@ -133,6 +134,10 @@ export default function HomePage() {
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const [countdown, setCountdown] = useState('');
   const timerRef = useRef(null);
+  const finishedRef = useRef(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
+  const [commentsSeen, setCommentsSeen] = useState(false);
   const toastTimeout = useRef(null);
 
   useEffect(() => {
@@ -183,6 +188,25 @@ export default function HomePage() {
           setCorrect(saved.correct);
           setGaveUp(saved.gaveUp);
           setElapsed(saved.elapsed);
+        } else {
+          // A kezdőidőt eltároljuk, hogy ha a felhasználó kilép és visszalép (vagy
+          // frissíti az oldalt), az időzítő ne kezdődjön újra nulláról.
+          const STARTTIME_KEY = 'titkositas_starttime_v1';
+          let st;
+          try {
+            const raw = localStorage.getItem(STARTTIME_KEY);
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (parsed && parsed.date === data.date && Number.isFinite(parsed.ts)) {
+              st = parsed.ts;
+            } else {
+              st = Date.now();
+              localStorage.setItem(STARTTIME_KEY, JSON.stringify({ date: data.date, ts: st }));
+            }
+          } catch {
+            st = Date.now();
+          }
+          setStartTime(st);
+          setElapsed(Date.now() - st);
         }
         fetchStats(data.date);
         setLoading(false);
@@ -194,7 +218,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (loading || answered || !puzzle) return;
+    if (loading || answered || !puzzle || !startTime) return;
     timerRef.current = setInterval(() => setElapsed(Date.now() - startTime), 500);
     return () => clearInterval(timerRef.current);
   }, [loading, answered, puzzle, startTime]);
@@ -311,6 +335,14 @@ export default function HomePage() {
   }
 
   function finishGame({ correct: wasCorrect, gaveUp: didGiveUp, guessOverride, lockedOverride }) {
+    // Szinkron (nem React state) őr a duplán induló hívások ellen - pl. ha valaki
+    // gyorsan kétszer nyomja meg az Ellenőrzés gombot vagy Entert, mielőtt az
+    // "answered" állapot ténylegesen frissülne. Enélkül a statisztikába (megfejtők
+    // száma) duplán kerülhetne be ugyanaz a megoldás, míg a ranglistán nem (ott ez
+    // védett), ami eltérést okozott a két szám között.
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+
     const finalGuess = guessOverride || guess;
     const finalLocked = lockedOverride || lockedLetters;
     const finalElapsed = Date.now() - startTime;
@@ -405,6 +437,27 @@ export default function HomePage() {
       'napititkos.hu',
     ];
     return lines.join('\n');
+  }
+
+  // A kommentek darabszáma zárójelben csak addig látszik, amíg ma még nem nyitotta meg.
+  const COMMENTS_SEEN_KEY = 'titkositas_comments_seen_v1';
+  useEffect(() => {
+    if (!answered || !puzzleMeta?.date) return;
+    try {
+      setCommentsSeen(localStorage.getItem(COMMENTS_SEEN_KEY) === puzzleMeta.date);
+    } catch {}
+    fetch(`/api/comments?date=${puzzleMeta.date}&count=1`)
+      .then((r) => r.json())
+      .then((d) => setCommentCount(d.count || 0))
+      .catch(() => {});
+  }, [answered, puzzleMeta?.date]);
+
+  function openComments() {
+    setShowComments(true);
+    setCommentsSeen(true);
+    try {
+      localStorage.setItem(COMMENTS_SEEN_KEY, puzzleMeta.date);
+    } catch {}
   }
 
   function share() {
@@ -528,16 +581,14 @@ export default function HomePage() {
         </div>
 
         <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0 }}>
+          {puzzle.submittedBy && (
+            <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>
+          )}
           <div className="clue-box">
             <div className="clue-text">
               {renderClueWithHighlight(puzzle.clue, activeHighlightWords)}
             </div>
           </div>
-          {puzzle.submittedBy && (
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
-              Beküldte: {puzzle.submittedBy}
-            </div>
-          )}
 
           {!answered && (
             <>
@@ -718,6 +769,22 @@ export default function HomePage() {
         <div className="card result">
           <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
           <div style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Idő: {formatTime(elapsed)}</div>
+          <div className="result-actions">
+            <div className="result-action">
+              <button className="primary round-btn" onClick={share} aria-label="Eredmény másolása">
+                <Icon src="/icons/Megosztas.png" size={20} className="icon-on-accent" />
+              </button>
+              <span>Eredmény másolása</span>
+            </div>
+            <div className="result-action">
+              <button className="primary round-btn" onClick={openComments} aria-label="Kommentek">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.8A8 8 0 1 1 21 12z" />
+                </svg>
+              </button>
+              <span>Kommentek{!commentsSeen && commentCount > 0 ? ` (${commentCount})` : ''}</span>
+            </div>
+          </div>
           <div className="stats">
             {solverCount !== null && (
               <div className="stat">
@@ -732,23 +799,28 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          <div className="actions" style={{ marginTop: 8, flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <button
-              className="primary"
-              onClick={share}
-              style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-              aria-label="Eredmény másolása"
-            >
-              <Icon src="/icons/Megosztas.png" size={20} className="icon-on-accent" />
-            </button>
-            <span style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontWeight: 600 }}>Eredmény másolása</span>
-          </div>
           {countdown && (
-            <div style={{ marginTop: 8, fontSize: 13, color: 'var(--ink-soft)' }}>
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
               <Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Következő titkosírás:{' '}
               <b style={{ color: 'var(--accent2)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
             </div>
           )}
+        </div>
+      )}
+
+      {showComments && (
+        <div className="modal-overlay" onClick={() => setShowComments(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+              Mai kommentek
+            </h2>
+            <Comments date={puzzleMeta.date} onCountChange={setCommentCount} />
+            <div className="actions" style={{ marginTop: 14 }}>
+              <button className="ghost" onClick={() => setShowComments(false)}>
+                Bezárás
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

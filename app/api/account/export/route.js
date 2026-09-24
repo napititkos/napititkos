@@ -26,6 +26,16 @@ export async function GET() {
     .filter((p) => String(p.submittedByEmail || '').toLowerCase() === email)
     .map((p) => ({ id: p.id, clue: p.clue, answer: p.answer, hints: p.hints }));
 
+  const comments = [];
+  for (const k of await kv.scan('comments:*')) {
+    for (const item of await kv.raw().lrange(k, 0, -1)) {
+      try {
+        const c = JSON.parse(item);
+        if (c.uid === id) comments.push({ date: k.slice('comments:'.length), text: c.text, ts: c.ts });
+      } catch {}
+    }
+  }
+
   const data = {
     exportedAt: new Date().toISOString(),
     account: {
@@ -41,6 +51,7 @@ export async function GET() {
     tutorial: (await kv.get(`tutorial:${id}`)) || null,
     submissions,
     publishedPuzzles,
+    comments,
   };
   return new Response(JSON.stringify(data, null, 2), {
     headers: {

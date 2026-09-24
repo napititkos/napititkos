@@ -229,6 +229,10 @@ input.letter-box{
   font-size: 18px;
   font-weight: 800;
   border-radius: 8px;
+  caret-color: transparent;
+}
+input.letter-box::selection{
+  background: transparent;
 }
 input.letter-box.locked{
   background: var(--accent-soft);
@@ -365,3 +369,23 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
 .flash-once{
   animation: flashOnceAnim 1.4s ease-in-out 2;
 }
+
+.submitted-by{
+  text-align: right;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 0 4px 4px 0;
+}
+
+.comment-list{ display:flex; flex-direction:column; gap:8px; max-height: 50vh; overflow-y:auto; }
+.comment{ background: var(--paper); border:1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.comment-head{ display:flex; align-items:center; gap:8px; font-size:13px; }
+.comment-head span{ color: var(--ink-soft); font-size: 12px; }
+.comment-text{ font-size: 14px; margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; }
+button.comment-del{ margin-left:auto; border:none; padding: 2px 6px; font-size: 12px; color: var(--ink-soft); }
+
+.result-actions{ display:flex; justify-content:center; gap: 28px; margin-top: 10px; }
+.result-action{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+.result-action span{ font-size: 12.5px; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
+button.round-btn{ width:44px; height:44px; border-radius:50%; padding:0; }
+.result .stats{ margin: 10px 0 8px; }

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { enumerationFor } from '../../lib/format';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
+import Comments from '../../components/Comments';
 
 const HU_MONTHS = [
   'Január', 'Február', 'Március', 'Április', 'Május', 'Június',
@@ -17,6 +18,7 @@ export default function ArchivePage() {
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
   const [playingId, setPlayingId] = useState(null);
+  const [gaveUpIds, setGaveUpIds] = useState([]);
 
   useEffect(() => {
     const prog = loadProgress();
@@ -32,12 +34,21 @@ export default function ArchivePage() {
     return !!history[it.shownDate]?.correct || archiveSolved.includes(it.id);
   }
 
-  function handleSolved(id) {
+  function handleSolved(id, date) {
     const prog = loadProgress();
     if (!prog.archiveSolved) prog.archiveSolved = [];
     if (!prog.archiveSolved.includes(id)) {
       prog.archiveSolved.push(id);
       saveProgress(prog);
+      // Utólagos megfejtés beszámítása az összesített megfejtőszámba (rejtvényenként egyszer).
+      fetch('/api/archive/solve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date }),
+      }).catch(() => {});
+      setItems((prev) =>
+        prev.map((x) => (x.shownDate === date && x.totalSolvers != null ? { ...x, totalSolvers: x.totalSolvers + 1 } : x))
+      );
     }
     setArchiveSolved(prog.archiveSolved);
   }
@@ -129,7 +140,10 @@ export default function ArchivePage() {
                                   return (
                                     <div className="sub-item" key={itemKey}>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                                        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{it.shownDate}</span>
+                                        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+                                          {it.shownDate}
+                                          {it.totalSolvers != null && ` · ${it.totalSolvers} megfejtő összesen`}
+                                        </span>
                                         <span style={{ fontSize: 12.5, color: solved ? 'var(--good)' : 'var(--ink-soft)' }}>
                                           {solved ? '✓ megfejtetted' : '– nem oldottad meg'}
                                         </span>
@@ -151,8 +165,17 @@ export default function ArchivePage() {
                                           <PuzzlePlayer
                                             puzzle={it}
                                             initiallySolved={solved}
-                                            onSolved={() => handleSolved(it.id)}
+                                            onSolved={() => handleSolved(it.id, it.shownDate)}
+                                            onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />
+                                          {(solved || gaveUpIds.includes(it.id)) && (
+                                            <div style={{ marginTop: 12 }}>
+                                              <b style={{ fontSize: 14 }}>Kommentek ezen a napon</b>
+                                              <div style={{ marginTop: 6 }}>
+                                                <Comments date={it.shownDate} readOnly />
+                                              </div>
+                                            </div>
+                                          )}
                                           <div style={{ marginTop: 10 }}>
                                             <button className="ghost small" onClick={() => setPlayingId(null)}>
                                               Bezárás

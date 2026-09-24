@@ -46,6 +46,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
             disabled={disabled || locked[idx]}
             value={value[idx] || ''}
             onFocus={(e) => e.target.select()}
+            onClick={(e) => e.target.select()}
             onChange={(e) => {
               const v = e.target.value.toUpperCase().slice(-1);
               const next = [...value];

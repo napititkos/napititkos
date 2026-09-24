@@ -6,7 +6,7 @@ import { fireConfetti } from './Confetti';
 import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked } from '../lib/puzzleLogic';
 import { enumerationFor } from '../lib/format';
 
-export default function PuzzlePlayer({ puzzle, onSolved, initiallySolved = false }) {
+export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolved = false }) {
   const [guess, setGuess] = useState(() =>
     initiallySolved
       ? Array.from(puzzle.answer).map((ch) => (ch === ' ' ? ' ' : ch.toUpperCase()))
@@ -44,6 +44,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, initiallySolved = false
     setLockedLetters(fullGuess.map(() => true));
     setAnswered(true);
     setCorrect(false);
+    onGaveUp && onGaveUp();
   }
 
   function revealHint(type) {
@@ -107,6 +108,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, initiallySolved = false
 
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
+      {puzzle.submittedBy && <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>}
       <div className="clue-box" style={{ marginBottom: 10 }}>
         <div className="clue-text">
           {puzzle.clue} {enumerationFor(puzzle.answer)}
