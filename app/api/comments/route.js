@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { kv } from '../../../lib/kv';
 import { auth } from '../../../auth';
 import { todayStr, isValidDateStr } from '../../../lib/date';
-import { isAdminRequest } from '../../../lib/adminAuth';
+import { adminUser, isAdminRequest } from '../../../lib/adminAuth';
 import { isLimited, tooMany } from '../../../lib/rateLimit';
 import { cleanName, readJson } from '../../../lib/validate';
 
@@ -84,7 +84,7 @@ export async function DELETE(req) {
   const id = searchParams.get('id');
   if (!isValidDateStr(date) || !id) return Response.json({ error: 'invalid' }, { status: 400 });
   const session = await auth();
-  const isAdmin = isAdminRequest(req) || session?.user?.role === 'admin';
+  const isAdmin = (await isAdminRequest(req)) || !!(await adminUser());
   if (!isAdmin && !session?.user?.id) return Response.json({ error: 'unauthenticated' }, { status: 401 });
 
   const result = await kv.withLock(`comments:${date}`, async () => {

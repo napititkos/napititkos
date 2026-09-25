@@ -147,7 +147,7 @@ export async function GET(req) {
       const fresh = (await kv.get('rotation:state')) || null;
       if (isCurrent(fresh)) return; // közben más kérés már elvégezte
       await rotate(fresh, puzzles, scheduledToday, rotationBoundary, now);
-    });
+    }, { waitMs: 8000 }); // reggeli hidegindításnál a váltás lassabb lehet
     state = (await kv.get('rotation:state')) || null;
     if (!isCurrent(state)) return Response.json({ error: 'busy' }, { status: 503 });
   } else if (new Date(state.since).getTime() !== rotationBoundary) {

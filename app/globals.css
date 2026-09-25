@@ -165,7 +165,7 @@ nav.topnav{
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 20px; margin-bottom: 18px; max-width: 100%;
 }
-.topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; flex-wrap:wrap; gap:8px;}
+.topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 9px; flex-wrap:wrap; gap:8px;}
 /* Az időzítő a fejléc tetejére kerül; alatta a beküldő neve abszolút pozícióval, így
    nem növeli a fejléc magasságát és a rejtvénydoboz nem csúszik lejjebb. */
 .topbar-right{ position: relative; align-self: flex-start; }
@@ -406,3 +406,27 @@ button.notif-btn.has-new::after{
   content:''; position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%;
   background: var(--accent-strong); border: 2px solid var(--card);
 }
+
+/* A Keverés gomb nem letiltott (így üresen megnyomva üzenetet ad), csak halványabb. */
+button[aria-disabled="true"]{ opacity: 0.75; }
+button[aria-disabled="true"]:hover{ transform: none; }
+.inline-toast{ text-align:center; font-size: 13px; font-weight: 700; color: var(--accent); max-height: 0; opacity: 0; overflow: hidden; transition: opacity .25s ease, max-height .25s ease, margin .25s ease; }
+.inline-toast.show{ max-height: 60px; opacity: 1; margin-top: 8px; }
+
+.notif-wrap{ position: relative; display: inline-flex; }
+.notif-pop{
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  width: min(320px, calc(100vw - 28px)); max-height: 60vh; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: var(--shadow); padding: 8px;
+}
+.notif-pop::before{
+  content:''; position:absolute; top:-7px; right: 14px; width: 12px; height: 12px;
+  background: var(--card); border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.notif-item{ padding: 8px 10px; border-radius: 10px; }
+.notif-item + .notif-item{ border-top: 1px solid var(--line); border-radius: 0; }
+.notif-time{ font-size: 11.5px; color: var(--ink-soft); }
+.notif-text{ font-size: 14px; margin-top: 2px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.notif-empty{ padding: 10px; font-size: 14px; color: var(--ink-soft); text-align: center; }

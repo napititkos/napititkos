@@ -121,8 +121,8 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
             <div style={{ position: 'relative', display: 'inline-flex', maxWidth: 'calc(100% - 104px)', minWidth: 0 }}>
               <button
                 className="ghost small"
-                disabled={!isRowFull()}
-                onClick={shuffleGuess}
+                aria-disabled={!isRowFull()}
+                onClick={() => (isRowFull() ? shuffleGuess() : showToast('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
                 title="A beírt betűk véletlenszerű összekeverése"
                 style={{
                   position: 'absolute',

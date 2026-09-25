@@ -59,6 +59,10 @@ rekordját úgy, hogy `emailVerified: null` és legyen `passwordHash` (pl. egy m
 | ADM-08 | Belépés után cseréld le az `ADMIN_PASSWORD`-öt a Vercelen, és deployolj újra. Az eddigi böngésző-munkamenettel hívd az admin API-t. | 401 (a régi munkamenet érvénytelen). Az új jelszóval a belépés működik. |
 | ADM-09 | Az `ADMIN_PASSWORD` törlése a preview-n, majd belépési kísérlet. | 500 és "nincs megfelelően beállítva" (nem enged be). |
 | ADM-10 | Régi (jelszót tartalmazó) `admin_token` süti a böngészőben, majd sikeres belépés. | A belépés válasza törli a régi sütit is. |
+| ADM-11 | Kijelentkezett állapotban `/admin`, majd `POST /api/admin/login` a helyes admin jelszóval. | Az oldal bejelentkezést kér, a végpont **403**, süti nem jön létre. A próbálkozás nem növeli a jelszó-hibaszámlálót. |
+| ADM-12 | Bejelentkezés egy **sima** (nem admin) fiókkal, majd a helyes admin jelszó megadása. | **403**, "Ehhez a fiókhoz nincs admin jog". |
+| ADM-13 | Admin fiókkal + jelszóval belépve kijelentkezés a fiókból (a 8 órás admin süti megmarad), majd admin API hívása. | **401** (a munkamenet a fiókhoz kötött). |
+| ADM-14 | Admin munkamenet közben egy másik admin elveszi tőled az admin jogot, majd admin API hívása. | **Azonnal 401**, a 8 órás lejárat megvárása nélkül. |
 
 ## 4. Próbálkozás-korlát (admin belépés)
 

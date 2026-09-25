@@ -26,6 +26,11 @@ export default function BetujatekExample({ onProgress }) {
   const [solved2, setSolved2] = useState(false);
   const [wrongTried2, setWrongTried2] = useState(false);
   const [flashShuffle, setFlashShuffle] = useState(false);
+  const [toast2, setToast2] = useState('');
+  function showHint2(msg) {
+    setToast2(msg);
+    setTimeout(() => setToast2(''), 2600);
+  }
 
   useEffect(() => {
     const progress = loadTutorialProgress();
@@ -206,8 +211,8 @@ export default function BetujatekExample({ onProgress }) {
               <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
                 <button
                   className={`ghost small${flashShuffle ? ' flash-once' : ''}`}
-                  disabled={!isRowFull2()}
-                  onClick={shuffleGuess2}
+                  aria-disabled={!isRowFull2()}
+                  onClick={() => (isRowFull2() ? shuffleGuess2() : showHint2('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
                   title="A beírt betűk véletlenszerű összekeverése"
                 >
                   <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
@@ -222,6 +227,7 @@ export default function BetujatekExample({ onProgress }) {
                 )}
               </div>
 
+              <div className={`inline-toast${toast2 ? ' show' : ''}`}>{toast2}</div>
               {wrongTried2 && (
                 <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
                   Még nem ez az - keresd meg a készlet szavakat a rejtvényben!

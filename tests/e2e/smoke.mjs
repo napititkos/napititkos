@@ -82,14 +82,20 @@ const loggedIn = (s) => !!(s && s.user && s.user.email);
 
 // ---------------------------------------------------------------- ADMIN
 section('ADMIN belépés');
+// A jelszót csak admin jogú, bejelentkezett fióktól fogadja el a szerver.
+const ADMIN_ACC_PW = 'Admin-Fiok-Jelszo-1';
+const adminAcc = await seedUser('admin-fiok@teszt.hu', { role: 'admin', passwordHash: await hashPassword(ADMIN_ACC_PW) });
+const admJar = (await credLogin('admin-fiok@teszt.hu', ADMIN_ACC_PW)).jar;
+await seedUser('sima-fiok@teszt.hu', { passwordHash: await hashPassword(ADMIN_ACC_PW) });
+const plainJar = (await credLogin('sima-fiok@teszt.hu', ADMIN_ACC_PW)).jar;
 await clearLimits();
 let r = await fetch(BASE + '/api/admin/users');
 check('admin API süti nélkül: 401', r.status === 401);
 for (let i = 1; i <= 5; i++) {
-  r = await post('/api/admin/login', { password: 'rossz' + i });
+  r = await post('/api/admin/login', { password: 'rossz' + i }, { cookie: admJar.header() });
   check(`hibás jelszó #${i}: 401`, r.status === 401, `(${r.status})`);
 }
-r = await post('/api/admin/login', { password: ADMIN_PW });
+r = await post('/api/admin/login', { password: ADMIN_PW }, { cookie: admJar.header() });
 check('6. próba HELYES jelszóval is: 429 + Retry-After 900', r.status === 429 && r.headers.get('retry-after') === '900', `(${r.status})`);
 const ipKeys = (await limitKeys()).filter((k) => k.startsWith('rl:adminlogin:ip:'));
 console.log('  (a használt IP-kulcs:', ipKeys.join(', '), ')');
@@ -99,7 +105,7 @@ check('a számláló TTL-je pozitív és <= 900', ttl > 0 && ttl <= 900, `(${ttl
 check('van összesített számláló, értéke 5', (await redis.get('rl:adminlogin:global')) === '5');
 
 await clearLimits();
-r = await post('/api/admin/login', { password: ADMIN_PW });
+r = await post('/api/admin/login', { password: ADMIN_PW }, { cookie: admJar.header() });
 check('zárolás feloldása után a helyes jelszó: 200', r.status === 200, `(${r.status})`);
 const sc = r.headers.getSetCookie();
 const sess = sc.find((c) => c.startsWith('__Host-admin_session='));
@@ -110,7 +116,7 @@ check('a süti értéke nem tartalmazza a jelszót', !sess.includes(ADMIN_PW));
 check('a régi admin_token süti törlésre kerül', sc.some((c) => c.startsWith('admin_token=;') && /Max-Age=0/i.test(c)));
 check('sikeres belépés törli az IP-számlálót', (await limitKeys()).filter((k) => k.startsWith('rl:adminlogin:ip:')).length === 0);
 const tok = sess.split(';')[0].split('=')[1];
-const adminCookie = `__Host-admin_session=${tok}`;
+const adminCookie = `__Host-admin_session=${tok}; ${admJar.header()}`;
 for (const p of ['/api/admin/users', '/api/admin/puzzles', '/api/admin/history', '/api/submissions']) {
   r = await fetch(BASE + p, { headers: { cookie: adminCookie } });
   check(`érvényes admin süti: ${p} = 200`, r.status === 200, `(${r.status})`);
@@ -126,8 +132,32 @@ check('hibás aláírású token: 401', r.status === 401);
 r = await fetch(BASE + '/api/admin/login', { method: 'DELETE' });
 check('kijelentkezés törli a sütit', r.headers.getSetCookie().some((c) => c.startsWith('__Host-admin_session=;') && /Max-Age=0/i.test(c)));
 await redis.set('rl:adminlogin:global', '50', 'EX', 900);
-r = await post('/api/admin/login', { password: ADMIN_PW });
+r = await post('/api/admin/login', { password: ADMIN_PW }, { cookie: admJar.header() });
 check('összesített korlát (50): 429 minden címnek', r.status === 429, `(${r.status})`);
+await clearLimits();
+
+
+section('ADMIN: plusz védelmi vonal (fiók + admin jog)');
+await clearLimits();
+r = await post('/api/admin/login', { password: ADMIN_PW });
+check('helyes jelszó bejelentkezés nélkül: 403', r.status === 403, `(${r.status})`);
+check('fiók nélkül nem jön létre admin süti', !r.headers.getSetCookie().some((c) => c.startsWith('__Host-admin_session=') && !/Max-Age=0/i.test(c)));
+r = await post('/api/admin/login', { password: ADMIN_PW }, { cookie: plainJar.header() });
+check('helyes jelszó admin jog nélküli fiókkal: 403', r.status === 403, `(${r.status})`);
+check('fiók nélküli próbálkozás nem növeli a jelszó-hibaszámlálót', (await limitKeys()).length === 0);
+r = await post('/api/admin/login', { password: ADMIN_PW }, { cookie: admJar.header() });
+const tok2 = r.headers.getSetCookie().find((c) => c.startsWith('__Host-admin_session=')).split(';')[0].split('=')[1];
+check('admin fiókkal + helyes jelszóval: 200', r.status === 200, `(${r.status})`);
+r = await fetch(BASE + '/api/admin/users', { headers: { cookie: `__Host-admin_session=${tok2}` } });
+check('admin süti bejelentkezett fiók nélkül: 401', r.status === 401, `(${r.status})`);
+r = await fetch(BASE + '/api/admin/users', { headers: { cookie: `__Host-admin_session=${tok2}; ${plainJar.header()}` } });
+check('admin süti egy MÁSIK fiókkal: 401', r.status === 401, `(${r.status})`);
+r = await fetch(BASE + '/api/admin/users', { headers: { cookie: `__Host-admin_session=${tok2}; ${admJar.header()}` } });
+check('admin süti + ugyanaz a fiók: 200', r.status === 200, `(${r.status})`);
+await redis.set(`au:user:${adminAcc.id}`, JSON.stringify({ ...JSON.parse(await redis.get(`au:user:${adminAcc.id}`)), role: 'user' }));
+r = await fetch(BASE + '/api/admin/users', { headers: { cookie: `__Host-admin_session=${tok2}; ${admJar.header()}` } });
+check('admin jog elvétele után azonnal 401 (élő munkamenettel is)', r.status === 401, `(${r.status})`);
+await redis.set(`au:user:${adminAcc.id}`, JSON.stringify({ ...JSON.parse(await redis.get(`au:user:${adminAcc.id}`)), role: 'admin' }));
 await clearLimits();
 
 // ---------------------------------------------------------------- REGISZTRÁCIÓ

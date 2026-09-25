@@ -11,7 +11,7 @@ const BACKUP_COUNT = 10;
 // GET /api/admin/puzzles?backups=1      -> a mentések időpontjai
 // GET /api/admin/puzzles?backup=<ms>    -> egy korábbi mentés tartalma (visszaállításhoz)
 export async function GET(req) {
-  if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const { searchParams } = new URL(req.url);
   if (searchParams.get('backups')) {
     const index = (await kv.get('puzzles:backups')) || [];
@@ -29,7 +29,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const body = await readJson(req, 1500000);
   const result = sanitizePuzzleList(body?.puzzles);
   if (result.error) {

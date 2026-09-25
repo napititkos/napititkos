@@ -19,12 +19,12 @@ function cleanText(v) {
 }
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return unauthorized();
+  if (!(await isAdminRequest(req))) return unauthorized();
   return Response.json({ notifications: (await kv.get(KEY)) || [] });
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return unauthorized();
+  if (!(await isAdminRequest(req))) return unauthorized();
   const body = await readJson(req, 5000);
   const text = cleanText(body?.text);
   if (!text) return Response.json({ error: 'empty' }, { status: 400 });
@@ -40,7 +40,7 @@ export async function POST(req) {
 }
 
 export async function DELETE(req) {
-  if (!isAdminRequest(req)) return unauthorized();
+  if (!(await isAdminRequest(req))) return unauthorized();
   const id = new URL(req.url).searchParams.get('id');
   if (!id) return Response.json({ error: 'invalid' }, { status: 400 });
   const res = await kv.withLock('notifications', async () => {
