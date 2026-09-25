@@ -592,16 +592,16 @@ export default function HomePage() {
 
       <div className="card">
         <div className="topbar">
-          <div>
+          <div className="topbar-main">
             <div className="puzzle-title">
               Napi titkosírás{puzzleMeta?.dayNumber ? ` #${puzzleMeta.dayNumber}` : ''}
             </div>
-            <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 9 }}>minden nap új!</div>
+            <div className="topbar-sub">
+              <span>minden nap új!</span>
+              {puzzle.submittedBy && <span className="submitted-by">Beküldte: {puzzle.submittedBy}</span>}
+            </div>
           </div>
-          <div className="topbar-right">
-            <div className="timer">{formatTime(elapsed)}</div>
-            {puzzle.submittedBy && <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>}
-          </div>
+          <div className="timer topbar-timer">{formatTime(elapsed)}</div>
         </div>
 
         <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0 }}>
@@ -613,32 +613,26 @@ export default function HomePage() {
 
           {!answered && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-                <div style={{ position: 'relative', display: 'inline-flex', maxWidth: 'calc(100% - 104px)', minWidth: 0 }}>
-                  <button
-                    className="ghost small"
-                    aria-disabled={!isRowFull()}
-                    onClick={() => (isRowFull() ? shuffleGuess() : showToast('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
-                    title="A beírt betűk véletlenszerű összekeverése"
-                    style={{
-                      position: 'absolute',
-                      right: 'calc(100% + 8px)',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      padding: '9px 11px',
-                    }}
-                  >
-                    <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
-                  </button>
-                  <LetterBoxes
-                    answer={puzzle.answer}
-                    value={guess}
-                    locked={lockedLetters}
-                    onChange={setGuess}
-                    disabled={answered}
-                    onEnter={() => checkAnswer(guess.join(''))}
-                  />
-                </div>
+              <div style={{ marginTop: 10 }}>
+                <LetterBoxes
+                  answer={puzzle.answer}
+                  value={guess}
+                  locked={lockedLetters}
+                  onChange={setGuess}
+                  disabled={answered}
+                  onEnter={() => checkAnswer(guess.join(''))}
+                  leftSlot={
+                    <button
+                      className="ghost small"
+                      aria-disabled={!isRowFull()}
+                      onClick={() => (isRowFull() ? shuffleGuess() : showToast('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
+                      title="A beírt betűk véletlenszerű összekeverése"
+                      style={{ padding: '9px 11px' }}
+                    >
+                      <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
+                    </button>
+                  }
+                />
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
                 <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
