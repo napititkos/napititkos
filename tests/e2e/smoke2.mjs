@@ -249,6 +249,72 @@ const lbs = [];
 for (let i = 0; i < 35; i++) lbs.push((await post('/api/leaderboard', { name: `Spam ${i}`, hintsUsed: 1, elapsed: 1000 + i })).status);
 check('ranglista: a címenkénti óránkénti 30 küldés után 429', lbs.filter((s) => s === 200).length === 30 - before && lbs.filter((s) => s === 429).length === 35 - (30 - before), `(${before}) ${JSON.stringify(lbs)}`);
 
+
+// ---------------------------------------------------------------- KOMMENTEK
+section('Kommentek');
+r = await fetch(BASE + '/api/comments?count=1'); let j = await r.json();
+check('darabszám vendégként is: 200, 0', r.status === 200 && j.count === 0, JSON.stringify(j));
+r = await fetch(BASE + '/api/comments'); check('lista vendégként: 401 (a megfejtést is elárulhatja)', r.status === 401);
+r = await post('/api/comments', { text: 'Vendég vagyok' }); check('írás vendégként: 401', r.status === 401);
+await seedUser('kommentelo@teszt.hu', 'Komment-Jelszo-1', { name: 'Kommentelő Kata' });
+const cA = (await credLogin('kommentelo@teszt.hu', 'Komment-Jelszo-1')).jar;
+await seedUser('masik@teszt.hu', 'Komment-Jelszo-2', { name: '' });
+const cB = (await credLogin('masik@teszt.hu', 'Komment-Jelszo-2')).jar;
+await seedUser('nincsmeg@teszt.hu', 'Komment-Jelszo-3', { emailVerified: null });
+const cC = (await credLogin('nincsmeg@teszt.hu', 'Komment-Jelszo-3')).jar;
+r = await post('/api/comments', { text: 'Nem megerősített' }, { cookie: cC.header() }); check('írás megerősítetlen fiókkal: 403', r.status === 403, `(${r.status})`);
+r = await post('/api/comments', { text: '   ' }, { cookie: cA.header() }); check('üres komment: 400', r.status === 400);
+r = await post('/api/comments', { text: 'Szép rejtvény!\u200b\u0007', evil: 1 }, { cookie: cA.header() }); j = await r.json();
+check('komment elküldve: 200', r.status === 200, `(${r.status})`);
+check('a név a fiókból jön, e-mail nincs benne', j.comment?.name === 'Kommentelő Kata' && !JSON.stringify(j).includes('@'));
+check('láthatatlan és vezérlőkarakterek kiszűrve', j.comment?.text === 'Szép rejtvény!');
+r = await post('/api/comments', { text: 'x'.repeat(900) }, { cookie: cB.header() }); j = await r.json();
+check('név nélküli fiók: "Névtelen", nem e-mail', j.comment?.name === 'Névtelen', JSON.stringify(j.comment?.name));
+check('túl hosszú szöveg 500 karakterre vágva', j.comment?.text?.length === 500);
+r = await fetch(BASE + '/api/comments?count=1'); check('darabszám: 2', (await r.json()).count === 2);
+r = await fetch(BASE + '/api/comments', { headers: { cookie: cB.header() } }); j = await r.json();
+check('lista bejelentkezve: 2 komment, uid és e-mail nélkül', j.comments?.length === 2 && !JSON.stringify(j).includes('"uid"') && !JSON.stringify(j).includes('@'));
+check('a saját komment "mine" jelölést kap', j.comments?.[1]?.mine === true && j.comments?.[0]?.mine === false);
+const firstId = j.comments[0].id;
+r = await fetch(BASE + `/api/comments?date=${budapestToday}&id=${firstId}`, { method: 'DELETE', headers: { cookie: cB.header() } });
+check('más kommentjének törlése: 403', r.status === 403, `(${r.status})`);
+r = await fetch(BASE + `/api/comments?date=${budapestToday}&id=${firstId}`, { method: 'DELETE', headers: { cookie: cA.header() } });
+check('saját komment törlése: 200', r.status === 200, `(${r.status})`);
+const secondId = (await (await fetch(BASE + '/api/comments', { headers: { cookie: cB.header() } })).json()).comments[0].id;
+r = await fetch(BASE + `/api/comments?date=${budapestToday}&id=${secondId}`, { method: 'DELETE', headers: adm });
+check('admin bármelyiket törölheti: 200', r.status === 200, `(${r.status})`);
+r = await fetch(BASE + '/api/comments?count=1'); check('törlések után: 0', (await r.json()).count === 0);
+
+// ---------------------------------------------------------------- ÉRTESÍTÉSEK
+section('Értesítések');
+r = await post('/api/admin/notifications', { text: 'Nem admin' }, { cookie: cA.header() }); check('küldés nem adminként: 401', r.status === 401);
+r = await post('/api/admin/notifications', { text: 'Holnap új tutorial!' }, adm); j = await r.json();
+check('admin küldés: 200', r.status === 200 && j.notifications?.[0]?.text === 'Holnap új tutorial!');
+const nid = j.notifications[0].id;
+r = await fetch(BASE + '/api/notifications'); j = await r.json();
+check('nyilvános lista vendégként is látja', j.notifications?.some((n) => n.id === nid));
+r = await fetch(BASE + `/api/admin/notifications?id=${nid}`, { method: 'DELETE', headers: { cookie: cA.header() } }); check('törlés nem adminként: 401', r.status === 401);
+r = await fetch(BASE + `/api/admin/notifications?id=${nid}`, { method: 'DELETE', headers: adm }); check('admin törlés: 200', r.status === 200);
+check('törlés után eltűnt a nyilvános listából', !(await (await fetch(BASE + '/api/notifications')).json()).notifications.some((n) => n.id === nid));
+
+// ---------------------------------------------------------------- ARCHÍV MEGFEJTŐSZÁM
+section('Archív összesített megfejtőszám');
+const hist = JSON.parse(await redis.get('rotation:history'));
+const pastDate = '2026-01-15';
+await redis.set('rotation:history', JSON.stringify([{ ...hist[0], shownDate: pastDate }, ...hist]));
+await redis.hset(`stats:h:${pastDate}`, 'correctCount', '4');
+r = await fetch(BASE + '/api/archive'); j = await r.json();
+let item = j.archive.find((x) => x.shownDate === pastDate);
+check('összesen = aznapi megfejtők (4)', item?.totalSolvers === 4, JSON.stringify(item?.totalSolvers));
+check('az aznapi szám tartósan elmentve (a napi statisztika lejárta után is megmarad)', (await redis.hget('solvers:day', pastDate)) === '4');
+r = await post('/api/archive/solve', { date: budapestToday }); check('mai dátum nem számolható: 400', r.status === 400);
+r = await post('/api/archive/solve', { date: '2020-01-01' }); check('ismeretlen dátum: 400', r.status === 400);
+r = await post('/api/archive/solve', { date: 'nem-datum' }); check('hibás dátum: 400', r.status === 400);
+r = await post('/api/archive/solve', { date: pastDate }); check('utólagos megfejtés: 200', r.status === 200);
+await redis.del(`stats:h:${pastDate}`);
+r = await fetch(BASE + '/api/archive'); item = (await r.json()).archive.find((x) => x.shownDate === pastDate);
+check('összesen = 4 + 1, a napi statisztika törlése után is', item?.totalSolvers === 5, JSON.stringify(item?.totalSolvers));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

@@ -300,6 +300,80 @@ export default function AdminPage() {
     }
   }
 
+  function updateEntry(ei, updater) {
+    setEntries((prev) => {
+      const next = [...prev];
+      next[ei] = updater(next[ei]);
+      return next;
+    });
+  }
+
+  function addEntry() {
+    const fresh = emptyEntry();
+    setEntries((prev) => [...prev, fresh]);
+    setExpandedId(fresh.id);
+    setJustAddedId(fresh.id);
+  }
+  function removeEntry(ei) {
+    if (!confirm('Biztosan törlöd ezt a titkosírást?')) return;
+    setEntries((prev) => prev.filter((_, i) => i !== ei));
+  }
+  function moveEntry(ei, dir) {
+    setEntries((prev) => {
+      const next = [...prev];
+      const target = ei + dir;
+      if (target < 0 || target >= next.length) return next;
+      [next[ei], next[target]] = [next[target], next[ei]];
+      return next;
+    });
+  }
+
+  async function saveAll() {
+    setLoading(true);
+    setSaveStatus(null);
+    const normalized = entries.map((en) => ({
+      ...en,
+      answer: (en.answerWords || splitAnswerWords(en.answer)).join(' ').trim(),
+      parHints: en.parHints === '' || en.parHints == null ? 0 : en.parHints,
+    }));
+    const res = await fetch('/api/admin/puzzles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ puzzles: normalized }),
+    });
+    setLoading(false);
+    setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
+  }
+
+  function convertSubmissionToEntry(s) {
+    const fresh = {
+      id: generateId(),
+      clue: capitalizeFirst(s.clue || ''),
+      answer: (s.answer || '').toUpperCase(),
+      answerWords: splitAnswerWords((s.answer || '').toUpperCase()),
+      parHints: 3,
+      submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
+      submittedByEmail: s.submitterEmail || '',
+      hints: {
+        definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || '') },
+        indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || '') },
+        fodder: { enabled: !!s.hints?.fodder, text: capitalizeFirst(s.hints?.fodder || '') },
+        alternativ: { enabled: !!s.hints?.alternativ, text: capitalizeFirst(s.hints?.alternativ || '') },
+        betu: { enabled: true },
+      },
+    };
+    setEntries((prev) => [...prev, fresh]);
+    setExpandedId(fresh.id);
+    setJustAddedId(fresh.id);
+    setSortMode('manual');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteSubmission(id) {
+    await fetch(`/api/submissions?id=${id}`, { method: 'DELETE' });
+    loadSubmissions();
+  }
+
   async function logout() {
     await fetch('/api/admin/login', { method: 'DELETE' });
     setAuthed(false);
