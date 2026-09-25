@@ -206,8 +206,10 @@ check('törlés után nem lehet belépni', !(await credLogin(UEMAIL, PW)).ok);
 
 // ---------------------------------------------------------------- ADMIN: rejtvénylista
 section('Admin: rejtvénylista ellenőrzés és mentés');
-let rr = await post('/api/admin/login', { password: ADMIN_PW });
-const adm = { cookie: `__Host-admin_session=${rr.headers.getSetCookie().find((c) => c.startsWith('__Host-admin_session=')).split(';')[0].split('=')[1]}` };
+await seedUser('admin2@teszt.hu', 'Admin-Fiok-Jelszo-2', { role: 'admin' });
+const admAccJar = (await credLogin('admin2@teszt.hu', 'Admin-Fiok-Jelszo-2')).jar;
+let rr = await post('/api/admin/login', { password: ADMIN_PW }, { cookie: admAccJar.header() });
+const adm = { cookie: `__Host-admin_session=${rr.headers.getSetCookie().find((c) => c.startsWith('__Host-admin_session=')).split(';')[0].split('=')[1]}; ${admAccJar.header()}` };
 r = await post('/api/admin/puzzles', { puzzles: 'nem lista' }, adm); check('nem lista: 400', r.status === 400);
 r = await post('/api/admin/puzzles', { puzzles: [puzzles[0], puzzles[0]] }, adm); check('duplikált azonosító: 400', r.status === 400);
 r = await post('/api/admin/puzzles', { puzzles: [{ clue: 'nincs id' }] }, adm); check('azonosító nélküli elem: 400', r.status === 400);

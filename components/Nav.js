@@ -83,7 +83,7 @@ export default function Nav() {
             <span className="progress-badge">{tutorialDone}/{TUTORIAL_SECTIONS.length}</span>
           </a>
           <a href="/stats" onClick={() => setOpen(false)}>
-            📊 Statisztikáim
+            <Icon src="/icons/Statisztikaim.png" /> Statisztikáim
           </a>
           <a href="#" onClick={handleAchievementsClick}>
             <Icon src="/icons/Trofeak.png" /> Trófeák

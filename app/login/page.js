@@ -2,6 +2,17 @@
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 
+// Bejelentkezés utáni visszairányítás (pl. az admin oldalról jövet). Csak saját,
+// relatív útvonal fogadható el, hogy a link ne vihessen idegen oldalra.
+function returnTo() {
+  try {
+    const v = new URLSearchParams(window.location.search).get('callbackUrl') || '/';
+    return v.startsWith('/') && !v.startsWith('//') ? v : '/';
+  } catch {
+    return '/';
+  }
+}
+
 export default function LoginPage() {
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'magic'
   const [email, setEmail] = useState('');
@@ -39,7 +50,7 @@ export default function LoginPage() {
     if (res?.error) {
       setStatus({ ok: false, msg: 'Hibás email cím vagy jelszó.' });
     } else {
-      window.location.href = '/';
+      window.location.href = returnTo();
     }
   }
 
@@ -90,7 +101,7 @@ export default function LoginPage() {
           type="button"
           className="ghost"
           style={{ width: '100%', justifyContent: 'center', display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16 }}
-          onClick={() => signIn('google', { callbackUrl: '/' })}
+          onClick={() => signIn('google', { callbackUrl: returnTo() })}
         >
           <svg width="18" height="18" viewBox="0 0 18 18">
             <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.87 2.7-6.62z" />

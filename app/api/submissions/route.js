@@ -7,7 +7,7 @@ import { isLimited, tooMany } from '../../../lib/rateLimit';
 import { readJson } from '../../../lib/validate';
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const list = (await kv.get('submissions:list')) || [];
   return Response.json({ submissions: list });
 }
@@ -58,7 +58,7 @@ export async function POST(req) {
 }
 
 export async function DELETE(req) {
-  if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   const locked = await kv.withLock('submissions', async () => {

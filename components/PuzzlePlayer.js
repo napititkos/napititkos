@@ -117,32 +117,26 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
 
       {!answered && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', display: 'inline-flex', maxWidth: 'calc(100% - 104px)', minWidth: 0 }}>
-              <button
-                className="ghost small"
-                disabled={!isRowFull()}
-                onClick={shuffleGuess}
-                title="A beírt betűk véletlenszerű összekeverése"
-                style={{
-                  position: 'absolute',
-                  right: 'calc(100% + 8px)',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  padding: '9px 11px',
-                }}
-              >
-                <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
-              </button>
-              <LetterBoxes
-                answer={puzzle.answer}
-                value={guess}
-                locked={lockedLetters}
-                onChange={setGuess}
-                disabled={answered}
-                onEnter={() => checkAnswer(guess.join(''))}
-              />
-            </div>
+          <div style={{ marginTop: 0 }}>
+            <LetterBoxes
+              answer={puzzle.answer}
+              value={guess}
+              locked={lockedLetters}
+              onChange={setGuess}
+              disabled={answered}
+              onEnter={() => checkAnswer(guess.join(''))}
+              leftSlot={
+                <button
+                  className="ghost small"
+                  aria-disabled={!isRowFull()}
+                  onClick={() => (isRowFull() ? shuffleGuess() : showToast('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
+                  title="A beírt betűk véletlenszerű összekeverése"
+                  style={{ padding: '9px 11px' }}
+                >
+                  <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
+                </button>
+              }
+            />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
             <button className="primary" onClick={() => checkAnswer(guess.join(''))}>

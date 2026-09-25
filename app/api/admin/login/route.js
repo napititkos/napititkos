@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { kv } from '../../../../lib/kv';
 import { clientIp } from '../../../../lib/rateLimit';
+import { auth } from '../../../../auth';
+import { adminUser, isAdminRequest } from '../../../../lib/adminAuth';
 import {
   ADMIN_SESSION_SECONDS,
   adminCookieName,
@@ -48,12 +50,22 @@ export async function POST(req) {
     );
   }
 
+  // Plusz védelmi vonal: a jelszót csak admin jogú, bejelentkezett fióktól fogadjuk el.
+  // Fiók nélkül a jelszót ki sem próbáljuk, így azt kívülről találgatni sem lehet.
+  const account = await adminUser();
+  if (!account) {
+    return NextResponse.json(
+      { ok: false, error: 'Az admin belépéshez admin jogú fiókkal kell bejelentkezve lenned.' },
+      { status: 403 }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
 
   if (passwordMatches(body?.password, process.env.ADMIN_PASSWORD)) {
     await kv.del(ipKey);
     const res = NextResponse.json({ ok: true });
-    res.cookies.set(adminCookieName(), createAdminToken(), cookieOptions(ADMIN_SESSION_SECONDS));
+    res.cookies.set(adminCookieName(), createAdminToken(Date.now(), account.id), cookieOptions(ADMIN_SESSION_SECONDS));
     clearLegacyCookie(res);
     return res;
   }
@@ -67,4 +79,15 @@ export async function DELETE() {
   res.cookies.set(adminCookieName(), '', cookieOptions(0));
   clearLegacyCookie(res);
   return res;
+}
+
+// Az admin oldal ebből tudja, mit mutasson: bejelentkezés kell / nincs admin jog /
+// jelszó kell / beléphet.
+export async function GET(req) {
+  const session = await auth();
+  const account = session?.user ? await adminUser() : null;
+  return NextResponse.json(
+    { loggedIn: !!session?.user, admin: !!account, session: account ? await isAdminRequest(req) : false },
+    { headers: { 'Cache-Control': 'no-store' } }
+  );
 }

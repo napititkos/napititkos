@@ -4,7 +4,7 @@ import { kv } from '../../../../lib/kv';
 import { isAdminRequest } from '../../../../lib/adminAuth';
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
 
   const history = (await kv.get('rotation:history')) || [];
   const seenIds = new Set();

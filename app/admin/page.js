@@ -244,8 +244,27 @@ export default function AdminPage() {
     }
   }
 
+  // Belépés lépései: 1) bejelentkezett fiók, 2) admin jog a fiókon, 3) admin jelszó
+  // (ez indítja a 8 órás admin munkamenetet, a fiókhoz kötve).
+  const [access, setAccess] = useState('loading'); // loading | login | forbidden | password | ok
+  async function checkAccess() {
+    try {
+      const d = await (await fetch('/api/admin/login', { cache: 'no-store' })).json();
+      if (!d.loggedIn) return setAccess('login');
+      if (!d.admin) return setAccess('forbidden');
+      if (!d.session) return setAccess('password');
+      const result = await tryLoad();
+      if (result?.ok === false) {
+        if (result.msg) setLoginError(result.msg);
+        return setAccess('password');
+      }
+      setAccess('ok');
+    } catch {
+      setAccess('login');
+    }
+  }
   useEffect(() => {
-    tryLoad();
+    checkAccess();
   }, []);
 
   async function login(e) {
@@ -265,95 +284,26 @@ export default function AdminPage() {
             result.msg ||
               'A jelszó helyes volt, de a bejelentkezés mégsem maradt meg. Próbáld újra, vagy ellenőrizd, hogy a böngésződ nem blokkolja-e a sütiket.'
           );
+        } else {
+          setAccess('ok');
         }
+      } else if (res.status === 403) {
+        // Közben kijelentkezett, vagy elvették az admin jogát.
+        await checkAccess();
+      } else if (res.status === 429) {
+        setLoginError('Túl sok sikertelen próbálkozás. Próbáld újra 15 perc múlva.');
       } else {
-        const bodyText = await res.text().catch(() => '');
-        setLoginError(
-          `Hibás jelszó, vagy nincs beállítva ADMIN_PASSWORD a szerveren. (${res.status}${bodyText ? ' - ' + bodyText.slice(0, 150) : ''})`
-        );
+        setLoginError('Hibás admin jelszó.');
       }
     } catch (err) {
       setLoginError(`Váratlan hiba történt: ${err.message}`);
     }
   }
 
-  function updateEntry(ei, updater) {
-    setEntries((prev) => {
-      const next = [...prev];
-      next[ei] = updater(next[ei]);
-      return next;
-    });
-  }
-
-  function addEntry() {
-    const fresh = emptyEntry();
-    setEntries((prev) => [...prev, fresh]);
-    setExpandedId(fresh.id);
-    setJustAddedId(fresh.id);
-  }
-  function removeEntry(ei) {
-    if (!confirm('Biztosan törlöd ezt a titkosírást?')) return;
-    setEntries((prev) => prev.filter((_, i) => i !== ei));
-  }
-  function moveEntry(ei, dir) {
-    setEntries((prev) => {
-      const next = [...prev];
-      const target = ei + dir;
-      if (target < 0 || target >= next.length) return next;
-      [next[ei], next[target]] = [next[target], next[ei]];
-      return next;
-    });
-  }
-
-  async function saveAll() {
-    setLoading(true);
-    setSaveStatus(null);
-    const normalized = entries.map((en) => ({
-      ...en,
-      answer: (en.answerWords || splitAnswerWords(en.answer)).join(' ').trim(),
-      parHints: en.parHints === '' || en.parHints == null ? 0 : en.parHints,
-    }));
-    const res = await fetch('/api/admin/puzzles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ puzzles: normalized }),
-    });
-    setLoading(false);
-    setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
-  }
-
-  function convertSubmissionToEntry(s) {
-    const fresh = {
-      id: generateId(),
-      clue: capitalizeFirst(s.clue || ''),
-      answer: (s.answer || '').toUpperCase(),
-      answerWords: splitAnswerWords((s.answer || '').toUpperCase()),
-      parHints: 3,
-      submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
-      submittedByEmail: s.submitterEmail || '',
-      hints: {
-        definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || '') },
-        indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || '') },
-        fodder: { enabled: !!s.hints?.fodder, text: capitalizeFirst(s.hints?.fodder || '') },
-        alternativ: { enabled: !!s.hints?.alternativ, text: capitalizeFirst(s.hints?.alternativ || '') },
-        betu: { enabled: true },
-      },
-    };
-    setEntries((prev) => [...prev, fresh]);
-    setExpandedId(fresh.id);
-    setJustAddedId(fresh.id);
-    setSortMode('manual');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  async function deleteSubmission(id) {
-    await fetch(`/api/submissions?id=${id}`, { method: 'DELETE' });
-    loadSubmissions();
-  }
-
   async function logout() {
     await fetch('/api/admin/login', { method: 'DELETE' });
     setAuthed(false);
+    setAccess('password');
   }
 
   function renderEntryRow(e, ei) {
@@ -566,34 +516,56 @@ export default function AdminPage() {
           );
   }
 
-  if (!authed) {
+  if (access !== 'ok' || !authed) {
     return (
       <div className="wrap">
-        <h1 className="page-title">Admin belépés</h1>
+        <h1 className="page-title">Admin felület</h1>
         <div className="card">
-          <form onSubmit={login}>
-            <label className="field-label">Admin jelszó</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ textTransform: 'none' }}
-              />
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
-                title={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <button className="primary" type="submit">Belépés</button>
-            </div>
-          </form>
+          {access === 'loading' && <p style={{ margin: 0 }}>Jogosultság ellenőrzése…</p>}
+          {access === 'login' && (
+            <>
+              <p style={{ marginTop: 0 }}>Az admin felülethez jelentkezz be egy admin jogú fiókkal.</p>
+              <a href="/login?callbackUrl=/admin">
+                <button className="primary">Bejelentkezés</button>
+              </a>
+            </>
+          )}
+          {access === 'forbidden' && (
+            <p style={{ margin: 0 }}>
+              Ehhez a fiókhoz nincs admin jog. Ha szerinted kellene lennie, kérd meg egy admint, hogy adja meg a
+              jogot a Felhasználók listában.
+            </p>
+          )}
+          {access === 'password' && (
+            <form onSubmit={login}>
+              <p style={{ marginTop: 0, fontSize: 14, color: 'var(--ink-soft)' }}>
+                Admin jogú fiókkal vagy bejelentkezve. A folytatáshoz add meg az admin jelszót is.
+              </p>
+              <label className="field-label">Admin jelszó</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ textTransform: 'none' }}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
+                  title={showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <button className="primary" type="submit">Belépés</button>
+              </div>
+            </form>
+          )}
+          {access === 'ok' && !authed && <p style={{ margin: 0 }}>Betöltés…</p>}
           {loginError && <div className="feedback hint" style={{ marginLeft: 0, marginTop: 12 }}>{loginError}</div>}
         </div>
       </div>
