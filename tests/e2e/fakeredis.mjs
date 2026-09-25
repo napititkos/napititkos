@@ -12,7 +12,7 @@ function alive(k) {
 }
 function get(k, type, create = false) {
   let e = alive(k);
-  if (!e && create) { e = { type, v: type === 'hash' || type === 'zset' ? new Map() : '', exp: null }; store.set(k, e); }
+  if (!e && create) { e = { type, v: type === 'hash' || type === 'zset' ? new Map() : type === 'list' ? [] : '', exp: null }; store.set(k, e); }
   return e;
 }
 
@@ -80,6 +80,22 @@ function run(a) {
       return arr(slice.flatMap(([m, s]) => (withScores ? [m, String(s)] : [m])));
     }
     case 'ZREM': { const e = get(a[1], 'zset'); let n = 0; if (e) for (const m of a.slice(2)) if (e.v.delete(m)) n++; return int(n); }
+    // Lista-parancsok (a kommentek használják).
+    case 'RPUSH': { const e = get(a[1], 'list', true); e.v.push(...a.slice(2)); return int(e.v.length); }
+    case 'LLEN': { const e = get(a[1], 'list'); return int(e ? e.v.length : 0); }
+    case 'LRANGE': {
+      const e = get(a[1], 'list'); if (!e) return arr([]);
+      const len = e.v.length; let s0 = Number(a[2]); let s1 = Number(a[3]);
+      if (s0 < 0) s0 = Math.max(0, len + s0); if (s1 < 0) s1 = len + s1;
+      return arr(e.v.slice(s0, s1 + 1));
+    }
+    case 'LREM': {
+      const e = get(a[1], 'list'); if (!e) return int(0);
+      let cnt = Number(a[2]); const val = a[3]; let n = 0;
+      if (cnt >= 0) { for (let i = 0; i < e.v.length && (cnt === 0 || n < cnt); ) { if (e.v[i] === val) { e.v.splice(i, 1); n++; } else i++; } }
+      else { for (let i = e.v.length - 1; i >= 0 && n < -cnt; i--) if (e.v[i] === val) { e.v.splice(i, 1); n++; } }
+      return int(n);
+    }
     case 'ZCARD': { const e = get(a[1], 'zset'); return int(e ? e.v.size : 0); }
     default: return `-ERR unknown command '${cmd}'\r\n`;
   }
