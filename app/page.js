@@ -498,7 +498,8 @@ export default function HomePage() {
   }
 
   function fetchStats(date, fresh = false) {
-    fetch(`/api/stats?date=${date}${fresh ? `&t=${Date.now()}` : ''}`)
+    // A böngésző ne mutasson korábban letöltött (régi) számot: mindig friss választ kérünk.
+    fetch(`/api/stats?date=${date}${fresh ? `&t=${Date.now()}` : ''}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => {
         setAvgHints(d.average);
@@ -520,6 +521,22 @@ export default function HomePage() {
     ];
     return lines.join('\n');
   }
+
+  // A nyitott eredménykártyán a számok (megfejtők, még fejti) maguktól is frissülnek:
+  // 20 másodpercenként, ha az oldal látszik, és azonnal, amikor visszatér a lapra.
+  useEffect(() => {
+    if (!answered || !puzzleMeta?.date) return;
+    const date = puzzleMeta.date;
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchStats(date);
+    }, 20000);
+    const onVisible = () => document.visibilityState === 'visible' && fetchStats(date);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [answered, puzzleMeta?.date]);
 
   // A kommentek darabszáma zárójelben csak addig látszik, amíg ma még nem nyitotta meg.
   const COMMENTS_SEEN_KEY = 'titkositas_comments_seen_v1';
@@ -869,16 +886,16 @@ export default function HomePage() {
                 <span>megfejtő ma</span>
               </div>
             )}
-            {avgHints !== null && (
-              <div className="stat">
-                <b>{avgHints.toFixed(1)}</b>
-                <span>átlag tipp / játékos</span>
-              </div>
-            )}
             {playingCount !== null && (
               <div className="stat">
                 <b>{playingCount}</b>
                 <span>még fejti</span>
+              </div>
+            )}
+            {avgHints !== null && (
+              <div className="stat">
+                <b>{avgHints.toFixed(1)}</b>
+                <span>átlag tipp / játékos</span>
               </div>
             )}
           </div>

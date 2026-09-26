@@ -77,8 +77,17 @@ export default function StatsPage() {
             <span>leggyorsabb idő</span>
           </div>
           <div className="stat">
-            <b>{unlockedCount}/{ACHIEVEMENTS.length}</b>
-            <span>trófea</span>
+            <a
+              href="#"
+              className="stat-link"
+              onClick={(e) => {
+                e.preventDefault();
+                window.dispatchEvent(new Event('open-achievements'));
+              }}
+            >
+              <b>{unlockedCount}/{ACHIEVEMENTS.length}</b>
+              <span>trófea</span>
+            </a>
           </div>
         </div>
         <div className="actions" style={{ marginTop: 18 }}>
