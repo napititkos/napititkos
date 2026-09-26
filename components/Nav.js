@@ -48,14 +48,14 @@ export default function Nav() {
         <div style={{ marginLeft: 'auto' }}>
           {status !== 'loading' && (
             session?.user ? (
-              <a href="#" onClick={handleLogout} className="account-badge" title="Kijelentkezés">
+              <a href="/account" className="account-badge" title="Profilom">
                 <Icon src="/icons/Fiok.png" size={16} />
-                <span className="account-badge-name">Kijelentkezés</span>
+                <span className="account-badge-label">Profil</span>
               </a>
             ) : (
               <a href="/login" className="account-badge" title="Bejelentkezés">
                 <Icon src="/icons/Fiok.png" size={16} />
-                <span className="account-badge-name">Belépés</span>
+                <span className="account-badge-label">Belépés</span>
               </a>
             )
           )}
@@ -109,9 +109,6 @@ export default function Nav() {
                   <Icon src="/icons/Fiok.png" size={16} />
                   Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{session.user.name || session.user.email}</b>
                 </div>
-                <a href="/account" onClick={() => setOpen(false)}>
-                  <Icon src="/icons/Fiok.png" /> Fiókom és adataim
-                </a>
                 <a href="#" onClick={handleLogout}>
                   <Icon src="/icons/Kijelentkezes.png" /> Kijelentkezés
                 </a>

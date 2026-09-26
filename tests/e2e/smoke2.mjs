@@ -315,6 +315,32 @@ await redis.del(`stats:h:${pastDate}`);
 r = await fetch(BASE + '/api/archive'); item = (await r.json()).archive.find((x) => x.shownDate === pastDate);
 check('összesen = 4 + 1, a napi statisztika törlése után is', item?.totalSolvers === 5, JSON.stringify(item?.totalSolvers));
 
+
+// ---------------------------------------------------------------- MÉG FEJTI
+section('Még fejti (megnyitotta, de nem fejezte be)');
+const devA = 'a'.repeat(32), devB = 'b'.repeat(32), devC = 'c'.repeat(32);
+const playing = async () => (await (await fetch(BASE + `/api/stats?date=${budapestToday}&t=${Math.random()}`)).json()).playing;
+check('kezdetben 0', (await playing()) === 0);
+for (const d of [devA, devB, devC]) await post('/api/stats/presence', { device: d, action: 'open' });
+check('három eszköz megnyitotta: 3', (await playing()) === 3);
+await post('/api/stats/presence', { device: devA, action: 'open' });
+check('ugyanaz az eszköz kétszer megnyitva sem számít duplán: 3', (await playing()) === 3);
+await post('/api/stats/presence', { device: devA, action: 'done' });
+check('egy befejezte: 2', (await playing()) === 2);
+await post('/api/stats/presence', { device: devA, action: 'done' });
+check('kétszeri befejezés sem csökkenti duplán: 2', (await playing()) === 2);
+await post('/api/stats/presence', { device: 'd'.repeat(32), action: 'done' });
+check('megnyitás nélküli befejezés nem visz negatívba: 2', (await playing()) === 2);
+await post('/api/stats/presence', { device: devA, action: 'open' });
+check('befejezés után újra megnyitva sem számít: 2', (await playing()) === 2);
+r = await post('/api/stats/presence', { device: 'nem-hex!', action: 'open' }); check('hibás eszközazonosító: 400', r.status === 400);
+r = await post('/api/stats/presence', { device: devB, action: 'torol' }); check('ismeretlen művelet: 400', r.status === 400);
+check('a jelenlét-kulcsnak van lejárata', (await redis.ttl(`presence:${budapestToday}`)) > 0);
+const beforeRepeat = (await (await fetch(BASE + `/api/stats?date=${budapestToday}&t=${Math.random()}`)).json()).correctCount;
+r = await post('/api/stats', { hintsUsed: 0, correct: true, repeat: true });
+const afterRepeat = (await (await fetch(BASE + `/api/stats?date=${budapestToday}&t=${Math.random()}`)).json()).correctCount;
+check('vendég után bejelentkezve újra megfejtve nem számít duplán a megfejtők közé', r.status === 200 && afterRepeat === beforeRepeat, `${beforeRepeat} -> ${afterRepeat}`);
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { loadProgress, saveProgress, mergeProgress, setProgressSyncEnabled } from '../lib/progress';
+import { loadProgress, saveProgress, mergeProgress, setProgressSyncEnabled, dropGuestEntry } from '../lib/progress';
+import { todayStr } from '../lib/date';
 import {
   loadTutorialProgress,
   saveTutorialProgress,
@@ -28,6 +29,9 @@ export default function ProgressSync() {
         const res = await fetch('/api/account/progress');
         const data = await res.json();
         const local = loadProgress();
+        // A bejelentkezés előtt, vendégként megfejtett mai titkosírás nem kerül át a
+        // fiókba: visszavonjuk, hogy a fiókkal újra meg lehessen fejteni.
+        dropGuestEntry(local, todayStr());
         const merged = mergeProgress(local, data.progress);
         saveProgress(merged);
         setProgressSyncEnabled(true);

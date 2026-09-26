@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { fireConfetti } from '../components/Confetti';
 import { ACHIEVEMENTS, computeNewAchievements } from '../lib/achievements';
-import { loadProgress, saveProgress } from '../lib/progress';
+import { loadProgress, saveProgress, dropGuestEntry } from '../lib/progress';
+import { loadActiveMs, saveActiveMs, clearActiveTimer } from '../lib/activeTimer';
+import { deviceId } from '../lib/device';
 import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
@@ -111,7 +113,7 @@ function emptyLocked(answer) {
 
 
 export default function HomePage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [puzzle, setPuzzle] = useState(null);
@@ -124,7 +126,14 @@ export default function HomePage() {
   const [correct, setCorrect] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [startTime, setStartTime] = useState(null);
+  // Aktív játékidő: accRef = eddig felgyűlt idő, resumeRef = mikor indult az aktuális
+  // (látható) szakasz; ha az oldal a háttérben van, resumeRef = null és az idő áll.
+  const accRef = useRef(0);
+  const resumeRef = useRef(null);
+  const [timerReady, setTimerReady] = useState(false);
+  const loadStartedRef = useRef(false);
+  const [playingCount, setPlayingCount] = useState(null);
+  const activeElapsed = () => accRef.current + (resumeRef.current ? Date.now() - resumeRef.current : 0);
   const [progress, setProgress] = useState({ streak: 0, best: 0 });
   const [avgHints, setAvgHints] = useState(null);
   const [solverCount, setSolverCount] = useState(null);
@@ -157,6 +166,10 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    // Megvárjuk, amíg kiderül, be van-e jelentkezve (a vendégként megfejtett mai
+    // titkosírást bejelentkezés után újra meg lehessen fejteni a fiókkal).
+    if (sessionStatus === 'loading' || loadStartedRef.current) return;
+    loadStartedRef.current = true;
     // A nap első kérése végzi a napi váltást; reggel (hidegindításkor) ez lassabb lehet,
     // és a szerver átmenetileg "foglalt" (503) vagy hálózati hibát adhat. Ilyenkor csendben
     // újrapróbáljuk, és csak több sikertelen kísérlet után mutatunk hibát.
@@ -196,6 +209,10 @@ export default function HomePage() {
         setLockedLetters(emptyLocked(data.puzzle.answer));
 
         const prog = loadProgress();
+        if (sessionStatus === 'authenticated' && dropGuestEntry(prog, data.date)) {
+          saveProgress(prog);
+          clearActiveTimer();
+        }
         setProgress({ streak: prog.streak, best: prog.best });
         setUnlockedAchievements(prog.unlocked || []);
         const saved = prog.history[data.date];
@@ -209,24 +226,21 @@ export default function HomePage() {
           setGaveUp(saved.gaveUp);
           setElapsed(saved.elapsed);
         } else {
-          // A kezdőidőt eltároljuk, hogy ha a felhasználó kilép és visszalép (vagy
-          // frissíti az oldalt), az időzítő ne kezdődjön újra nulláról.
-          const STARTTIME_KEY = 'titkositas_starttime_v1';
-          let st;
-          try {
-            const raw = localStorage.getItem(STARTTIME_KEY);
-            const parsed = raw ? JSON.parse(raw) : null;
-            if (parsed && parsed.date === data.date && Number.isFinite(parsed.ts)) {
-              st = parsed.ts;
-            } else {
-              st = Date.now();
-              localStorage.setItem(STARTTIME_KEY, JSON.stringify({ date: data.date, ts: st }));
-            }
-          } catch {
-            st = Date.now();
+          // Az időzítő onnan folytatódik, ahol abbahagyta (frissítés, bezárás után is),
+          // de csak a látható percek számítanak.
+          accRef.current = loadActiveMs(data.date);
+          resumeRef.current = document.visibilityState === 'visible' ? Date.now() : null;
+          setElapsed(activeElapsed());
+          setTimerReady(true);
+          // "Még fejti" számláló: névtelen eszközazonosítóval jelezzük, hogy megnyitotta.
+          const dev = deviceId();
+          if (dev) {
+            fetch('/api/stats/presence', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ device: dev, action: 'open' }),
+            }).catch(() => {});
           }
-          setStartTime(st);
-          setElapsed(Date.now() - st);
         }
         fetchStats(data.date);
         setLoading(false);
@@ -235,13 +249,36 @@ export default function HomePage() {
         setErrorMsg('Nem sikerült betölteni a mai titkosírást. Próbáld frissíteni az oldalt.');
         setLoading(false);
       });
-  }, []);
+  }, [sessionStatus]);
 
   useEffect(() => {
-    if (loading || answered || !puzzle || !startTime) return;
-    timerRef.current = setInterval(() => setElapsed(Date.now() - startTime), 500);
-    return () => clearInterval(timerRef.current);
-  }, [loading, answered, puzzle, startTime]);
+    if (loading || answered || !puzzle || !timerReady) return;
+    const date = puzzleMeta?.date;
+    const persist = () => date && !finishedRef.current && saveActiveMs(date, activeElapsed());
+    let ticks = 0;
+    timerRef.current = setInterval(() => {
+      setElapsed(activeElapsed());
+      if (++ticks % 4 === 0) persist(); // kb. 2 másodpercenként mentjük (összeomlás esetére is)
+    }, 500);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        if (!resumeRef.current) resumeRef.current = Date.now();
+      } else {
+        accRef.current = activeElapsed();
+        resumeRef.current = null;
+        persist();
+      }
+      setElapsed(activeElapsed());
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', persist);
+    return () => {
+      clearInterval(timerRef.current);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', persist);
+      persist();
+    };
+  }, [loading, answered, puzzle, timerReady]);
 
   useEffect(() => {
     if (!answered || !puzzleMeta?.nextRotationAt) return;
@@ -365,15 +402,30 @@ export default function HomePage() {
 
     const finalGuess = guessOverride || guess;
     const finalLocked = lockedOverride || lockedLetters;
-    const finalElapsed = Date.now() - startTime;
+    const finalElapsed = activeElapsed();
+    accRef.current = finalElapsed;
+    resumeRef.current = null;
     setElapsed(finalElapsed);
     clearInterval(timerRef.current);
+    clearActiveTimer();
     fireConfetti();
 
     const totalHints = revealed.filter((t) => t !== 'betu').length + betuCount + (didGiveUp ? 1 : 0);
 
     const prog = loadProgress();
     const today = puzzleMeta.date;
+    // Pillanatkép a megfejtés előtti állapotról: ha vendégként fejti meg, bejelentkezés
+    // után ebből állítjuk vissza, hogy a fiókjával újra megfejthesse.
+    const undo = {
+      streak: prog.streak,
+      best: prog.best,
+      lastDate: prog.lastDate,
+      totalSolved: prog.totalSolved || 0,
+      noHintSolves: prog.noHintSolves || 0,
+      fastestTime: prog.fastestTime ?? null,
+    };
+    // Ha ma már vendégként egyszer beleszámított a statisztikába, most ne számoljuk újra.
+    const repeat = prog.guestReplayDate === today;
     // A szerver (budapesti) dátumából számoljuk az előző napot, nem a böngésző UTC idejéből.
     const yesterday = previousDay(today);
     if (prog.lastDate === yesterday) prog.streak += 1;
@@ -388,6 +440,7 @@ export default function HomePage() {
       correct: wasCorrect,
       gaveUp: didGiveUp,
       elapsed: finalElapsed,
+      ...(session?.user ? {} : { guest: true, undo }),
     };
     if (wasCorrect) {
       prog.totalSolved = (prog.totalSolved || 0) + 1;
@@ -418,8 +471,16 @@ export default function HomePage() {
     const statsSent = fetch('/api/stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: today, hintsUsed: totalHints, correct: wasCorrect }),
+      body: JSON.stringify({ date: today, hintsUsed: totalHints, correct: wasCorrect, repeat }),
     }).catch(() => {});
+    const dev = deviceId();
+    const presenceSent = dev
+      ? fetch('/api/stats/presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device: dev, action: 'done' }),
+        }).catch(() => {})
+      : Promise.resolve();
 
     if (wasCorrect) {
       // Soha nem tesszük ki az email címet a ranglistára - ha van fiókhoz tartozó
@@ -433,7 +494,7 @@ export default function HomePage() {
       }).catch(() => {});
     }
 
-    statsSent.then(() => fetchStats(today, true));
+    Promise.all([statsSent, presenceSent]).then(() => fetchStats(today, true));
   }
 
   function fetchStats(date, fresh = false) {
@@ -442,6 +503,7 @@ export default function HomePage() {
       .then((d) => {
         setAvgHints(d.average);
         setSolverCount(d.correctCount ?? 0);
+        setPlayingCount(typeof d.playing === 'number' ? d.playing : null);
       })
       .catch(() => {});
   }
@@ -811,6 +873,12 @@ export default function HomePage() {
               <div className="stat">
                 <b>{avgHints.toFixed(1)}</b>
                 <span>átlag tipp / játékos</span>
+              </div>
+            )}
+            {playingCount !== null && (
+              <div className="stat">
+                <b>{playingCount}</b>
+                <span>még fejti</span>
               </div>
             )}
           </div>
