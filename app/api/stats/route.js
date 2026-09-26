@@ -48,6 +48,8 @@ export async function GET(req) {
   const playing = Math.max(0, Number(await kv.raw().hget(`presence:${date}`, '_playing')) || 0);
   return Response.json(
     { completions, average, correctCount, playing },
-    { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' } }
+    // Legfeljebb 5 másodpercig gyorsítótárazható a CDN-en, régi (lejárt) válasz kiadása
+    // nélkül; a böngésző nem tárolja, így újratöltéskor mindig friss szám látszik.
+    { headers: { 'Cache-Control': 'public, max-age=0, s-maxage=5, must-revalidate' } }
   );
 }

@@ -50,7 +50,7 @@ export default function Nav() {
             session?.user ? (
               <a href="/account" className="account-badge" title="Profilom">
                 <Icon src="/icons/Fiok.png" size={16} />
-                <span className="account-badge-label">Profil</span>
+                <span className="account-badge-label">Profilom</span>
               </a>
             ) : (
               <a href="/login" className="account-badge" title="Bejelentkezés">
@@ -105,10 +105,10 @@ export default function Nav() {
           {status !== 'loading' && (
             session?.user ? (
               <>
-                <div style={{ padding: '10px 10px 2px', fontSize: 13, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <a href="/account" onClick={() => setOpen(false)} title="Profilom" style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>
                   <Icon src="/icons/Fiok.png" size={16} />
                   Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{session.user.name || session.user.email}</b>
-                </div>
+                </a>
                 <a href="#" onClick={handleLogout}>
                   <Icon src="/icons/Kijelentkezes.png" /> Kijelentkezés
                 </a>

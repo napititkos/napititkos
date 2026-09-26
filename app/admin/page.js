@@ -672,7 +672,15 @@ export default function AdminPage() {
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <b>{entries.length} db titkosírás a sorban</b>
+          <b>
+            {freshEntries(entries, sortMode, sortDirection, justAddedId, shownDateById, currentActiveId).length} db
+            titkosírás a sorban
+          </b>
+          {archivedList(entries, shownDateById, currentActiveId).length > 0 && (
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)', marginLeft: 6 }}>
+              (+ {archivedList(entries, shownDateById, currentActiveId).length} archivált)
+            </span>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="ghost small" onClick={addEntry}>+ Új titkosírás</button>
             <button className="primary small" onClick={saveAll} disabled={loading}>

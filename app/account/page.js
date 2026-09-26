@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { loadProgress } from '../../lib/progress';
 import { ACHIEVEMENTS } from '../../lib/achievements';
+import { enumerationFor } from '../../lib/format';
 import { signOut, useSession } from 'next-auth/react';
 
 export default function AccountPage() {
@@ -9,10 +10,19 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [prog, setProg] = useState(null);
+  const [mySubmissions, setMySubmissions] = useState(null);
 
   useEffect(() => {
     setProg(loadProgress());
   }, []);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/account/my-submissions')
+      .then((r) => r.json())
+      .then((d) => setMySubmissions(d.submissions || []))
+      .catch(() => setMySubmissions([]));
+  }, [session?.user?.id]);
 
   async function deleteAccount() {
     const sure = window.confirm(
@@ -68,7 +78,7 @@ export default function AccountPage() {
         <div className="help-block" style={{ marginBottom: 0 }}>
           <h3>Statisztikáim</h3>
           {prog && (
-            <div className="stats" style={{ justifyContent: 'flex-start', gap: 24, margin: '10px 0 14px' }}>
+            <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '10px 0 14px' }}>
               <div className="stat">
                 <b>{prog.streak}</b>
                 <span>napos sorozat</span>
@@ -81,12 +91,19 @@ export default function AccountPage() {
                 <b>{prog.totalSolved || 0}</b>
                 <span>megoldott</span>
               </div>
-              <div className="stat">
+              <a
+                href="#"
+                className="stat-link"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.dispatchEvent(new Event('open-achievements'));
+                }}
+              >
                 <b>
                   {(prog.unlocked || []).length}/{ACHIEVEMENTS.length}
                 </b>
                 <span>trófea</span>
-              </div>
+              </a>
             </div>
           )}
           <a href="/stats" style={{ textDecoration: 'none' }}>
@@ -97,6 +114,31 @@ export default function AccountPage() {
 
       <h2 style={{ fontFamily: 'var(--font-baloo), "Baloo 2", sans-serif', color: 'var(--accent)', fontSize: 21, margin: '6px 0 12px', letterSpacing: '0.015em' }}>Adataim</h2>
       <div className="card">
+        <div className="help-block">
+          <h3>Elfogadott beküldéseim {mySubmissions ? `(${mySubmissions.length})` : ''}</h3>
+          {mySubmissions === null && <p style={{ color: 'var(--ink-soft)' }}>Betöltés…</p>}
+          {mySubmissions && mySubmissions.length === 0 && (
+            <p style={{ color: 'var(--ink-soft)' }}>
+              Még egy beküldésed sem került be a napi titkosírások közé.{' '}
+              <a href="/submit" style={{ color: 'var(--accent)' }}>
+                Küldj be egyet!
+              </a>
+            </p>
+          )}
+          {mySubmissions &&
+            mySubmissions.map((sub) => (
+              <div className="sub-item" key={sub.id}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                  <span>
+                    {sub.clue} {enumerationFor(sub.answer)}
+                  </span>
+                  <span style={{ fontSize: 12.5, color: sub.shownDate ? 'var(--good)' : 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
+                    {sub.shownDate ? `✓ ${sub.shownDate}` : 'beütemezve'}
+                  </span>
+                </div>
+              </div>
+            ))}
+        </div>
         <div className="help-block">
           <h3>Adataim letöltése</h3>
           <p>A fiókodhoz tartozó összes adatot (fiók, haladás, beküldéseid) egy JSON fájlban letöltheted.</p>
