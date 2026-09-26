@@ -17,7 +17,8 @@ export async function POST(req) {
   if (!body || !Number.isInteger(hintsUsed) || hintsUsed < 0 || hintsUsed > MAX_HINTS) {
     return Response.json({ ok: false, error: 'invalid-body' }, { status: 400 });
   }
-  await recordResult(todayStr(), { hintsUsed, correct: body.correct === true });
+  // Aki ma vendégként már megfejtette, majd bejelentkezve újra, azt nem számoljuk kétszer.
+  if (body.repeat !== true) await recordResult(todayStr(), { hintsUsed, correct: body.correct === true });
   return Response.json({ ok: true });
 }
 
@@ -44,8 +45,9 @@ export async function GET(req) {
     }
   }
   const average = completions ? totalHints / completions : 0;
+  const playing = Math.max(0, Number(await kv.raw().hget(`presence:${date}`, '_playing')) || 0);
   return Response.json(
-    { completions, average, correctCount },
+    { completions, average, correctCount, playing },
     { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' } }
   );
 }

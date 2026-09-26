@@ -80,12 +80,12 @@ nav.topnav{
   font-size: 13px; font-weight: 700;
   max-width: 140px;
 }
-.account-badge-name{
+.account-badge-name, .account-badge-label{
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 @media (max-width: 420px){
   .account-badge-name{ display: none; }
-  .account-badge{ padding: 8px; }
+  .account-badge{ padding: 6px 10px; }
 }
 .drawer-overlay{
   position: fixed; inset: 0; background: rgba(61,52,82,0.45);

@@ -42,6 +42,12 @@ export default function PrivacyPage() {
             fiókodhoz kötve a szerverünkön is elmentődnek, hogy más eszközön bejelentkezve is
             megtaláld a haladásodat.
           </p>
+          <p>
+            A "még fejti" számlálóhoz az eszközöd egy véletlenszerű, névtelen azonosítót kap, amit
+            a böngésződ tárol. Ebből csak annyit rögzítünk, hogy az adott napon megnyitotta-e a
+            titkosírást, és befejezte-e. Nincs a fiókodhoz, a nevedhez vagy más adathoz kötve, és
+            a szerverről két nap után törlődik.
+          </p>
         </div>
         <div className="help-block">
           <h3>Ranglista</h3>
