@@ -17,13 +17,21 @@ export async function POST(req) {
   const body = await readJson(req, 500);
   const device = body?.device;
   const action = body?.action;
-  if (typeof device !== 'string' || !DEVICE.test(device) || !['open', 'done'].includes(action)) {
+  if (typeof device !== 'string' || !DEVICE.test(device) || !['open', 'done', 'reopen'].includes(action)) {
     return Response.json({ ok: false, error: 'invalid-body' }, { status: 400 });
   }
   const r = kv.raw();
   const key = `presence:${todayStr()}`;
   if (action === 'open') {
     if ((await r.hsetnx(key, device, 'o')) === 1) await r.hincrby(key, '_playing', 1);
+  } else if (action === 'reopen') {
+    // Vendégként befejezte, majd bejelentkezve újra játszik: ismét "fejti".
+    if ((await r.hget(key, device)) === 'd') {
+      await r.hset(key, device, 'o');
+      await r.hincrby(key, '_playing', 1);
+    } else if ((await r.hsetnx(key, device, 'o')) === 1) {
+      await r.hincrby(key, '_playing', 1);
+    }
   } else {
     const prev = await r.hget(key, device);
     if (prev === 'o') {

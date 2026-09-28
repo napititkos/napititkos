@@ -226,6 +226,8 @@ export default function AdminPage() {
     });
     if (res.ok) {
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
+    } else if (res.status === 409) {
+      alert('A saját admin jogodat nem veheted el. Ha le szeretnél mondani róla, kérj meg egy másik admint.');
     } else {
       alert('Nem sikerült módosítani a jogosultságot.');
     }
@@ -318,6 +320,30 @@ export default function AdminPage() {
     if (!confirm('Biztosan törlöd ezt a titkosírást?')) return;
     setEntries((prev) => prev.filter((_, i) => i !== ei));
   }
+  // A sorban (nem archivált) lévő titkosírások indexei a lista sorrendjében; a napi
+  // váltás ebben a sorrendben választ.
+  function queueIndexes(list) {
+    return list.map((e, i) => (isArchived(e, shownDateById, currentActiveId) ? -1 : i)).filter((i) => i >= 0);
+  }
+
+  // Beírt sorszámra mozgatás: a titkosírás a sor k-adik helyére kerül.
+  function moveToQueuePosition(ei, k) {
+    setEntries((prev) => {
+      const q = queueIndexes(prev);
+      const cur = q.indexOf(ei);
+      if (cur === -1) return prev;
+      const target = Math.min(Math.max(1, Math.round(k)), q.length) - 1;
+      if (target === cur) return prev;
+      const next = [...prev];
+      const [item] = next.splice(ei, 1);
+      const q2 = queueIndexes(next);
+      const insertAt = target >= q2.length ? q2[q2.length - 1] + 1 : q2[target];
+      next.splice(insertAt, 0, item);
+      return next;
+    });
+    setJustAddedId(null);
+  }
+
   function moveEntry(ei, dir) {
     setEntries((prev) => {
       const next = [...prev];
@@ -391,7 +417,36 @@ export default function AdminPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   <span>{isOpen ? '▾' : '▸'}</span>
-                  <b>#{ei + 1}.</b>
+                  {!isArchived(e, shownDateById, currentActiveId) && sortMode === 'manual' ? (
+                    <input
+                      key={`pos-${e.id}-${queueIndexes(entries).indexOf(ei)}`}
+                      type="number"
+                      min={1}
+                      max={queueIndexes(entries).length}
+                      defaultValue={queueIndexes(entries).indexOf(ei) + 1}
+                      className="queue-pos"
+                      title="Hányadik legyen a sorban? Írd be, majd Enter"
+                      aria-label="Sorszám a sorban"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        ev.currentTarget.select();
+                      }}
+                      onFocus={(ev) => ev.currentTarget.select()}
+                      onKeyDown={(ev) => {
+                        ev.stopPropagation();
+                        if (ev.key === 'Enter') {
+                          ev.preventDefault();
+                          moveToQueuePosition(ei, Number(ev.currentTarget.value));
+                        }
+                      }}
+                      onBlur={(ev) => {
+                        const v = Number(ev.currentTarget.value);
+                        if (v && v !== queueIndexes(entries).indexOf(ei) + 1) moveToQueuePosition(ei, v);
+                      }}
+                    />
+                  ) : (
+                    <b>#{ei + 1}.</b>
+                  )}
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                     {e.clue || '(üres)'}
                   </span>

@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../../lib/kv';
-import { isAdminRequest } from '../../../../lib/adminAuth';
+import { adminUser, isAdminRequest } from '../../../../lib/adminAuth';
+import { readJson } from '../../../../lib/validate';
 
 export async function GET(req) {
   if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -25,10 +26,16 @@ export async function GET(req) {
 
 export async function PATCH(req) {
   if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
-  const body = await req.json().catch(() => ({}));
+  const body = (await readJson(req, 2000)) || {};
   const { id, role } = body;
   if (typeof id !== 'string' || !['user', 'admin'].includes(role)) {
     return Response.json({ error: 'invalid-body' }, { status: 400 });
+  }
+  // A saját admin jogát senki nem veheti el magától (különben kizárná magát, és ha ő az
+  // egyetlen admin, az admin felülethez senki nem férne hozzá).
+  const me = await adminUser();
+  if (me && me.id === id && role !== 'admin') {
+    return Response.json({ error: 'self-demote', message: 'A saját admin jogodat nem veheted el.' }, { status: 409 });
   }
   const user = await kv.get(`au:user:${id}`);
   if (!user) return Response.json({ error: 'not-found' }, { status: 404 });

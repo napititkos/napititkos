@@ -94,7 +94,7 @@ check('az előzmény dátuma budapesti mai nap', history[0]?.shownDate === budap
 check('nincs megmaradt zár', (await redis.keys('lock:*')).length === 0);
 const archive = await (await fetch(BASE + '/api/archive')).json();
 r = await fetch(BASE + '/api/archive');
-check('archívum: az aktív rejtvény nincs benne, gyorsítótár-fejléc van', archive.archive.length === 0 && /s-maxage=60/.test(h('cache-control')));
+check('archívum: az aktív rejtvény nincs benne, gyorsítótár-fejléc van (régi válasz kiadása nélkül)', archive.archive.length === 0 && /s-maxage=\d+/.test(h('cache-control')) && !/stale-while-revalidate/.test(h('cache-control')));
 check('az archívum nem tartalmaz e-mail-címet', !JSON.stringify(archive).includes('example.hu'));
 
 // ---------------------------------------------------------------- STATISZTIKA
@@ -340,6 +340,31 @@ const beforeRepeat = (await (await fetch(BASE + `/api/stats?date=${budapestToday
 r = await post('/api/stats', { hintsUsed: 0, correct: true, repeat: true });
 const afterRepeat = (await (await fetch(BASE + `/api/stats?date=${budapestToday}&t=${Math.random()}`)).json()).correctCount;
 check('vendég után bejelentkezve újra megfejtve nem számít duplán a megfejtők közé', r.status === 200 && afterRepeat === beforeRepeat, `${beforeRepeat} -> ${afterRepeat}`);
+
+
+section('Még fejti: vendégként befejezte, bejelentkezve újra játszik');
+const devR = 'e'.repeat(32);
+const pBefore = await playing();
+await post('/api/stats/presence', { device: devR, action: 'open' });
+await post('/api/stats/presence', { device: devR, action: 'done' });
+check('befejezés után nem fejti', (await playing()) === pBefore);
+await post('/api/stats/presence', { device: devR, action: 'reopen' });
+check('újrajátszáskor ismét fejti (+1)', (await playing()) === pBefore + 1);
+await post('/api/stats/presence', { device: devR, action: 'reopen' });
+check('kétszeri újranyitás sem számít duplán', (await playing()) === pBefore + 1);
+await post('/api/stats/presence', { device: devR, action: 'done' });
+check('újra befejezve visszaáll', (await playing()) === pBefore);
+
+section('Admin: a saját admin jog nem vehető el');
+const meId = JSON.parse(await redis.get(`au:userByEmail:admin2@teszt.hu`));
+r = await fetch(BASE + '/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...adm }, body: JSON.stringify({ id: meId, role: 'user' }) });
+check('saját jog elvétele: 409', r.status === 409, `(${r.status})`);
+check('a jog megmaradt', JSON.parse(await redis.get(`au:user:${meId}`)).role === 'admin');
+const otherId = JSON.parse(await redis.get(`au:userByEmail:kommentelo@teszt.hu`));
+r = await fetch(BASE + '/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...adm }, body: JSON.stringify({ id: otherId, role: 'admin' }) });
+check('másnak adhat jogot: 200', r.status === 200);
+r = await fetch(BASE + '/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...adm }, body: JSON.stringify({ id: otherId, role: 'user' }) });
+check('másét elveheti: 200', r.status === 200 && JSON.parse(await redis.get(`au:user:${otherId}`)).role === 'user');
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

@@ -209,9 +209,11 @@ export default function HomePage() {
         setLockedLetters(emptyLocked(data.puzzle.answer));
 
         const prog = loadProgress();
+        let reopened = false;
         if (sessionStatus === 'authenticated' && dropGuestEntry(prog, data.date)) {
           saveProgress(prog);
           clearActiveTimer();
+          reopened = true;
         }
         setProgress({ streak: prog.streak, best: prog.best });
         setUnlockedAchievements(prog.unlocked || []);
@@ -238,7 +240,7 @@ export default function HomePage() {
             fetch('/api/stats/presence', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ device: dev, action: 'open' }),
+              body: JSON.stringify({ device: dev, action: reopened ? 'reopen' : 'open' }),
             }).catch(() => {});
           }
         }

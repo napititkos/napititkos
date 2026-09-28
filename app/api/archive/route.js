@@ -74,9 +74,10 @@ export async function GET() {
     totalSolvers: totals[p.shownDate] ?? null,
     commentCount: commentCounts[p.shownDate] ?? 0,
   }));
-  // Mindenkinek ugyanaz, ezért a CDN rövid ideig gyorsítótárazhatja.
-  return Response.json(
+    return Response.json(
     { archive },
-    { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+    // A CDN legfeljebb 10 másodpercig tarthatja, régi (lejárt) válasz kiadása nélkül; a
+    // böngésző nem tárolja, így a megfejtőszám újratöltéskor friss.
+    { headers: { 'Cache-Control': 'public, max-age=0, s-maxage=10, must-revalidate' } }
   );
 }
