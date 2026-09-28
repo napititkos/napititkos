@@ -65,7 +65,7 @@ export default function StatsPage() {
             <span>legjobb sorozat</span>
           </div>
           <div className="stat">
-            <b>{progress.totalSolved || 0}</b>
+            <b>{(progress.totalSolved || 0) + (progress.archiveSolved || []).length}</b>
             <span>megoldott rejtvény</span>
           </div>
           <div className="stat">

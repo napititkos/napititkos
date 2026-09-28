@@ -88,7 +88,7 @@ export default function AccountPage() {
                 <span>legjobb sorozat</span>
               </div>
               <div className="stat">
-                <b>{prog.totalSolved || 0}</b>
+                <b>{(prog.totalSolved || 0) + (prog.archiveSolved || []).length}</b>
                 <span>megoldott</span>
               </div>
               <a

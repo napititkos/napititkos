@@ -25,7 +25,7 @@ export default function ArchivePage() {
     const prog = loadProgress();
     setHistory(prog.history || {});
     setArchiveSolved(prog.archiveSolved || []);
-    fetch('/api/archive')
+    fetch('/api/archive', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => setItems(data.archive || []))
       .catch(() => setError('Nem sikerült betölteni az archívumot.'));
