@@ -447,15 +447,16 @@ input.queue-pos{ width: 52px !important; min-width: 52px !important; flex: none 
 /* Tipptípusok fix színei (minden rejtvénynél ugyanaz): a kiemelés, a tipp gombja és a
    felfedett tipp doboza is ezt használja. */
 :root{
-  --hl-definicio-bg: #CDEFFA; --hl-definicio-ink: #0B5A73;
-  --hl-indikator-bg: #FFE7A3; --hl-indikator-ink: #7A5200;
-  --hl-fodder-bg: #E9D9FF;    --hl-fodder-ink: #5A2EA6;
+  /* az oldal palettájából, tompítva: halványkék, barack, halványlila */
+  --hl-definicio-bg: #DCEFF6; --hl-definicio-ink: #2F6F84;
+  --hl-indikator-bg: #FBE6D8; --hl-indikator-ink: #9A5B36;
+  --hl-fodder-bg: #E6E4FA;    --hl-fodder-ink: #5B56A0;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --hl-definicio-bg: #17566A; --hl-definicio-ink: #BDEBFA;
-    --hl-indikator-bg: #6E5310; --hl-indikator-ink: #FFE7A3;
-    --hl-fodder-bg: #4E3285;    --hl-fodder-ink: #E9D9FF;
+    --hl-definicio-bg: #26434E; --hl-definicio-ink: #A9DDEC;
+    --hl-indikator-bg: #4B3729; --hl-indikator-ink: #F2C9A8;
+    --hl-fodder-bg: #36345B;    --hl-fodder-ink: #CFCBF5;
   }
 }
 .hl-type-definicio{ --hl-bg: var(--hl-definicio-bg); --hl-ink: var(--hl-definicio-ink); }
@@ -496,4 +497,29 @@ button.primary.hl-btn{ background: var(--hl-bg); color: var(--hl-ink); border-co
   .row-main{ flex: 1 1 100%; }
   .row-side{ flex: 1 1 100%; justify-content: flex-end; flex-wrap: wrap; }
   .row-date{ display: none; }
+}
+
+/* Több tipphez is tartozó szó: sávosan mindegyik tipp színe látszik. */
+mark.hl-multi{ color: var(--ink); font-weight: 700; }
+
+/* Eredménykártya: a gombok és a statisztikák három egyforma oszlopban, így a középső
+   pontosan középen van, a két szélső pedig a feliratok hosszától függetlenül egyenlő
+   távolságra esik tőle (asztalon és mobilon is). */
+.result .result-actions,
+.result .stats{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-items: center;
+  align-items: start;
+  gap: 10px 6px;
+  width: 100%;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.result .result-action{ width: 100%; text-align: center; }
+.result .result-action span{ white-space: normal; line-height: 1.25; }
+.result .stats .stat{ width: 100%; text-align: center; }
+@media (max-width: 420px){
+  .result .result-actions, .result .stats{ gap: 10px 4px; }
 }
