@@ -699,22 +699,13 @@ export default function HomePage() {
                     <Icon src="/icons/Rejtveny_tippek.png" size={16} /> Tippek ({hintsUsed()} felhasználva)
                   </button>
                 )}
-                <button className="ghost small" onClick={giveUp}>
-                  Feladom, mutasd a választ
-                </button>
               </div>
-              {revealed.map((t) => (
+              {revealed.filter((t) => t !== 'betu').map((t) => (
                 <div className={`hint-box${HL_TYPES.includes(t) ? ` hl-type-${t}` : ''}`} key={t}>
-                  {t === 'betu' ? (
-                    <>
-                      <b>Helyes betű:</b> Eddig {betuCount} betűt fedtünk fel a válaszban.
-                    </>
-                  ) : (
-                    <>
+                  <>
                       {HL_TYPES.includes(t) && <span className="hl-dot" />}
                       <b>{HINT_LABELS[t]}:</b> {puzzle.hints[t].text}
                     </>
-                  )}
                 </div>
               ))}
             </>

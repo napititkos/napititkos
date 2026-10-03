@@ -23,6 +23,16 @@ export default function ArchivePage() {
   const [gaveUpIds, setGaveUpIds] = useState([]);
   const [commentCounts, setCommentCounts] = useState({});
 
+  // Vendégeknek előzetes: csak darabszámok évre/hónapra bontva (konkrét rejtvény nélkül).
+  const [teaser, setTeaser] = useState(null);
+  useEffect(() => {
+    if (status !== 'unauthenticated') return;
+    fetch('/api/archive/summary')
+      .then((r) => r.json())
+      .then((d) => setTeaser(d))
+      .catch(() => {});
+  }, [status]);
+
   useEffect(() => {
     if (status !== 'authenticated') return;
     const prog = loadProgress();
@@ -88,9 +98,39 @@ export default function ArchivePage() {
             <p style={{ margin: 0 }}>Betöltés…</p>
           ) : (
             <>
-              <p style={{ marginTop: 0 }}>
-                A korábbi titkosírások újrajátszásához és a régi kommentek megtekintéséhez jelentkezz be.
-              </p>
+              {teaser && teaser.total > 0 ? (
+                <>
+                  <p style={{ marginTop: 0, fontSize: 15.5 }}>
+                    <b>{teaser.total} korábbi titkosírás</b> vár rád, újra kijátszható formában, tippekkel és a régi
+                    kommentekkel együtt.
+                  </p>
+                  <div className="teaser-list">
+                    {Object.keys(teaser.byYear)
+                      .sort((a, b) => b.localeCompare(a))
+                      .map((y) => (
+                        <div key={y} className="teaser-year">
+                          <b>{y}</b>
+                          <div className="teaser-months">
+                            {Object.keys(teaser.byYear[y])
+                              .sort((a, b) => b.localeCompare(a))
+                              .map((m) => (
+                                <span key={m} className="teaser-month">
+                                  {HU_MONTHS[parseInt(m, 10) - 1]} <b>{teaser.byYear[y][m]}</b>
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <p style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>
+                    Bejelentkezve azt is látod, melyiket fejtetted már meg, és hányan fejtették meg összesen.
+                  </p>
+                </>
+              ) : (
+                <p style={{ marginTop: 0 }}>
+                  A korábbi titkosírások újrajátszásához és a régi kommentek megtekintéséhez jelentkezz be.
+                </p>
+              )}
               <a href="/login?callbackUrl=/archive" style={{ textDecoration: 'none' }}>
                 <button className="primary">Bejelentkezés</button>
               </a>
@@ -195,7 +235,7 @@ export default function ArchivePage() {
                                             onSolved={() => handleSolved(it.id, it.shownDate)}
                                             onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />
-                                          {(solved || gaveUpIds.includes(it.id)) && (
+                                          {solved && (
                                             <div style={{ marginTop: 12 }}>
                                               <b style={{ fontSize: 14 }}>
                                                 Kommentek ezen a napon ({commentCounts[it.shownDate] ?? it.commentCount ?? 0})

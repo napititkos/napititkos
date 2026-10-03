@@ -387,6 +387,19 @@ check('a kijelölések megmaradnak, a hibás értékek kiesnek', JSON.stringify(
 check('üres tipphez nem tárol kijelölést', JSON.stringify(sub?.hintWords?.indikator) === '[]');
 check('nem kiemelhető tipphez nem tárol kijelölést', sub?.hintWords?.alternativ === undefined);
 
+
+section('Archívum előzetes (vendégeknek)');
+r = await fetch(BASE + '/api/archive/summary');
+j = await r.json();
+const histAll = JSON.parse(await redis.get('rotation:history'));
+const pastAll = histAll.slice(0, -1);
+check('bejelentkezés nélkül is elérhető: 200', r.status === 200);
+check('a darabszám egyezik a korábbi titkosírások számával (a mai nélkül)', j.total === pastAll.length, `${j.total} vs ${pastAll.length}`);
+const [py, pm] = pastAll[0].shownDate.split('-');
+check('évre és hónapra bontva', typeof j.byYear?.[py]?.[pm] === 'number' && j.byYear[py][pm] >= 1, JSON.stringify(j.byYear));
+const txt = JSON.stringify(j);
+check('nem ad ki rejtvényszöveget, választ vagy tippet', !pastAll.some((h) => (h.clue && txt.includes(h.clue)) || (h.answer && txt.includes(h.answer))) && !/clue|answer|hints/.test(txt));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
