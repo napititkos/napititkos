@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { enumerationFor } from '../../lib/format';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
@@ -11,6 +12,7 @@ const HU_MONTHS = [
 ];
 
 export default function ArchivePage() {
+  const { status } = useSession();
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState({});
@@ -22,6 +24,7 @@ export default function ArchivePage() {
   const [commentCounts, setCommentCounts] = useState({});
 
   useEffect(() => {
+    if (status !== 'authenticated') return;
     const prog = loadProgress();
     setHistory(prog.history || {});
     setArchiveSolved(prog.archiveSolved || []);
@@ -29,7 +32,7 @@ export default function ArchivePage() {
       .then((r) => r.json())
       .then((data) => setItems(data.archive || []))
       .catch(() => setError('Nem sikerült betölteni az archívumot.'));
-  }, []);
+  }, [status]);
 
   function isSolved(it) {
     return !!history[it.shownDate]?.correct || archiveSolved.includes(it.id);
@@ -75,6 +78,28 @@ export default function ArchivePage() {
   }
 
   const years = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  if (status !== 'authenticated') {
+    return (
+      <div className="wrap">
+        <h1 className="page-title">Korábbi titkosírások</h1>
+        <div className="card">
+          {status === 'loading' ? (
+            <p style={{ margin: 0 }}>Betöltés…</p>
+          ) : (
+            <>
+              <p style={{ marginTop: 0 }}>
+                A korábbi titkosírások újrajátszásához és a régi kommentek megtekintéséhez jelentkezz be.
+              </p>
+              <a href="/login?callbackUrl=/archive" style={{ textDecoration: 'none' }}>
+                <button className="primary">Bejelentkezés</button>
+              </a>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="wrap">

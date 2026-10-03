@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../lib/kv';
+import { auth } from '../../../auth';
 
 // Összesített megfejtőszám egy korábbi titkosírásra = aznapi megfejtők + azóta az
 // archívumban megfejtők. Az aznapi szám a napi statisztikából jön, ami 120 nap után
@@ -47,6 +48,11 @@ async function solverTotals(dates) {
 }
 
 export async function GET() {
+  // A korábbi titkosírások csak bejelentkezve érhetők el.
+  const session = await auth();
+  if (!session?.user) {
+    return Response.json({ error: 'unauthenticated' }, { status: 401, headers: { 'Cache-Control': 'private, no-store' } });
+  }
   const history = (await kv.get('rotation:history')) || [];
   // Az utolsó bejegyzés mindig a jelenleg AKTÍV titkosírás - azt nem mutatjuk,
   // nehogy lelőjük a ma megfejtendő rejtvény válaszát.
@@ -76,8 +82,8 @@ export async function GET() {
   }));
     return Response.json(
     { archive },
-    // A CDN legfeljebb 10 másodpercig tarthatja, régi (lejárt) válasz kiadása nélkül; a
-    // böngésző nem tárolja, így a megfejtőszám újratöltéskor friss.
-    { headers: { 'Cache-Control': 'public, max-age=0, s-maxage=10, must-revalidate' } }
+    // Bejelentkezéshez kötött tartalom: a CDN nem tárolhatja (különben egy eltárolt választ
+    // bejelentkezés nélkül is kiadhatna), és a böngésző sem.
+    { headers: { 'Cache-Control': 'private, no-store' } }
   );
 }

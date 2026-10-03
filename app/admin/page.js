@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { enumerationFor, splitAnswerWords } from '../../lib/format';
+import { HL_TYPES, clueTokens } from '../../lib/clue';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
@@ -98,7 +99,68 @@ function sortIndexed(list, mode, direction, justAddedId) {
   }
   return sorted;
 }
+function budapestToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Budapest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+function addDays(dateStr, n) {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+export function shortHuDate(dateStr) {
+  if (!dateStr) return '';
+  const [, m, d] = dateStr.split('-').map(Number);
+  return `${String(m).padStart(2, '0')}.${String(d).padStart(2, '0')}.`;
+}
+// Várható sorrend, ahogy a napi váltás választani fog: ma a futó titkosírás, utána
+// minden napra az arra a napra ütemezett, ha van, különben a sor következő eleme.
+// Visszaadja az elemeket a várható dátummal együtt.
+function projectedOrder(entries, shownDateById, currentActiveId) {
+  const fresh = indexedEntries(entries).filter(({ entry }) => !isArchived(entry, shownDateById, currentActiveId));
+  const today = budapestToday();
+  const out = [];
+  const current = fresh.find(({ entry }) => entry.id === currentActiveId);
+  if (current) out.push({ ...current, date: today, isCurrent: true });
+  const rest = fresh.filter(({ entry }) => entry.id !== currentActiveId);
+  const scheduled = rest.filter(({ entry }) => entry.scheduledDate);
+  const queue = rest.filter(({ entry }) => !entry.scheduledDate);
+  const tomorrow = addDays(today, 1);
+  // Lejárt (már elmúlt dátumra ütemezett, de meg nem jelent) elemek elöl, jelölve.
+  for (const it of scheduled.filter(({ entry }) => entry.scheduledDate < tomorrow).sort((a, b) => a.entry.scheduledDate.localeCompare(b.entry.scheduledDate))) {
+    out.push({ ...it, date: it.entry.scheduledDate, overdue: true });
+  }
+  const byDate = new Map();
+  for (const it of scheduled.filter(({ entry }) => entry.scheduledDate >= tomorrow)) {
+    if (!byDate.has(it.entry.scheduledDate)) byDate.set(it.entry.scheduledDate, []);
+    byDate.get(it.entry.scheduledDate).push(it);
+  }
+  let d = tomorrow;
+  let qi = 0;
+  let guard = 0;
+  while ((qi < queue.length || byDate.size) && guard++ < 5000) {
+    if (byDate.has(d)) {
+      for (const it of byDate.get(d)) out.push({ ...it, date: d });
+      byDate.delete(d);
+    } else if (qi < queue.length) {
+      out.push({ ...queue[qi++], date: d });
+    } else {
+      // Már csak későbbi ütemezettek maradtak: ugrás a következő ütemezett napra.
+      d = [...byDate.keys()].sort()[0];
+      continue;
+    }
+    d = addDays(d, 1);
+  }
+  return out;
+}
 function freshEntries(entries, mode, direction, justAddedId, shownDateById, currentActiveId) {
+  if (mode === 'manual') {
+    const proj = projectedOrder(entries, shownDateById, currentActiveId);
+    if (justAddedId) {
+      const i = proj.findIndex((x) => x.entry.id === justAddedId);
+      if (i > 0) proj.unshift(...proj.splice(i, 1));
+    }
+    return proj;
+  }
   const list = indexedEntries(entries).filter(
     ({ entry }) => !isArchived(entry, shownDateById, currentActiveId)
   );
@@ -323,7 +385,9 @@ export default function AdminPage() {
   // A sorban (nem archivált) lévő titkosírások indexei a lista sorrendjében; a napi
   // váltás ebben a sorrendben választ.
   function queueIndexes(list) {
-    return list.map((e, i) => (isArchived(e, shownDateById, currentActiveId) ? -1 : i)).filter((i) => i >= 0);
+    return list
+      .map((e, i) => (isArchived(e, shownDateById, currentActiveId) || e.id === currentActiveId || e.scheduledDate ? -1 : i))
+      .filter((i) => i >= 0);
   }
 
   // Beírt sorszámra mozgatás: a titkosírás a sor k-adik helyére kerül.
@@ -406,18 +470,21 @@ export default function AdminPage() {
     setAccess('password');
   }
 
-  function renderEntryRow(e, ei) {
+  function renderEntryRow(e, ei, meta = {}) {
           const isOpen = expandedId === e.id;
           const answerShown = !!revealedAnswers[e.id];
           return (
             <div className="puzzle-editor" key={e.id}>
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                onClick={() => setExpandedId(isOpen ? null : e.id)}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+              <div className="row-head" onClick={() => setExpandedId(isOpen ? null : e.id)}>
+                <div className="row-main">
                   <span>{isOpen ? '▾' : '▸'}</span>
-                  {!isArchived(e, shownDateById, currentActiveId) && sortMode === 'manual' ? (
+                  {meta.isCurrent ? (
+                    <span className="pos-badge" title="Ma ez fut">ma</span>
+                  ) : e.scheduledDate && !isArchived(e, shownDateById, currentActiveId) ? (
+                    <span className={`pos-badge${meta.overdue ? ' overdue' : ''}`} title={`Beütemezve: ${e.scheduledDate}${meta.overdue ? ' (a dátum elmúlt, nem jelent meg)' : ''}`}>
+                      📅
+                    </span>
+                  ) : !isArchived(e, shownDateById, currentActiveId) && sortMode === 'manual' ? (
                     <input
                       key={`pos-${e.id}-${queueIndexes(entries).indexOf(ei)}`}
                       type="number"
@@ -447,45 +514,43 @@ export default function AdminPage() {
                   ) : (
                     <b>#{ei + 1}.</b>
                   )}
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
-                    {e.clue || '(üres)'}
-                  </span>
+                  <span className="row-clue">{e.clue || '(üres)'}</span>
+                </div>
+                <div className="row-side" onClick={(ev) => ev.stopPropagation()}>
+                  {meta.date && (
+                    <span className={`row-date${e.scheduledDate ? ' sched' : ''}${meta.overdue ? ' overdue' : ''}`} title={e.scheduledDate ? 'Beütemezve' : 'Várható megjelenés'}>
+                      {meta.isCurrent ? 'ma' : `${e.scheduledDate ? '' : '~'}${shortHuDate(meta.date)}`}
+                    </span>
+                  )}
                   {e.answer ? (
                     answerShown ? (
                       <span
-                        style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', display: 'inline-block', minWidth: 100 }}
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          setRevealedAnswers((prev) => ({ ...prev, [e.id]: false }));
-                        }}
+                        className="row-answer"
+                        onClick={() => setRevealedAnswers((prev) => ({ ...prev, [e.id]: false }))}
                         title="Elrejtés"
                       >
                         {e.answer}
                       </span>
                     ) : (
-                      <button
-                        className="ghost small"
-                        style={{ minWidth: 100 }}
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          setRevealedAnswers((prev) => ({ ...prev, [e.id]: true }));
-                        }}
-                      >
+                      <button className="ghost small row-answer-btn" onClick={() => setRevealedAnswers((prev) => ({ ...prev, [e.id]: true }))}>
                         Megoldás
                       </button>
                     )
                   ) : (
-                    <span style={{ color: 'var(--ink-soft)', fontSize: 13, display: 'inline-block', minWidth: 100 }}>(nincs válasz)</span>
+                    <span className="row-answer muted">(nincs válasz)</span>
                   )}
-                  {e.scheduledDate && (
-                    <span className="progress-badge" title="Beütemezve">
-                      📅 {e.scheduledDate}
-                    </span>
+                  {queueIndexes(entries).indexOf(ei) >= 0 && sortMode === 'manual' && (
+                    <>
+                      <button className="ghost small" aria-label="Feljebb" onClick={() => moveToQueuePosition(ei, queueIndexes(entries).indexOf(ei))}>↑</button>
+                      <button className="ghost small" aria-label="Lejjebb" onClick={() => moveToQueuePosition(ei, queueIndexes(entries).indexOf(ei) + 2)}>↓</button>
+                    </>
                   )}
-                </div>
-                <div style={{ display: 'flex', gap: 6 }} onClick={(ev) => ev.stopPropagation()}>
-                  <button className="ghost small" onClick={() => moveEntry(ei, -1)}>↑</button>
-                  <button className="ghost small" onClick={() => moveEntry(ei, 1)}>↓</button>
+                  {sortMode !== 'manual' && (
+                    <>
+                      <button className="ghost small" onClick={() => moveEntry(ei, -1)}>↑</button>
+                      <button className="ghost small" onClick={() => moveEntry(ei, 1)}>↓</button>
+                    </>
+                  )}
                   <button className="ghost small" onClick={() => removeEntry(ei)}>Törlés</button>
                 </div>
               </div>
@@ -626,6 +691,39 @@ export default function AdminPage() {
                           placeholder={`Írd be a(z) ${h.label.toLowerCase()} tippet…`}
                         />
                       )}
+                      {e.hints[h.key]?.enabled && HL_TYPES.includes(h.key) && (
+                        <div className={`hl-type-${h.key}`} style={{ marginTop: 6 }}>
+                          <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+                            <span className="hl-dot" />
+                            Kattints a rejtvény azon szavaira, amelyeket ez a tipp kiemel a játékosnak:
+                          </div>
+                          <div className="word-chips">
+                            {clueTokens(e.clue)
+                              .filter((tok) => tok.w >= 0)
+                              .map((tok) => {
+                                const on = (e.hints[h.key]?.words || []).includes(tok.w);
+                                return (
+                                  <button
+                                    type="button"
+                                    key={tok.w}
+                                    className={`word-chip${on ? ' on' : ''}`}
+                                    aria-pressed={on}
+                                    onClick={() =>
+                                      updateEntry(ei, (en) => {
+                                        const cur = en.hints[h.key]?.words || [];
+                                        const words = on ? cur.filter((x) => x !== tok.w) : [...cur, tok.w].sort((a, b) => a - b);
+                                        return { ...en, hints: { ...en.hints, [h.key]: { ...en.hints[h.key], words } } };
+                                      })
+                                    }
+                                  >
+                                    {tok.t}
+                                  </button>
+                                );
+                              })}
+                            {!e.clue && <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>Előbb írd be a rejtvény szövegét.</span>}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
 
@@ -703,9 +801,9 @@ export default function AdminPage() {
 
   return (
     <div className="wrap">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h1 className="page-title">Admin - titkosírások kezelése</h1>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             className="ghost small"
             onClick={async () => {
@@ -726,7 +824,7 @@ export default function AdminPage() {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
           <b>
             {freshEntries(entries, sortMode, sortDirection, justAddedId, shownDateById, currentActiveId).length} db
             titkosírás a sorban
@@ -794,7 +892,7 @@ export default function AdminPage() {
         )}
 
         {freshEntries(entries, sortMode, sortDirection, justAddedId, shownDateById, currentActiveId).map(
-          ({ entry: e, index: ei }) => renderEntryRow(e, ei)
+          ({ entry: e, index: ei, date, isCurrent, overdue }) => renderEntryRow(e, ei, { date, isCurrent, overdue })
         )}
 
         {archivedList(entries, shownDateById, currentActiveId).length > 0 && (
