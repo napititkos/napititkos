@@ -58,7 +58,7 @@ export default function AccountPage() {
       <div className="wrap">
         <h1 className="page-title">Profilom</h1>
         <div className="card">
-          A profilod megtekintéséhez <a href="/login" style={{ color: 'var(--accent)', fontWeight: 700 }}>jelentkezz be</a>.
+          A profilod megtekintéséhez <a href="/login" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>jelentkezz be</a>.
         </div>
       </div>
     );
@@ -112,7 +112,7 @@ export default function AccountPage() {
         </div>
       </div>
 
-      <h2 style={{ fontFamily: 'var(--font-baloo), "Baloo 2", sans-serif', color: 'var(--accent)', fontSize: 21, margin: '6px 0 12px', letterSpacing: '0.015em' }}>Adataim</h2>
+      <h2 style={{ fontFamily: 'var(--font-baloo), "Baloo 2", sans-serif', color: 'var(--accent-text)', fontSize: 21, margin: '6px 0 12px', letterSpacing: '0.015em' }}>Adataim</h2>
       <div className="card">
         <div className="help-block">
           <h3>Elfogadott beküldéseim {mySubmissions ? `(${mySubmissions.length})` : ''}</h3>
@@ -120,7 +120,7 @@ export default function AccountPage() {
           {mySubmissions && mySubmissions.length === 0 && (
             <p style={{ color: 'var(--ink-soft)' }}>
               Még egy beküldésed sem került be a napi titkosírások közé.{' '}
-              <a href="/submit" style={{ color: 'var(--accent)' }}>
+              <a href="/submit" style={{ color: 'var(--accent-text)' }}>
                 Küldj be egyet!
               </a>
             </p>

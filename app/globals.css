@@ -1,8 +1,13 @@
 :root{
+  /* Szövegként használt színek: a díszítő alapszínek sötétebb, olvasható változatai
+     (WCAG AA: legalább 4,5:1 a fehér, a papír és a halvány hátterek előtt is). */
+  --accent-text:#B83665;
+  --accent2-text:#18738A;
+  --good-text:#167B58;
   --paper:#FFF7F2;
   --card:#FFFFFF;
   --ink:#3D3452;
-  --ink-soft:#8B84A3;
+  --ink-soft:#6A6384;
   --line:#E8CFF0;
   --accent:#FF6F91;
   --accent-strong:#D6456B;
@@ -22,6 +27,9 @@
 }
 @media (prefers-color-scheme: dark){
   :root{
+    --accent-text: var(--accent);
+    --accent2-text: var(--accent2);
+    --good-text: var(--good);
     --paper:#231D33;
     --card:#2D2645;
     --ink:#F3EFFA;
@@ -156,7 +164,7 @@ nav.topnav{
 .progress-badge{
   font-size: 10.5px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
   padding: 2px 7px;
   border-radius: 999px;
@@ -181,18 +189,18 @@ nav.topnav{
   margin: 0; font-size: 13px; text-align: right; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.puzzle-title{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 22px; font-weight:700; color: var(--accent); letter-spacing: 0.015em; }
+.puzzle-title{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 22px; font-weight:700; color: var(--accent-text); letter-spacing: 0.015em; }
 .timer, .pill{
-  font-variant-numeric: tabular-nums; background: var(--accent2-soft); color: var(--accent2);
+  font-variant-numeric: tabular-nums; background: var(--accent2-soft); color: var(--accent2-text);
   padding: 6px 14px; border-radius: 999px; font-weight:700; font-size:13.5px;
 }
-.pill{ background: var(--accent-soft); color: var(--accent); }
+.pill{ background: var(--accent-soft); color: var(--accent-text); }
 .clue-row{ border-top: 1px solid var(--line); padding: 16px 0; max-width: 100%; }
 .clue-row:first-of-type{ border-top:none; padding-top:0; }
 .clue-head{ display:flex; gap: 10px; align-items:flex-start; }
 .num{
   flex:0 0 auto; width: 28px; height: 28px; border: none; border-radius: 999px;
-  background: var(--accent-soft); color: var(--accent);
+  background: var(--accent-soft); color: var(--accent-text);
   display:flex; align-items:center; justify-content:center; font-size: 13px; font-weight:700;
 }
 .num.good{ background: var(--good); color:#fff; }
@@ -253,7 +261,7 @@ input.letter-box::selection{
 input.letter-box.locked{
   background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 input.letter-box:focus{
   outline: none;
@@ -279,7 +287,11 @@ button{
 }
 button:hover:not(:disabled){ transform: translateY(-1px) scale(1.03); }
 button:active:not(:disabled){ transform: translateY(0) scale(0.98); }
-button.primary{ background: var(--accent-strong); color: #fff; border-color: var(--accent-strong); }
+/* A fehér feliratú rózsaszín gombok színe. Sötét módban sötétebb árnyalat, hogy a fehér
+   felirat jól olvasható legyen (kontraszt 4,7:1 a korábbi 2,6:1 helyett). */
+:root{ --btn-primary: #D33861; }
+@media (prefers-color-scheme: dark){ :root{ --btn-primary: #BF4A70; } }
+button.primary{ background: var(--btn-primary); color: #fff; border-color: var(--btn-primary); }
 button.ghost{ border-color: var(--line); color: var(--ink-soft); }
 button.small{ padding: 5px 12px; font-size:12.5px; }
 button:disabled{ opacity:0.4; cursor:default; }
@@ -287,20 +299,20 @@ button:disabled{ opacity:0.4; cursor:default; }
 .hintbar{ margin-left:8px; margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; max-width: calc(100% - 8px); }
 .hint-box{
   margin-left:8px; margin-top:8px; font-size: 13.5px; padding: 9px 12px; border-radius: 12px;
-  background: var(--accent-soft); color: var(--accent); max-width: calc(100% - 8px);
+  background: var(--accent-soft); color: var(--accent-text); max-width: calc(100% - 8px);
 }
 .feedback{ margin-left:8px; margin-top:8px; font-size: 13.5px; padding: 9px 12px; border-radius: 12px; max-width: calc(100% - 8px); }
-.feedback.good{ background: var(--good-soft); color: var(--good); }
+.feedback.good{ background: var(--good-soft); color: var(--good-text); }
 .feedback.hint{ background: var(--warn-soft); color: var(--warn); }
 .locked-note{ font-size: 13.5px; color: var(--ink-soft); font-style: italic; }
 .result{ text-align:center; }
 .card.result{ padding: 16px; margin-bottom: 14px; }
-.result h2{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 21px; margin: 0 0 4px; color: var(--accent); letter-spacing: 0.015em; }
+.result h2{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 21px; margin: 0 0 4px; color: var(--accent-text); letter-spacing: 0.015em; }
 .squares{ font-size: 26px; letter-spacing: 4px; margin: 14px 0; }
 .stats{ display:flex; justify-content:center; gap: 22px; margin: 16px 0 20px; flex-wrap:wrap; }
 .result .stats{ gap: 16px; margin: 10px 0 12px; }
 .result .stat b{ font-size: 19px; }
-.stat b{ display:block; font-size: 22px; font-family:var(--font-baloo), 'Baloo 2', sans-serif; color: var(--accent); letter-spacing: 0.015em; }
+.stat b{ display:block; font-size: 22px; font-family:var(--font-baloo), 'Baloo 2', sans-serif; color: var(--accent-text); letter-spacing: 0.015em; }
 .stat span{ font-size: 12px; color: var(--ink-soft); }
 .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px; margin-top: 20px; }
@@ -321,9 +333,9 @@ footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px
   opacity:0; pointer-events:none; transition: opacity 0.25s ease; z-index: 50;
 }
 .toast.show{ opacity:1; }
-h1.page-title{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 26px; margin: 4px 0 18px; color: var(--accent); letter-spacing: 0.015em; }
+h1.page-title{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 26px; margin: 4px 0 18px; color: var(--accent-text); letter-spacing: 0.015em; }
 .help-block{ margin-bottom: 18px; }
-.help-block h3{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 17px; margin: 0 0 6px; color: var(--accent); letter-spacing: 0.015em; }
+.help-block h3{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 17px; margin: 0 0 6px; color: var(--accent-text); letter-spacing: 0.015em; }
 .help-block p{ font-size: 14.5px; line-height:1.6; color: var(--ink); margin:0; }
 label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margin: 12px 0 6px; }
 .checkbox-row{ display:flex; align-items:center; gap:8px; margin: 8px 0; font-size: 14px; }
@@ -332,7 +344,7 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
 .clue-editor:first-of-type{ border-top:none; padding-top:0; margin-top:0; }
 .sub-item{ border-bottom: 1px solid var(--line); padding: 10px 0; font-size: 13.5px; }
 .mail-link{
-  display:inline-block; margin-top: 8px; font-weight:700; color: var(--accent); text-decoration:none;
+  display:inline-block; margin-top: 8px; font-weight:700; color: var(--accent-text); text-decoration:none;
   border-bottom: 2px solid var(--accent);
 }
 .modal-overlay{
@@ -347,7 +359,7 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
 }
 .clue-highlight{
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   border-radius: 6px;
   padding: 1px 4px;
   font-weight: 800;
@@ -403,7 +415,7 @@ button.round-btn{ width:44px; height:44px; border-radius:50%; padding:0; }
 .result .stats{ margin: 10px 0 8px; }
 
 /* Új, még meg nem nézett kommentek jelzése a gomb felirata mellett. */
-.result-action span.has-new{ color: var(--accent); }
+.result-action span.has-new{ color: var(--accent-text); }
 .result-action span.has-new::after{ content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background: var(--accent); margin-left:5px; vertical-align: middle; }
 
 button.notif-btn{ position: relative; padding: 6px 9px; }
@@ -415,7 +427,7 @@ button.notif-btn.has-new::after{
 /* A Keverés gomb nem letiltott (így üresen megnyomva üzenetet ad), csak halványabb. */
 button[aria-disabled="true"]{ opacity: 0.75; }
 button[aria-disabled="true"]:hover{ transform: none; }
-.inline-toast{ text-align:center; font-size: 13px; font-weight: 700; color: var(--accent); max-height: 0; opacity: 0; overflow: hidden; transition: opacity .25s ease, max-height .25s ease, margin .25s ease; }
+.inline-toast{ text-align:center; font-size: 13px; font-weight: 700; color: var(--accent-text); max-height: 0; opacity: 0; overflow: hidden; transition: opacity .25s ease, max-height .25s ease, margin .25s ease; }
 .inline-toast.show{ max-height: 60px; opacity: 1; margin-top: 8px; }
 
 .notif-wrap{ position: relative; display: inline-flex; }
@@ -438,7 +450,7 @@ button[aria-disabled="true"]:hover{ transform: none; }
 
 /* Kattintható statisztika (pl. trófeák): ugyanúgy néz ki, mint a többi, de linkként működik. */
 a.stat-link{ display:block; text-align:center; text-decoration:none; color: inherit; border-radius: 8px; }
-a.stat-link b{ display:block; font-size: 22px; font-family: var(--font-baloo), 'Baloo 2', sans-serif; color: var(--accent); letter-spacing: 0.015em; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a.stat-link b{ display:block; font-size: 22px; font-family: var(--font-baloo), 'Baloo 2', sans-serif; color: var(--accent-text); letter-spacing: 0.015em; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 a.stat-link span{ font-size: 12px; color: var(--ink-soft); }
 a.stat-link:hover{ background: var(--accent-soft); }
 
@@ -449,7 +461,7 @@ input.queue-pos{ width: 52px !important; min-width: 52px !important; flex: none 
 :root{
   /* az oldal palettájából, tompítva: halványkék, barack, halványlila */
   --hl-definicio-bg: #DCEFF6; --hl-definicio-ink: #2F6F84;
-  --hl-indikator-bg: #FBE6D8; --hl-indikator-ink: #9A5B36;
+  --hl-indikator-bg: #FBE6D8; --hl-indikator-ink: #965935;
   --hl-fodder-bg: #E6E4FA;    --hl-fodder-ink: #5B56A0;
 }
 @media (prefers-color-scheme: dark){
@@ -484,11 +496,11 @@ button.primary.hl-btn{ background: var(--hl-bg); color: var(--hl-ink); border-co
 .row-main{ display:flex; align-items:center; gap: 10px; min-width: 0; flex: 1 1 auto; }
 .row-clue{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .row-side{ display:flex; align-items:center; gap: 6px; flex: 0 0 auto; cursor: default; }
-.row-answer{ color: var(--accent); font-weight: 700; cursor: pointer; display:inline-block; min-width: 90px; }
+.row-answer{ color: var(--accent-text); font-weight: 700; cursor: pointer; display:inline-block; min-width: 90px; }
 .row-answer.muted{ color: var(--ink-soft); font-size: 13px; font-weight: 400; cursor: default; }
 .row-answer-btn{ min-width: 90px; }
 .row-date{ font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.row-date.sched{ color: var(--accent); font-weight: 700; }
+.row-date.sched{ color: var(--accent-text); font-weight: 700; }
 .row-date.overdue, .pos-badge.overdue{ color: #C0392B; }
 .pos-badge{ display:inline-flex; align-items:center; justify-content:center; min-width: 52px; height: 32px; border-radius: 10px; border: 2px solid var(--line); font-weight: 800; font-size: 13px; color: var(--ink-soft); flex: none; }
 @media (max-width: 560px){
@@ -523,3 +535,10 @@ mark.hl-multi{ color: var(--ink); font-weight: 700; }
 @media (max-width: 420px){
   .result .result-actions, .result .stats{ gap: 10px 4px; }
 }
+
+/* Csak képernyőolvasónak szóló szöveg (vizuálisan rejtett). */
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+/* Helykitöltő szöveg: a böngésző alapértelmezettje a papírszínű mezőkben nem elég
+   kontrasztos, ezért az oldal halványszöveg-színét kapja (5,3:1). */
+::placeholder{ color: var(--ink-soft); opacity: 1; }

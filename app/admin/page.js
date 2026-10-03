@@ -445,9 +445,9 @@ export default function AdminPage() {
       submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
       submittedByEmail: s.submitterEmail || '',
       hints: {
-        definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || '') },
-        indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || '') },
-        fodder: { enabled: !!s.hints?.fodder, text: capitalizeFirst(s.hints?.fodder || '') },
+        definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || ''), words: s.hintWords?.definicio || [] },
+        indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || ''), words: s.hintWords?.indikator || [] },
+        fodder: { enabled: !!s.hints?.fodder, text: capitalizeFirst(s.hints?.fodder || ''), words: s.hintWords?.fodder || [] },
         alternativ: { enabled: !!s.hints?.alternativ, text: capitalizeFirst(s.hints?.alternativ || '') },
         betu: { enabled: true },
       },

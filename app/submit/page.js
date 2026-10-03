@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import { computeNewAchievements } from '../../lib/achievements';
+import HintWordPicker from '../../components/HintWordPicker';
+import { clueTokens } from '../../lib/clue';
 
 export default function SubmitPage() {
   const { data: session, status: authStatus } = useSession();
@@ -14,6 +16,8 @@ export default function SubmitPage() {
     definicio: '',
     alternativ: '',
   });
+  // A kiemelhető tippekhez kijelölt szavak indexei a rejtvényszövegben.
+  const [words, setWords] = useState({ definicio: [], indikator: [], fodder: [] });
   const [status, setStatus] = useState(null);
   const [sending, setSending] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -22,6 +26,11 @@ export default function SubmitPage() {
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
+    // Ha a rejtvény szövege rövidül, a már nem létező szavakra mutató kijelölések kiesnek.
+    if (field === 'clue') {
+      const n = clueTokens(value).filter((t) => t.w >= 0).length;
+      setWords((w) => Object.fromEntries(Object.entries(w).map(([k, v]) => [k, v.filter((i) => i < n)])));
+    }
   }
 
   async function submit(e) {
@@ -48,6 +57,11 @@ export default function SubmitPage() {
             definicio: form.definicio,
             alternativ: form.alternativ,
           },
+          hintWords: {
+            definicio: form.definicio.trim() ? words.definicio : [],
+            indikator: form.indikator.trim() ? words.indikator : [],
+            fodder: form.fodder.trim() ? words.fodder : [],
+          },
         }),
       });
       if (res.ok) {
@@ -71,6 +85,7 @@ export default function SubmitPage() {
         }
         setStatus({ ok: true, msg: 'Köszönjük! Megkaptuk a rejtvényedet, hamarosan átnézzük.' + extra });
         setForm({ clue: '', answer: '', fodder: '', indikator: '', definicio: '', alternativ: '' });
+        setWords({ definicio: [], indikator: [], fodder: [] });
         setConsent(false);
       } else {
         const data = await res.json().catch(() => ({}));
@@ -169,14 +184,32 @@ export default function SubmitPage() {
             placeholder="VÁLASZ"
           />
 
-          <label className="field-label">Definíció (opcionális tipp)</label>
+          <label className="field-label hl-type-definicio">
+            <span className="hl-dot" />
+            Definíció (opcionális tipp)
+          </label>
           <textarea value={form.definicio} onChange={(e) => update('definicio', e.target.value)} />
+          {form.definicio.trim() && (
+            <HintWordPicker clue={form.clue} type="definicio" words={words.definicio} onChange={(v) => setWords((w) => ({ ...w, definicio: v }))} />
+          )}
 
-          <label className="field-label">Mutató (opcionális tipp)</label>
+          <label className="field-label hl-type-indikator">
+            <span className="hl-dot" />
+            Mutató (opcionális tipp)
+          </label>
           <textarea value={form.indikator} onChange={(e) => update('indikator', e.target.value)} />
+          {form.indikator.trim() && (
+            <HintWordPicker clue={form.clue} type="indikator" words={words.indikator} onChange={(v) => setWords((w) => ({ ...w, indikator: v }))} />
+          )}
 
-          <label className="field-label">Készlet (opcionális tipp)</label>
+          <label className="field-label hl-type-fodder">
+            <span className="hl-dot" />
+            Készlet (opcionális tipp)
+          </label>
           <textarea value={form.fodder} onChange={(e) => update('fodder', e.target.value)} />
+          {form.fodder.trim() && (
+            <HintWordPicker clue={form.clue} type="fodder" words={words.fodder} onChange={(v) => setWords((w) => ({ ...w, fodder: v }))} />
+          )}
 
           <label className="field-label">Alternatív tipp (opcionális)</label>
           <textarea value={form.alternativ} onChange={(e) => update('alternativ', e.target.value)} />
@@ -191,7 +224,7 @@ export default function SubmitPage() {
             />
             <label htmlFor="consent" style={{ fontSize: 13.5, lineHeight: 1.5 }}>
               Kijelentem, hogy elolvastam és elfogadom az{' '}
-              <a href="/privacy" style={{ color: 'var(--accent)' }}>
+              <a href="/privacy" style={{ color: 'var(--accent-text)' }}>
                 Adatvédelmi tájékoztatót
               </a>
               .

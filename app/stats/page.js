@@ -49,7 +49,7 @@ export default function StatsPage() {
         {!session?.user && (
           <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
             Ez most csak ezen az eszközön/böngészőn mért adat.{' '}
-            <a href="/login" style={{ color: 'var(--accent)' }}>
+            <a href="/login" style={{ color: 'var(--accent-text)' }}>
               Jelentkezz be
             </a>
             , hogy a fiókodhoz kötve, más eszközök között is szinkronban maradjon.
@@ -107,7 +107,7 @@ export default function StatsPage() {
           {mySubmissions && mySubmissions.length === 0 && (
             <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>
               Még egy beküldésed sem került be a napi titkosírások közé.{' '}
-              <a href="/submit" style={{ color: 'var(--accent)' }}>
+              <a href="/submit" style={{ color: 'var(--accent-text)' }}>
                 Küldj be egyet!
               </a>
             </p>

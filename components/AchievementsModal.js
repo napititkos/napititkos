@@ -23,7 +23,7 @@ export default function AchievementsModal() {
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+        <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Trofeak.png" size={24} /> Trófeák
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -36,15 +36,20 @@ export default function AchievementsModal() {
                   display: 'flex',
                   gap: 10,
                   alignItems: 'center',
-                  opacity: done ? 1 : 0.4,
                   background: done ? 'var(--accent-soft)' : 'transparent',
+                  border: done ? '2px solid transparent' : '2px dashed var(--line)',
                   borderRadius: 12,
                   padding: '8px 10px',
                 }}
               >
-                <span style={{ fontSize: 22 }}>{a.emoji}</span>
+                <span style={{ fontSize: 22, opacity: done ? 1 : 0.35, filter: done ? 'none' : 'grayscale(1)' }} aria-hidden="true">
+                  {a.emoji}
+                </span>
                 <div>
-                  <div style={{ fontWeight: 700 }}>{a.title}</div>
+                  <div style={{ fontWeight: 700, color: done ? 'var(--ink)' : 'var(--ink-soft)' }}>
+                    {a.title}
+                    {!done && <span className="sr-only"> (még nincs meg)</span>}
+                  </div>
                   <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{a.desc}</div>
                 </div>
               </div>

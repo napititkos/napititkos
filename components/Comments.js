@@ -71,7 +71,7 @@ export default function Comments({ date, readOnly = false, onCountChange }) {
     return (
       <p style={{ fontSize: 14, margin: 0 }}>
         A kommentek olvasásához és írásához{' '}
-        <a href="/login" style={{ color: 'var(--accent)', fontWeight: 700 }}>
+        <a href="/login" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>
           jelentkezz be
         </a>
         .

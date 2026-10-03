@@ -593,7 +593,7 @@ export default function HomePage() {
       {showIntro && (
         <div className="modal-overlay" onClick={dismissIntro}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
               Üdv a Titkosírásban! <Icon src="/icons/Udvozlo_uzenet.png" size={22} />
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
@@ -602,13 +602,13 @@ export default function HomePage() {
             </p>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
               Ahhoz, hogy belekezdj, először nézd át a{' '}
-              <a href="/help" style={{ color: 'var(--accent)', fontWeight: 700 }} onClick={dismissIntro}>
+              <a href="/help" style={{ color: 'var(--accent-text)', fontWeight: 700 }} onClick={dismissIntro}>
                 Súgót
               </a>{' '}
               és a{' '}
               <a
                 href="#"
-                style={{ color: 'var(--accent)', fontWeight: 700 }}
+                style={{ color: 'var(--accent-text)', fontWeight: 700 }}
                 onClick={(e) => {
                   e.preventDefault();
                   dismissIntro();
@@ -726,7 +726,7 @@ export default function HomePage() {
               onClick={() => setShowHintModal(false)}
             >
               <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-                <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0, letterSpacing: '0.015em' }}>
+                <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
                   <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Melyik tippet kéred?
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -753,7 +753,12 @@ export default function HomePage() {
                           <button
                             className={used ? 'ghost small' : `primary small${hl ? ' hl-btn' : ''}`}
                             disabled={used || exhausted}
-                            onClick={() => (isBetu ? revealLetterHint() : revealHint(t))}
+                            onClick={() => {
+                          // Tipp kérésekor az ablak bezárul, hogy azonnal látszódjon a rejtvényben.
+                          if (isBetu) revealLetterHint();
+                          else revealHint(t);
+                          setShowHintModal(false);
+                        }}
                           >
                             {isBetu
                               ? exhausted
@@ -863,7 +868,7 @@ export default function HomePage() {
           {countdown && (
             <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
               <Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Következő titkosírás:{' '}
-              <b style={{ color: 'var(--accent2)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
+              <b style={{ color: 'var(--accent2-text)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
             </div>
           )}
         </div>
@@ -872,7 +877,7 @@ export default function HomePage() {
       {showExplain && (
         <div className="modal-overlay" onClick={() => setShowExplain(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0 }}>
               <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Magyarázat
             </h2>
             <div className="clue-box" style={{ marginBottom: 10 }}>
@@ -882,7 +887,7 @@ export default function HomePage() {
               </div>
             </div>
             <p style={{ margin: '0 0 12px' }}>
-              Megfejtés: <b style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}>{puzzle.answer}</b>
+              Megfejtés: <b style={{ color: 'var(--accent-text)', letterSpacing: '0.05em' }}>{puzzle.answer}</b>
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {HINT_ORDER.filter((t) => t !== 'betu' && puzzle.hints?.[t]?.enabled && puzzle.hints[t].text).map((t) => (
@@ -907,7 +912,7 @@ export default function HomePage() {
       {showComments && (
         <div className="modal-overlay" onClick={() => setShowComments(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0 }}>
               Mai kommentek ({commentCount})
             </h2>
             <Comments date={puzzleMeta.date} onCountChange={setCommentCount} />
@@ -922,7 +927,7 @@ export default function HomePage() {
 
       <footer className="page-footer">
         Új titkosírás minden nap éjfélkor (magyar idő szerint). Elakadtál? Nézd meg a{' '}
-        <a href="/help" style={{ color: 'var(--accent)', fontWeight: 700 }}>
+        <a href="/help" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>
           Súgót
         </a>
         .

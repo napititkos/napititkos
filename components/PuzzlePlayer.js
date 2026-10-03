@@ -188,16 +188,17 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
       {showHintModal && (
         <div className="modal-overlay hint-modal-overlay" onClick={() => setShowHintModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0 }}>
               <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Tippek
             </h2>
             {availableHints.some((t) => t !== 'betu' && !revealed.includes(t)) && (
               <button
                 className="primary small"
                 style={{ marginBottom: 12 }}
-                onClick={() =>
-                  setRevealed((prev) => Array.from(new Set([...prev, ...availableHints.filter((t) => t !== 'betu')])))
-                }
+                onClick={() => {
+                  setRevealed((prev) => Array.from(new Set([...prev, ...availableHints.filter((t) => t !== 'betu')])));
+                  setShowHintModal(false);
+                }}
               >
                 Összes szöveges tipp megjelenítése
               </button>
@@ -221,7 +222,12 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
                       <button
                         className={used ? 'ghost small' : `primary small${HL_TYPES.includes(t) ? ' hl-btn' : ''}`}
                         disabled={used || exhausted}
-                        onClick={() => (isBetu ? revealLetterHint() : revealHint(t))}
+                        onClick={() => {
+                          // Tipp kérésekor az ablak bezárul, hogy azonnal látszódjon a rejtvényben.
+                          if (isBetu) revealLetterHint();
+                          else revealHint(t);
+                          setShowHintModal(false);
+                        }}
                       >
                         {isBetu ? (exhausted ? 'Nincs több betű' : 'Kérek egy betűt') : used ? 'Felhasználva ✓' : 'Ezt kérem'}
                       </button>
