@@ -45,6 +45,15 @@ export async function POST(req) {
       definicio: hint(body.hints?.definicio),
       alternativ: hint(body.hints?.alternativ),
     },
+    // A kiemelhető tippekhez kijelölt szavak indexei (csak kitöltött tipphez).
+    hintWords: Object.fromEntries(
+      ['definicio', 'indikator', 'fodder'].map((t) => [
+        t,
+        hint(body.hints?.[t]) && Array.isArray(body.hintWords?.[t])
+          ? [...new Set(body.hintWords[t].map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n < 200))].slice(0, 40)
+          : [],
+      ])
+    ),
     createdAt: new Date().toISOString(),
   };
   // Olvasás-módosítás-írás zár alatt, hogy párhuzamos beküldések ne írják felül egymást.

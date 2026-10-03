@@ -372,6 +372,21 @@ check('másnak adhat jogot: 200', r.status === 200);
 r = await fetch(BASE + '/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...adm }, body: JSON.stringify({ id: otherId, role: 'user' }) });
 check('másét elveheti: 200', r.status === 200 && JSON.parse(await redis.get(`au:user:${otherId}`)).role === 'user');
 
+
+section('Beküldés: a tippekhez kijelölt szavak');
+r = await post('/api/submissions', {
+  clue: 'Háborúban lelt ital zavaros alma',
+  answer: 'BORZALMAS',
+  hints: { definicio: 'Rettenetes', indikator: '', fodder: 'bor + alma' },
+  hintWords: { definicio: [4, 4, -1, 'x', 999], indikator: [1], fodder: [0, 4], alternativ: [2] },
+}, { cookie: cA.header() });
+check('beküldés kijelölésekkel: 200', r.status === 200, `(${r.status})`);
+const hwSubs = await (await fetch(BASE + '/api/submissions', { headers: adm })).json();
+const sub = hwSubs.submissions.find((x) => x.clue === 'Háborúban lelt ital zavaros alma');
+check('a kijelölések megmaradnak, a hibás értékek kiesnek', JSON.stringify(sub?.hintWords?.definicio) === '[4]' && JSON.stringify(sub?.hintWords?.fodder) === '[0,4]', JSON.stringify(sub?.hintWords));
+check('üres tipphez nem tárol kijelölést', JSON.stringify(sub?.hintWords?.indikator) === '[]');
+check('nem kiemelhető tipphez nem tárol kijelölést', sub?.hintWords?.alternativ === undefined);
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
