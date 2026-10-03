@@ -112,3 +112,19 @@ test('readJson: méretkorlát és hibás JSON', async () => {
   assert.equal(await readJson(req('{"a":"' + 'x'.repeat(50) + '"}'), 10), null);
   assert.equal(await readJson(req('{}', { 'content-length': '999999' }), 1000), null);
 });
+
+test('sanitizePuzzle: a tippekhez kijelölt szavak indexei megmaradnak, a hibásak kiesnek', async () => {
+  const { sanitizePuzzle } = await import('../lib/validate.js');
+  const p = sanitizePuzzle({
+    id: 'x1',
+    clue: 'Egy kettő három',
+    answer: 'ALMA',
+    hints: {
+      definicio: { enabled: true, text: 'a', words: [2, 0, 0, -1, 'x', 1.5, 999, '1'] },
+      alternativ: { enabled: true, text: 'b', words: [1] },
+    },
+  });
+  assert.deepEqual(p.hints.definicio.words, [2, 0, 1]);
+  assert.equal(p.hints.alternativ.words, undefined); // az alternatív tipp nem emel ki
+  assert.equal(p.hints.indikator.words, undefined);
+});

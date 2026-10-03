@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { loadProgress } from '../../lib/progress';
+import { loadProgress, solvedCount } from '../../lib/progress';
 import { ACHIEVEMENTS } from '../../lib/achievements';
 
 import { enumerationFor } from '../../lib/format';
@@ -65,7 +65,7 @@ export default function StatsPage() {
             <span>legjobb sorozat</span>
           </div>
           <div className="stat">
-            <b>{(progress.totalSolved || 0) + (progress.archiveSolved || []).length}</b>
+            <b>{solvedCount(progress)}</b>
             <span>megoldott rejtvény</span>
           </div>
           <div className="stat">

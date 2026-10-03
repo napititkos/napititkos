@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
 import Icon from './Icon';
 
@@ -8,6 +9,9 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
   const [tutorialDone, setTutorialDone] = useState(0);
   const { data: session, status } = useSession();
+  // Bejelentkezés után ugyanarra az oldalra térjen vissza, ahonnan indult.
+  const pathname = usePathname() || '/';
+  const loginHref = pathname === '/' || pathname.startsWith('/login') ? '/login' : `/login?callbackUrl=${encodeURIComponent(pathname)}`;
 
   useEffect(() => {
     setTutorialDone(completedSectionsCount(loadTutorialProgress()));
@@ -53,7 +57,7 @@ export default function Nav() {
                 <span className="account-badge-label">Profilom</span>
               </a>
             ) : (
-              <a href="/login" className="account-badge" title="Bejelentkezés">
+              <a href={loginHref} className="account-badge" title="Bejelentkezés">
                 <Icon src="/icons/Fiok.png" size={16} />
                 <span className="account-badge-label">Belépés</span>
               </a>
@@ -114,7 +118,7 @@ export default function Nav() {
                 </a>
               </>
             ) : (
-              <a href="/login" onClick={() => setOpen(false)}>
+              <a href={loginHref} onClick={() => setOpen(false)}>
                 <Icon src="/icons/Fiok.png" /> Bejelentkezés
               </a>
             )

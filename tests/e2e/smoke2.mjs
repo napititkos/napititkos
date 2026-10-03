@@ -92,9 +92,13 @@ check('12 párhuzamos kérés ugyanazt a rejtvényt adja', ids.size === 1, JSON.
 check('az előzményben pontosan egy bejegyzés van', history.length === 1, `(${history.length})`);
 check('az előzmény dátuma budapesti mai nap', history[0]?.shownDate === budapestToday);
 check('nincs megmaradt zár', (await redis.keys('lock:*')).length === 0);
-const archive = await (await fetch(BASE + '/api/archive')).json();
 r = await fetch(BASE + '/api/archive');
-check('archívum: az aktív rejtvény nincs benne, gyorsítótár-fejléc van (régi válasz kiadása nélkül)', archive.archive.length === 0 && /s-maxage=\d+/.test(h('cache-control')) && !/stale-while-revalidate/.test(h('cache-control')));
+check('archívum bejelentkezés nélkül: 401, nem gyorsítótárazható', r.status === 401 && /no-store/.test(h('cache-control')) && /private/.test(h('cache-control')));
+await seedUser('archiv-olvaso@teszt.hu', 'Archiv-Jelszo-1');
+const arcJar = (await credLogin('archiv-olvaso@teszt.hu', 'Archiv-Jelszo-1')).jar;
+r = await fetch(BASE + '/api/archive', { headers: { cookie: arcJar.header() } });
+const archive = await r.json();
+check('archívum bejelentkezve: az aktív rejtvény nincs benne, a CDN nem tárolja', r.status === 200 && archive.archive.length === 0 && /private/.test(h('cache-control')) && !/s-maxage/.test(h('cache-control')));
 check('az archívum nem tartalmaz e-mail-címet', !JSON.stringify(archive).includes('example.hu'));
 
 // ---------------------------------------------------------------- STATISZTIKA
@@ -303,16 +307,18 @@ const hist = JSON.parse(await redis.get('rotation:history'));
 const pastDate = '2026-01-15';
 await redis.set('rotation:history', JSON.stringify([{ ...hist[0], shownDate: pastDate }, ...hist]));
 await redis.hset(`stats:h:${pastDate}`, 'correctCount', '4');
-r = await fetch(BASE + '/api/archive'); j = await r.json();
+r = await fetch(BASE + '/api/archive', { headers: { cookie: cA.header() } }); j = await r.json();
 let item = j.archive.find((x) => x.shownDate === pastDate);
 check('összesen = aznapi megfejtők (4)', item?.totalSolvers === 4, JSON.stringify(item?.totalSolvers));
 check('az aznapi szám tartósan elmentve (a napi statisztika lejárta után is megmarad)', (await redis.hget('solvers:day', pastDate)) === '4');
-r = await post('/api/archive/solve', { date: budapestToday }); check('mai dátum nem számolható: 400', r.status === 400);
-r = await post('/api/archive/solve', { date: '2020-01-01' }); check('ismeretlen dátum: 400', r.status === 400);
-r = await post('/api/archive/solve', { date: 'nem-datum' }); check('hibás dátum: 400', r.status === 400);
-r = await post('/api/archive/solve', { date: pastDate }); check('utólagos megfejtés: 200', r.status === 200);
+r = await post('/api/archive/solve', { date: pastDate }); check('utólagos megfejtés bejelentkezés nélkül: 401', r.status === 401);
+const ac = { cookie: cA.header() };
+r = await post('/api/archive/solve', { date: budapestToday }, ac); check('mai dátum nem számolható: 400', r.status === 400);
+r = await post('/api/archive/solve', { date: '2020-01-01' }, ac); check('ismeretlen dátum: 400', r.status === 400);
+r = await post('/api/archive/solve', { date: 'nem-datum' }, ac); check('hibás dátum: 400', r.status === 400);
+r = await post('/api/archive/solve', { date: pastDate }, ac); check('utólagos megfejtés: 200', r.status === 200);
 await redis.del(`stats:h:${pastDate}`);
-r = await fetch(BASE + '/api/archive'); item = (await r.json()).archive.find((x) => x.shownDate === pastDate);
+r = await fetch(BASE + '/api/archive', { headers: ac }); item = (await r.json()).archive.find((x) => x.shownDate === pastDate);
 check('összesen = 4 + 1, a napi statisztika törlése után is', item?.totalSolvers === 5, JSON.stringify(item?.totalSolvers));
 
 

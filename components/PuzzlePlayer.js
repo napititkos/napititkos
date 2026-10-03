@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import LetterBoxes from './LetterBoxes';
+import ClueText from './ClueText';
+import { HL_TYPES, highlightMap } from '../lib/clue';
 import Icon from './Icon';
 import { fireConfetti } from './Confetti';
 import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked } from '../lib/puzzleLogic';
@@ -111,7 +113,8 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
       {puzzle.submittedBy && <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>}
       <div className="clue-box" style={{ marginBottom: 10 }}>
         <div className="clue-text">
-          {puzzle.clue} {enumerationFor(puzzle.answer)}
+          <ClueText clue={puzzle.clue} marks={highlightMap(puzzle.hints, answered ? HL_TYPES : revealed)} />{' '}
+          <span className="clue-enum">{enumerationFor(puzzle.answer)}</span>
         </div>
       </div>
 
@@ -155,13 +158,14 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
           </div>
 
           {revealed.map((t) => (
-            <div className="hint-box" key={t}>
+            <div className={`hint-box${HL_TYPES.includes(t) ? ` hl-type-${t}` : ''}`} key={t}>
               {t === 'betu' ? (
                 <>
                   <b>Helyes betű:</b> Eddig {betuCount} betűt fedtünk fel a válaszban.
                 </>
               ) : (
                 <>
+                  {HL_TYPES.includes(t) && <span className="hl-dot" />}
                   <b>{HINT_LABELS[t]}:</b> {puzzle.hints[t].text}
                 </>
               )}
@@ -204,11 +208,18 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
                 const used = isBetu ? false : revealed.includes(t);
                 const exhausted = isBetu && noMoreLettersToReveal();
                 return (
-                  <div key={t} style={{ border: '2px solid var(--line)', borderRadius: 12, padding: '10px 12px' }}>
+                  <div
+                    key={t}
+                    className={HL_TYPES.includes(t) ? `hl-type-${t}` : undefined}
+                    style={{ border: `2px solid ${HL_TYPES.includes(t) ? 'var(--hl-ink)' : 'var(--line)'}`, borderRadius: 12, padding: '10px 12px' }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                      <b>{HINT_LABELS[t]}</b>
+                      <b>
+                        {HL_TYPES.includes(t) && <span className="hl-dot" />}
+                        {HINT_LABELS[t]}
+                      </b>
                       <button
-                        className={used ? 'ghost small' : 'primary small'}
+                        className={used ? 'ghost small' : `primary small${HL_TYPES.includes(t) ? ' hl-btn' : ''}`}
                         disabled={used || exhausted}
                         onClick={() => (isBetu ? revealLetterHint() : revealHint(t))}
                       >

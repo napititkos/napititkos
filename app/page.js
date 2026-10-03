@@ -5,11 +5,15 @@ import { fireConfetti } from '../components/Confetti';
 import { ACHIEVEMENTS, computeNewAchievements } from '../lib/achievements';
 import { loadProgress, saveProgress, dropGuestEntry } from '../lib/progress';
 import { loadActiveMs, saveActiveMs, clearActiveTimer } from '../lib/activeTimer';
+import { loadInProgress, saveInProgress, clearInProgress } from '../lib/inProgress';
 import { deviceId } from '../lib/device';
 import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
 import LetterBoxes from '../components/LetterBoxes';
+import ClueText from '../components/ClueText';
+import { HL_TYPES, highlightMap } from '../lib/clue';
+import { enumerationFor } from '../lib/format';
 import Comments from '../components/Comments';
 import NotificationsButton from '../components/NotificationsButton';
 
@@ -50,52 +54,6 @@ function formatHuDate(isoDate) {
   return `${y}. ${HU_MONTHS[m - 1]} ${d}.`;
 }
 
-const HU_WORD_RE = /[A-Za-zÁÉÍÓÖŐÚÜŰáéíóöőúüű]+/g;
-const HU_STOPWORDS = new Set([
-  'a', 'az', 'egy', 'és', 'de', 'hogy', 'ha', 'is', 'nem', 'ez', 'ezt', 'ennek',
-  'arra', 'vagy', 'mint', 'majd', 'még', 'csak', 'már', 'meg', 'vele', 'lesz',
-  'volt', 'ami', 'amit', 'aki', 'akit', 'itt', 'ott', 'nagyon', 'ilyen', 'olyan',
-]);
-function extractWords(text) {
-  return (text || '').match(HU_WORD_RE) || [];
-}
-// Két szó "ugyanattól a tőtől" származik-e - egyszerű, ragozás-toleráns heurisztika:
-// egyezőnek számít, ha az egyik szó a másiknak (kellően hosszú) eleje.
-// Ez elkapja pl. "rettenetes" / "rettenetesen" vagy "citrom" / "citromot" párokat is.
-function sameStem(a, b) {
-  if (a === b) return true;
-  const shorter = a.length <= b.length ? a : b;
-  const longer = a.length <= b.length ? b : a;
-  if (shorter.length < 4) return false;
-  return longer.startsWith(shorter);
-}
-// Kísérleti: megkeresi, mely (nem túl gyakori) szavak szerepelnek - akár ragozott
-// alakban is - mind a tipp szövegében, mind magában a rejtvényben.
-function getHighlightWords(hintText, clueText) {
-  const hintWords = extractWords(hintText)
-    .map((w) => w.toLowerCase())
-    .filter((w) => w.length >= 4 && !HU_STOPWORDS.has(w));
-  const clueWordsLower = extractWords(clueText).map((w) => w.toLowerCase());
-  const matched = new Set();
-  for (const cw of clueWordsLower) {
-    if (hintWords.some((hw) => sameStem(hw, cw))) matched.add(cw);
-  }
-  return Array.from(matched);
-}
-function renderClueWithHighlight(clueText, highlightWords) {
-  if (!highlightWords || highlightWords.length === 0) return clueText;
-  const wordsSet = new Set(highlightWords);
-  const tokens = (clueText || '').split(new RegExp(`(${HU_WORD_RE.source})`, 'g'));
-  return tokens.map((tok, i) =>
-    wordsSet.has(tok.toLowerCase()) ? (
-      <mark className="clue-highlight" key={i}>
-        {tok}
-      </mark>
-    ) : (
-      tok
-    )
-  );
-}
 function difficultyText(totalHints, parHints, correct) {
   if (parHints == null) return null;
   if (!correct) return 'Legközelebb sikerülni fog!';
@@ -140,12 +98,12 @@ export default function HomePage() {
   const [toast, setToast] = useState('');
   const [showIntro, setShowIntro] = useState(false);
   const [showHintModal, setShowHintModal] = useState(false);
-  const [highlightedHintType, setHighlightedHintType] = useState(null);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const [countdown, setCountdown] = useState('');
   const timerRef = useRef(null);
   const finishedRef = useRef(false);
   const [showComments, setShowComments] = useState(false);
+  const [showExplain, setShowExplain] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [commentsSeen, setCommentsSeen] = useState(false);
   const toastTimeout = useRef(null);
@@ -213,6 +171,7 @@ export default function HomePage() {
         if (sessionStatus === 'authenticated' && dropGuestEntry(prog, data.date)) {
           saveProgress(prog);
           clearActiveTimer();
+          clearInProgress();
           reopened = true;
         }
         setProgress({ streak: prog.streak, best: prog.best });
@@ -230,6 +189,14 @@ export default function HomePage() {
         } else {
           // Az időzítő onnan folytatódik, ahol abbahagyta (frissítés, bezárás után is),
           // de csak a látható percek számítanak.
+          // Félbehagyott játék (felhasznált tippek, felfedett betűk, beírt válasz) visszatöltése.
+          const ip = loadInProgress(data.date, data.puzzle.answer);
+          if (ip) {
+            setGuess(ip.guess);
+            setLockedLetters(ip.lockedLetters);
+            setRevealed(ip.revealed);
+            setBetuCount(ip.betuCount);
+          }
           accRef.current = loadActiveMs(data.date);
           resumeRef.current = document.visibilityState === 'visible' ? Date.now() : null;
           setElapsed(activeElapsed());
@@ -325,7 +292,6 @@ export default function HomePage() {
     if (!revealed.includes(type)) {
       setRevealed((prev) => [...prev, type]);
     }
-    setHighlightedHintType(type);
   }
 
   function revealLetterHint() {
@@ -410,6 +376,7 @@ export default function HomePage() {
     setElapsed(finalElapsed);
     clearInterval(timerRef.current);
     clearActiveTimer();
+    clearInProgress();
     fireConfetti();
 
     const totalHints = revealed.filter((t) => t !== 'betu').length + betuCount + (didGiveUp ? 1 : 0);
@@ -524,6 +491,12 @@ export default function HomePage() {
     return lines.join('\n');
   }
 
+  // Játék közben a felhasznált tippek és a beírt válasz mentése (kilépés után is megmarad).
+  useEffect(() => {
+    if (loading || answered || !puzzle || !puzzleMeta?.date || !timerReady) return;
+    saveInProgress(puzzleMeta.date, puzzle.answer, { guess, lockedLetters, revealed, betuCount });
+  }, [guess, lockedLetters, revealed, betuCount, loading, answered, puzzle, puzzleMeta?.date, timerReady]);
+
   // A nyitott eredménykártyán a számok (megfejtők, még fejti) maguktól is frissülnek:
   // 20 másodpercenként, ha az oldal látszik, és azonnal, amikor visszatér a lapra.
   useEffect(() => {
@@ -611,10 +584,9 @@ export default function HomePage() {
     (t) => t === 'betu' || (puzzle.hints?.[t]?.enabled && puzzle.hints[t].text)
   );
 
-  const activeHighlightWords =
-    highlightedHintType && highlightedHintType !== 'betu' && puzzle.hints?.[highlightedHintType]?.text
-      ? getHighlightWords(puzzle.hints[highlightedHintType].text, puzzle.clue)
-      : [];
+  // A felfedett tippekhez (az admin felületen) kijelölt szavak kiemelése a tipp színével;
+  // a tipp-ablak bezárása után is megmarad.
+  const marks = highlightMap(puzzle.hints, revealed);
 
   return (
     <div className="wrap" style={{ paddingTop: 10 }}>
@@ -688,7 +660,8 @@ export default function HomePage() {
         <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0 }}>
           <div className="clue-box">
             <div className="clue-text">
-              {renderClueWithHighlight(puzzle.clue, activeHighlightWords)}
+              <ClueText clue={puzzle.clue} marks={marks} />{' '}
+              <span className="clue-enum">{enumerationFor(puzzle.answer)}</span>
             </div>
           </div>
 
@@ -731,24 +704,14 @@ export default function HomePage() {
                 </button>
               </div>
               {revealed.map((t) => (
-                <div
-                  className="hint-box"
-                  key={t}
-                  style={{
-                    cursor: t === 'betu' ? 'default' : 'pointer',
-                    outline: highlightedHintType === t ? `2px solid var(--accent)` : 'none',
-                  }}
-                  onClick={() =>
-                    t !== 'betu' && setHighlightedHintType((prev) => (prev === t ? null : t))
-                  }
-                  title={t !== 'betu' ? 'Kattints: emelje ki (vagy tüntesse el) a rejtvényben a hasonló szót' : undefined}
-                >
+                <div className={`hint-box${HL_TYPES.includes(t) ? ` hl-type-${t}` : ''}`} key={t}>
                   {t === 'betu' ? (
                     <>
                       <b>Helyes betű:</b> Eddig {betuCount} betűt fedtünk fel a válaszban.
                     </>
                   ) : (
                     <>
+                      {HL_TYPES.includes(t) && <span className="hl-dot" />}
                       <b>{HINT_LABELS[t]}:</b> {puzzle.hints[t].text}
                     </>
                   )}
@@ -771,21 +734,24 @@ export default function HomePage() {
                     const isBetu = t === 'betu';
                     const used = isBetu ? false : revealed.includes(t);
                     const exhausted = isBetu && noMoreLettersToReveal();
-                    const isHighlighted = highlightedHintType === t;
+                    const hl = HL_TYPES.includes(t);
                     return (
                       <div
                         key={t}
+                        className={hl ? `hl-type-${t}` : undefined}
                         style={{
-                          border: `2px solid ${isHighlighted ? 'var(--accent)' : 'var(--line)'}`,
+                          border: `2px solid ${hl ? 'var(--hl-ink)' : 'var(--line)'}`,
                           borderRadius: 12,
                           padding: '10px 12px',
-                          background: isHighlighted ? 'var(--accent-soft)' : 'transparent',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                          <b>{HINT_LABELS[t]}</b>
+                          <b>
+                            {hl && <span className="hl-dot" />}
+                            {HINT_LABELS[t]}
+                          </b>
                           <button
-                            className={used ? 'ghost small' : 'primary small'}
+                            className={used ? 'ghost small' : `primary small${hl ? ' hl-btn' : ''}`}
                             disabled={used || exhausted}
                             onClick={() => (isBetu ? revealLetterHint() : revealHint(t))}
                           >
@@ -799,19 +765,7 @@ export default function HomePage() {
                           </button>
                         </div>
                         {(isBetu ? betuCount > 0 : used) && (
-                          <p
-                            style={{
-                              fontSize: 13.5,
-                              color: 'var(--ink-soft)',
-                              margin: '8px 0 0',
-                              cursor: isBetu ? 'default' : 'pointer',
-                              textDecoration: !isBetu ? 'underline dotted' : 'none',
-                            }}
-                            onClick={() =>
-                              !isBetu && setHighlightedHintType((prev) => (prev === t ? null : t))
-                            }
-                            title={!isBetu ? 'Kattints: emelje ki a rejtvényben, hol illik ez a szó' : undefined}
-                          >
+                          <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
                             {isBetu
                               ? `Eddig ${betuCount} betűt fedtünk fel a válaszban.`
                               : puzzle.hints[t].text}
@@ -822,9 +776,8 @@ export default function HomePage() {
                   })}
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 14 }}>
-                  🧪 Kísérleti: amint elkérsz egy tippet, automatikusan megjelöljük a
-                  rejtvényben a hozzá kapcsolódó szót. Kattints a tipp szövegére, hogy ki- vagy
-                  bekapcsold a kiemelést.
+                  A definíció, a mutató és a készlet tipphez tartozó szavakat a rejtvényben a tipp
+                  színével jelöljük.
                 </p>
                 <div className="actions" style={{ marginTop: 10 }}>
                   <button className="primary" onClick={() => setShowHintModal(false)}>
@@ -873,6 +826,12 @@ export default function HomePage() {
               <span>Eredmény másolása</span>
             </div>
             <div className="result-action">
+              <button className="primary round-btn" onClick={() => setShowExplain(true)} aria-label="Magyarázat">
+                <Icon src="/icons/Rejtveny_tippek.png" size={20} className="icon-on-accent" />
+              </button>
+              <span>Magyarázat</span>
+            </div>
+            <div className="result-action">
               <button className="primary round-btn" onClick={openComments} aria-label="Kommentek">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.8A8 8 0 1 1 21 12z" />
@@ -907,6 +866,41 @@ export default function HomePage() {
               <b style={{ color: 'var(--accent2)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
             </div>
           )}
+        </div>
+      )}
+
+      {showExplain && (
+        <div className="modal-overlay" onClick={() => setShowExplain(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent)', marginTop: 0 }}>
+              <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Magyarázat
+            </h2>
+            <div className="clue-box" style={{ marginBottom: 10 }}>
+              <div className="clue-text">
+                <ClueText clue={puzzle.clue} marks={highlightMap(puzzle.hints, HL_TYPES)} />{' '}
+                <span className="clue-enum">{enumerationFor(puzzle.answer)}</span>
+              </div>
+            </div>
+            <p style={{ margin: '0 0 12px' }}>
+              Megfejtés: <b style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}>{puzzle.answer}</b>
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {HINT_ORDER.filter((t) => t !== 'betu' && puzzle.hints?.[t]?.enabled && puzzle.hints[t].text).map((t) => (
+                <div key={t} className={`hint-box${HL_TYPES.includes(t) ? ` hl-type-${t}` : ''}`} style={{ marginLeft: 0, marginTop: 0 }}>
+                  {HL_TYPES.includes(t) && <span className="hl-dot" />}
+                  <b>{HINT_LABELS[t]}:</b> {puzzle.hints[t].text}
+                </div>
+              ))}
+              {!HINT_ORDER.some((t) => t !== 'betu' && puzzle.hints?.[t]?.enabled && puzzle.hints[t].text) && (
+                <p style={{ color: 'var(--ink-soft)', margin: 0 }}>Ehhez a titkosíráshoz nem tartozik szöveges tipp.</p>
+              )}
+            </div>
+            <div className="actions" style={{ marginTop: 14 }}>
+              <button className="ghost" onClick={() => setShowExplain(false)}>
+                Bezárás
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -43,16 +43,18 @@ function rawTile(avail, n) {
   return Math.floor((avail - (n - 1) * GAP) / n);
 }
 
-export function computeLayout(chars, width, slotWidth) {
-  const chunks = buildChunks(chars);
-  const nMax = Math.max(1, ...chunks.map((c) => c.idx.length));
-  let side = !!slotWidth;
-  let avail = side ? width - 2 * (slotWidth + SLOT_GAP) : width;
-  if (side && rawTile(avail, nMax) < COMFORT) {
-    side = false;
-    avail = width;
+// Elrendezés adott szélességre: ha a válasz (több szó esetén a szavak együtt) legfeljebb
+// LONG_WORD betű, egy sorban marad, szükség esetén keskenyebb csempékkel; különben a
+// szavak (a hosszú szavak CHUNK-os darabjai) csak akkor kerülnek új sorba, ha nem férnek ki.
+function layoutFor(chunks, avail) {
+  const letters = chunks.reduce((a, c) => a + c.idx.length, 0);
+  if (chunks.length > 1 && letters <= LONG_WORD && !chunks.some((c) => c.own)) {
+    const t = Math.floor((avail - (letters - chunks.length) * GAP - (chunks.length - 1) * WORD_GAP) / letters);
+    if (t >= TILE_MIN) return { rows: [chunks], tile: Math.min(TILE_MAX, t), raw: t };
   }
-  const tile = Math.max(TILE_MIN, Math.min(TILE_MAX, rawTile(avail, nMax)));
+  const nMax = Math.max(1, ...chunks.map((c) => c.idx.length));
+  const raw = rawTile(avail, nMax);
+  const tile = Math.max(TILE_MIN, Math.min(TILE_MAX, raw));
   const w = (c) => c.idx.length * tile + (c.idx.length - 1) * GAP;
   const rows = [];
   let row = [];
@@ -76,7 +78,18 @@ export function computeLayout(chars, width, slotWidth) {
     }
   }
   if (row.length) rows.push(row);
-  return { rows, tile, side };
+  return { rows, tile, raw };
+}
+
+export function computeLayout(chars, width, slotWidth) {
+  const chunks = buildChunks(chars);
+  const below = layoutFor(chunks, width);
+  if (!slotWidth) return { rows: below.rows, tile: below.tile, side: false };
+  // A Keverés gomb csak akkor marad a betűk mellett, ha így is elég nagyok a csempék, és
+  // emiatt nem kell több sorba tördelni.
+  const side = layoutFor(chunks, width - 2 * (slotWidth + SLOT_GAP));
+  if (side.raw >= COMFORT && side.rows.length <= below.rows.length) return { rows: side.rows, tile: side.tile, side: true };
+  return { rows: below.rows, tile: below.tile, side: false };
 }
 
 export default function LetterBoxes({ answer, value, locked, onChange, disabled, onEnter, leftSlot }) {
