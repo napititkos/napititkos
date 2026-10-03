@@ -542,3 +542,10 @@ mark.hl-multi{ color: var(--ink); font-weight: 700; }
 /* Helykitöltő szöveg: a böngésző alapértelmezettje a papírszínű mezőkben nem elég
    kontrasztos, ezért az oldal halványszöveg-színét kapja (5,3:1). */
 ::placeholder{ color: var(--ink-soft); opacity: 1; }
+
+/* Korábbi titkosírások előzetese vendégeknek */
+.teaser-list{ display:flex; flex-direction:column; gap: 10px; margin: 6px 0 4px; }
+.teaser-year{ background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.teaser-year > b{ font-size: 16px; }
+.teaser-months{ display:flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 6px; }
+.teaser-month{ font-size: 13.5px; background: var(--accent-soft); color: var(--accent-text); border-radius: 999px; padding: 3px 10px; }
