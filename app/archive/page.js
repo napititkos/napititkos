@@ -23,7 +23,7 @@ export default function ArchivePage() {
   const [gaveUpIds, setGaveUpIds] = useState([]);
   const [commentCounts, setCommentCounts] = useState({});
 
-  // Vendégeknek előzetes: csak darabszámok évre/hónapra bontva (konkrét rejtvény nélkül).
+  // Vendégeknek előzetes: csak az összes korábbi titkosírás száma (konkrét rejtvény nélkül).
   const [teaser, setTeaser] = useState(null);
   useEffect(() => {
     if (status !== 'unauthenticated') return;
@@ -100,30 +100,12 @@ export default function ArchivePage() {
             <>
               {teaser && teaser.total > 0 ? (
                 <>
-                  <p style={{ marginTop: 0, fontSize: 15.5 }}>
-                    <b>{teaser.total} korábbi titkosírás</b> vár rád, újra kijátszható formában, tippekkel és a régi
-                    kommentekkel együtt.
+                  <p className="teaser-total">
+                    <b>{teaser.total} korábbi titkosírás</b> vár megfejtésre.
                   </p>
-                  <div className="teaser-list">
-                    {Object.keys(teaser.byYear)
-                      .sort((a, b) => b.localeCompare(a))
-                      .map((y) => (
-                        <div key={y} className="teaser-year">
-                          <b>{y}</b>
-                          <div className="teaser-months">
-                            {Object.keys(teaser.byYear[y])
-                              .sort((a, b) => b.localeCompare(a))
-                              .map((m) => (
-                                <span key={m} className="teaser-month">
-                                  {HU_MONTHS[parseInt(m, 10) - 1]} <b>{teaser.byYear[y][m]}</b>
-                                </span>
-                              ))}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
                   <p style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>
-                    Bejelentkezve azt is látod, melyiket fejtetted már meg, és hányan fejtették meg összesen.
+                    Jelentkezz be, és újrajátszhatod őket tippekkel és a régi kommentekkel együtt. Azt is
+                    látod majd, melyiket fejtetted már meg, és hányan fejtették meg összesen.
                   </p>
                 </>
               ) : (
@@ -145,10 +127,6 @@ export default function ArchivePage() {
     <div className="wrap">
       <h1 className="page-title">Korábbi titkosírások</h1>
       <div className="card">
-        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
-          A "megfejtve" jelzés csak ezen az eszközön/böngészőn (illetve bejelentkezve a
-          fiókodhoz kötve) számolja a saját teljesítményedet.
-        </p>
         {error && <p style={{ color: 'var(--bad)' }}>{error}</p>}
         {items === null && !error && <p>Betöltés…</p>}
         {items && items.length === 0 && (

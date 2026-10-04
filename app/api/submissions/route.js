@@ -3,8 +3,11 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../lib/kv';
 import { isAdminRequest } from '../../../lib/adminAuth';
 import { auth } from '../../../auth';
-import { isLimited, tooMany } from '../../../lib/rateLimit';
+import { cooldown, isLimited, releaseCooldown, tooMany, waitResponse, waitText } from '../../../lib/rateLimit';
 import { readJson } from '../../../lib/validate';
+
+// Spam ellen két beküldés között legalább ennyi időnek el kell telnie (felhasználónként).
+const SUBMIT_COOLDOWN_SECONDS = 120;
 
 export async function GET(req) {
   if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -56,13 +59,26 @@ export async function POST(req) {
     ),
     createdAt: new Date().toISOString(),
   };
+  // Két beküldés között 2 perc: csak az érvényes beküldés foglalja le az ablakot.
+  const cdId = session.user.id || session.user.email;
+  const wait = await cooldown('submit:user', cdId, SUBMIT_COOLDOWN_SECONDS);
+  if (wait > 0) {
+    return waitResponse(
+      wait,
+      `Két rejtvénybeküldés között 2 percet kell várnod. Próbáld újra ${waitText(wait)} múlva.`
+    );
+  }
   // Olvasás-módosítás-írás zár alatt, hogy párhuzamos beküldések ne írják felül egymást.
   const locked = await kv.withLock('submissions', async () => {
     const list = (await kv.get('submissions:list')) || [];
     list.unshift(entry);
     await kv.set('submissions:list', list.slice(0, 500));
   });
-  if (!locked) return Response.json({ error: 'busy' }, { status: 503 });
+  if (!locked) {
+    // A beküldés nem került be, ezért a várakozási ablak sem marad lefoglalva.
+    await releaseCooldown('submit:user', cdId);
+    return Response.json({ error: 'busy' }, { status: 503 });
+  }
   return Response.json({ ok: true });
 }
 

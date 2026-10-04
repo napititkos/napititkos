@@ -142,6 +142,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
             hintsUsed={hintsUsed()}
             hintsTotal={hintsTotal}
             notify={showToast}
+            compact
           />
 
           {revealed.filter((t) => t !== 'betu').map((t) => (

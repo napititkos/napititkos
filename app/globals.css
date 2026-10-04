@@ -217,8 +217,13 @@ nav.topnav{
   text-align: left;
 }
 .clue-box .clue-text{ padding-top: 0; }
-@media (max-width: 480px){
+/* A Keverés felirata: a főoldalon 390 px-től kifér (az Ellenőrzés középen marad), az archívum
+   szűkebb, beágyazott lejátszójában (compact) csak 480 px fölött. Alatta csak az ikon látszik. */
+@media (max-width: 389px){
   .keveres-label{ display: none; }
+}
+@media (max-width: 480px){
+  .play-actions.compact .keveres-label{ display: none; }
 }
 .answer-row{ display:flex; gap:8px; margin-top:10px; margin-left: 8px; flex-wrap:wrap; align-items:center; justify-content:center; max-width: calc(100% - 8px); }
 input[type=text], input[type=password], textarea{
@@ -543,12 +548,16 @@ mark.hl-multi{ color: var(--ink); font-weight: 700; }
    kontrasztos, ezért az oldal halványszöveg-színét kapja (5,3:1). */
 ::placeholder{ color: var(--ink-soft); opacity: 1; }
 
-/* Korábbi titkosírások előzetese vendégeknek */
-.teaser-list{ display:flex; flex-direction:column; gap: 10px; margin: 6px 0 4px; }
-.teaser-year{ background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
-.teaser-year > b{ font-size: 16px; }
-.teaser-months{ display:flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 6px; }
-.teaser-month{ font-size: 13.5px; background: var(--accent-soft); color: var(--accent-text); border-radius: 999px; padding: 3px 10px; }
+/* Korábbi titkosírások előzetese vendégeknek: csak egy összesítő szám. */
+.teaser-total{ font-size: 15.5px; margin-top: 0; }
+.teaser-total b{ color: var(--accent-text); }
+
+/* Admin: fióktiltás. A --bad-text a --bad olvasható (WCAG AA) szövegszínű változata. */
+:root{ --bad-text:#B8264A; }
+@media (prefers-color-scheme: dark){ :root{ --bad-text: var(--bad); } }
+.banned-badge{ font-size: 10.5px; font-weight: 700; color: var(--bad-text); background: var(--bad-soft); padding: 2px 7px; border-radius: 999px; }
+button.ghost.danger{ border-color: var(--bad); color: var(--bad-text); }
+.user-actions{ display:flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; max-width: 55%; }
 
 /* A rejtvény alatti gombsor: a középső (Ellenőrzés) pontosan középen. */
 .play-actions{ display:grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap: 8px; margin-top: 12px; }
