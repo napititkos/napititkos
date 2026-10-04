@@ -2,6 +2,10 @@
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 
+// Tiltott fiók üzenete (Google- és jelszavas belépésnél; a belépő link kérésénél szándékosan
+// általános hibát adunk, hogy egy e-mail-cím tiltott volta a cím birtoklása nélkül ne derüljön ki).
+const BANNED_MSG = 'Ez a fiók le van tiltva, ezért nem tudsz belépni. Ha szerinted tévedés, írj nekünk a Kapcsolat oldalon.';
+
 // Bejelentkezés utáni visszairányítás (pl. az admin oldalról jövet). Csak saját,
 // relatív útvonal fogadható el, hogy a link ne vihessen idegen oldalra.
 function returnTo() {
@@ -38,6 +42,8 @@ export default function LoginPage() {
       setStatus({ ok: false, msg: 'A belépő link lejárt vagy már felhasználtad. Kérj egy újat.' });
     } else if (error === 'missing_token') {
       setStatus({ ok: false, msg: 'Hiányzó vagy hibás belépő link.' });
+    } else if (error === 'banned') {
+      setStatus({ ok: false, msg: BANNED_MSG });
     }
   }, []);
 
@@ -47,7 +53,10 @@ export default function LoginPage() {
     setStatus(null);
     const res = await signIn('credentials', { email, password, redirect: false });
     setSending(false);
-    if (res?.error) {
+    if (res?.error === 'banned') {
+      // Csak helyes jelszó után derül ki (a tiltás ténye jelszó nélkül nem tudható meg).
+      setStatus({ ok: false, msg: BANNED_MSG });
+    } else if (res?.error) {
       setStatus({ ok: false, msg: 'Hibás email cím vagy jelszó.' });
     } else {
       window.location.href = returnTo();

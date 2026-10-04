@@ -5,7 +5,7 @@ import { kv } from '../../../lib/kv';
 import { auth } from '../../../auth';
 import { todayStr, isValidDateStr } from '../../../lib/date';
 import { adminUser, isAdminRequest } from '../../../lib/adminAuth';
-import { isLimited, tooMany } from '../../../lib/rateLimit';
+import { cooldown, isLimited, tooMany, waitResponse, waitText } from '../../../lib/rateLimit';
 import { cleanName, readJson } from '../../../lib/validate';
 
 // Kommentek titkosírásonként (napi dátum szerint), tartósan tárolva, hogy a korábbi
@@ -15,6 +15,10 @@ import { cleanName, readJson } from '../../../lib/validate';
 
 const MAX_TEXT = 500;
 const MAX_PER_DAY = 1000;
+// Spam ellen: két komment között legalább ennyi másodperc (felhasználónként), és ugyanazt a
+// szöveget nem lehet újra elküldeni, ha az illető az utolsó néhány komment között már szerepel vele.
+const COMMENT_COOLDOWN_SECONDS = 30;
+const DUPLICATE_LOOKBACK = 20;
 const key = (date) => `comments:${date}`;
 
 function cleanText(v) {
@@ -65,6 +69,26 @@ export async function POST(req) {
   const date = todayStr();
   const r = kv.raw();
   if ((await r.llen(key(date))) >= MAX_PER_DAY) return Response.json({ error: 'full' }, { status: 429 });
+
+  const recent = await r.lrange(key(date), -DUPLICATE_LOOKBACK, -1);
+  const duplicate = recent.some((raw) => {
+    try {
+      const c = JSON.parse(raw);
+      return c.uid === session.user.id && c.text === text;
+    } catch {
+      return false;
+    }
+  });
+  if (duplicate) {
+    return Response.json(
+      { error: 'duplicate', message: 'Ezt a kommentet már elküldted.' },
+      { status: 409 }
+    );
+  }
+  const wait = await cooldown('comment:user', session.user.id, COMMENT_COOLDOWN_SECONDS);
+  if (wait > 0) {
+    return waitResponse(wait, `Két komment között ${COMMENT_COOLDOWN_SECONDS} másodpercet kell várnod. Próbáld újra ${waitText(wait)} múlva.`);
+  }
 
   const comment = {
     id: crypto.randomBytes(8).toString('hex'),

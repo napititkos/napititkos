@@ -289,9 +289,35 @@ export default function AdminPage() {
     if (res.ok) {
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
     } else if (res.status === 409) {
-      alert('A saját admin jogodat nem veheted el. Ha le szeretnél mondani róla, kérj meg egy másik admint.');
+      const data = await res.json().catch(() => ({}));
+      alert(
+        data.error === 'banned'
+          ? data.message
+          : 'A saját admin jogodat nem veheted el. Ha le szeretnél mondani róla, kérj meg egy másik admint.'
+      );
     } else {
       alert('Nem sikerült módosítani a jogosultságot.');
+    }
+  }
+
+  // Fióktiltás / feloldás, mindkét irányban megerősítéssel.
+  async function changeUserBan(id, banned, name) {
+    const sure = confirm(
+      banned
+        ? `Biztosan letiltod ezt a fiókot: ${name}?\n\nA felhasználó azonnal kijelentkezik, és nem tud újra belépni (sem Google-lal, sem belépő linkkel, sem jelszóval), amíg fel nem oldod a tiltást.`
+        : `Feloldod a tiltást ennél a fióknál: ${name}?`
+    );
+    if (!sure) return;
+    const res = await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, banned }),
+    });
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, banned } : u)));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.message || 'Nem sikerült módosítani a tiltást.');
     }
   }
 
@@ -972,17 +998,32 @@ export default function AdminPage() {
                     {u.role === 'admin' && (
                       <span className="progress-badge" style={{ marginLeft: 6 }}>admin</span>
                     )}
+                    {u.banned && (
+                      <span className="banned-badge" style={{ marginLeft: 6 }}>letiltva</span>
+                    )}
                   </div>
                   <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
                     {u.email} · {u.emailVerified ? 'megerősítve' : 'nincs megerősítve'}
                   </div>
                 </div>
-                <button
-                  className="ghost small"
-                  onClick={() => changeUserRole(u.id, u.role === 'admin' ? 'user' : 'admin', u.name || u.email)}
-                >
-                  {u.role === 'admin' ? 'Admin-jog visszavonása' : 'Admin-jog adása'}
-                </button>
+                <div className="user-actions">
+                  {!u.banned && (
+                    <button
+                      className="ghost small"
+                      onClick={() => changeUserRole(u.id, u.role === 'admin' ? 'user' : 'admin', u.name || u.email)}
+                    >
+                      {u.role === 'admin' ? 'Admin-jog visszavonása' : 'Admin-jog adása'}
+                    </button>
+                  )}
+                  {u.role !== 'admin' && (
+                    <button
+                      className={`ghost small${u.banned ? '' : ' danger'}`}
+                      onClick={() => changeUserBan(u.id, !u.banned, u.name || u.email)}
+                    >
+                      {u.banned ? 'Tiltás feloldása' : 'Fiók tiltása'}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </>

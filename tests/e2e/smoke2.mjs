@@ -182,7 +182,10 @@ check('tutorial: csak ismert szakaszok, maximumra vágva', storedTut.hack === un
 
 // beküldések
 r = await post('/api/submissions', { clue: 'Kérdés?', answer: 'VÁLASZ', hints: { definicio: 'd' } }, cookie); check('rejtvény beküldése: 200', r.status === 200);
-const submissions = await Promise.all(Array.from({ length: 5 }, (_, i) => post('/api/submissions', { clue: `Párhuzamos ${i}`, answer: 'SZÓ' }, cookie)));
+// Két beküldés között 2 perc (felhasználónként), ezért a zár tesztjéhez 5 különböző fiók küld párhuzamosan.
+const parJars = [];
+for (let i = 0; i < 5; i++) { await seedUser(`parhuzamos${i}@teszt.hu`, 'Parhuzamos-Jelszo-1'); parJars.push((await credLogin(`parhuzamos${i}@teszt.hu`, 'Parhuzamos-Jelszo-1')).jar); }
+const submissions = await Promise.all(parJars.map((jar, i) => post('/api/submissions', { clue: `Párhuzamos ${i}`, answer: 'SZÓ' }, { cookie: jar.header() })));
 const subs = JSON.parse(await redis.get('submissions:list'));
 check('párhuzamos beküldések közül egy sem vész el (zár)', submissions.every((x) => x.status === 200) && subs.length === 6, `(${subs.length})`);
 r = await post('/api/submissions', { clue: '', answer: '' }, cookie); check('üres beküldés: 400', r.status === 400);
@@ -191,7 +194,7 @@ r = await post('/api/submissions', { clue: '', answer: '' }, cookie); check('ür
 r = await fetch(BASE + '/api/account/export'); check('export bejelentkezés nélkül: 401', r.status === 401);
 r = await fetch(BASE + '/api/account/export', { headers: cookie });
 const exp = await r.text();
-check('export: letölthető JSON a saját adatokkal, jelszó-hash nélkül', r.status === 200 && /attachment/.test(r.headers.get('content-disposition') || '') && exp.includes(UEMAIL) && !exp.includes('passwordHash') && !exp.includes(u.passwordHash.slice(0, 20)) && JSON.parse(exp).submissions.length === 6, exp.slice(0, 200));
+check('export: letölthető JSON a saját adatokkal, jelszó-hash nélkül', r.status === 200 && /attachment/.test(r.headers.get('content-disposition') || '') && exp.includes(UEMAIL) && !exp.includes('passwordHash') && !exp.includes(u.passwordHash.slice(0, 20)) && JSON.parse(exp).submissions.length === 1, exp.slice(0, 200));
 
 // törlés: a szerző e-mailje egy közzétett rejtvényen
 const pl = JSON.parse(await redis.get('puzzles:list'));
@@ -201,7 +204,8 @@ r = await post('/api/account/delete', {}); check('törlés bejelentkezés nélk�
 r = await post('/api/account/delete', {}, cookie); check('törlés megerősítés nélkül: 400', r.status === 400);
 r = await post('/api/account/delete', { confirm: true }, cookie); check('törlés: 200', r.status === 200);
 check('a fiók, az e-mail-index, a haladás és a tutorial törölve', !(await redis.get(`au:user:${u.id}`)) && !(await redis.get(`au:userByEmail:${UEMAIL}`)) && !(await redis.get(`progress:${u.id}`)) && !(await redis.get(`tutorial:${u.id}`)));
-check('a beküldései törölve', JSON.parse((await redis.get('submissions:list')) || '[]').length === 0);
+const subsAfterDelete = JSON.parse((await redis.get('submissions:list')) || '[]');
+check('a beküldései törölve, a többiekéi megmaradtak', !subsAfterDelete.some((x) => x.submitterEmail === UEMAIL) && subsAfterDelete.length === 5, `(${subsAfterDelete.length})`);
 const pl2 = JSON.parse(await redis.get('puzzles:list'));
 check('a közzétett rejtvényen nincs név és e-mail, a szöveg megmaradt', pl2[0].submittedBy === '' && pl2[0].submittedByEmail === '' && pl2[0].clue.startsWith('Szamár'));
 lb = await lbGet();
@@ -399,6 +403,100 @@ const [py, pm] = pastAll[0].shownDate.split('-');
 check('évre és hónapra bontva', typeof j.byYear?.[py]?.[pm] === 'number' && j.byYear[py][pm] >= 1, JSON.stringify(j.byYear));
 const txt = JSON.stringify(j);
 check('nem ad ki rejtvényszöveget, választ vagy tippet', !pastAll.some((h) => (h.clue && txt.includes(h.clue)) || (h.answer && txt.includes(h.answer))) && !/clue|answer|hints/.test(txt));
+
+// ---------------------------------------------------------------- BEKÜLDÉS: VÁRAKOZÁS
+section('Beküldés: két beküldés között 2 perc');
+await seedUser('varakozo@teszt.hu', 'Varakozo-Jelszo-1');
+const svJar = (await credLogin('varakozo@teszt.hu', 'Varakozo-Jelszo-1')).jar;
+const svId = JSON.parse(await redis.get('au:userByEmail:varakozo@teszt.hu'));
+const svCount = async () => JSON.parse((await redis.get('submissions:list')) || '[]').filter((x) => x.submitterEmail === 'varakozo@teszt.hu').length;
+r = await post('/api/submissions', { clue: 'Első beküldés', answer: 'EGY' }, { cookie: svJar.header() });
+check('első beküldés: 200', r.status === 200, `(${r.status})`);
+r = await post('/api/submissions', { clue: 'Második rögtön', answer: 'KETTŐ' }, { cookie: svJar.header() }); j = await r.json();
+check('azonnali második beküldés: 429, hátralévő idővel', r.status === 429 && j.error === 'cooldown' && j.retryAfter > 0 && j.retryAfter <= 120 && Number(r.headers.get('retry-after')) === j.retryAfter, JSON.stringify(j));
+check('a hibaüzenet magyarul kiírja a várakozást', /2 percet kell várnod/.test(j.message || '') && /múlva/.test(j.message || ''), j.message);
+check('a második nem került be', (await svCount()) === 1);
+r = await post('/api/submissions', { clue: '', answer: '' }, { cookie: svJar.header() });
+check('hibás űrlap várakozás közben is 400 (az ellenőrzés előbb fut)', r.status === 400, `(${r.status})`);
+const svTtl = await redis.ttl(`rl:cd:submit:user:${svId}`);
+check('a várakozási kulcs legfeljebb 2 percig él', svTtl > 0 && svTtl <= 120, `(${svTtl})`);
+await redis.del(`rl:cd:submit:user:${svId}`); // a 2 perc leteltét szimuláljuk
+r = await post('/api/submissions', { clue: 'Két perc múlva', answer: 'HÁROM' }, { cookie: svJar.header() });
+check('a várakozás letelte után újra beküldhet: 200', r.status === 200 && (await svCount()) === 2, `(${r.status})`);
+await seedUser('rohano@teszt.hu', 'Rohano-Jelszo-1');
+const rhJar = (await credLogin('rohano@teszt.hu', 'Rohano-Jelszo-1')).jar;
+const rush = await Promise.all(Array.from({ length: 4 }, (_, i) => post('/api/submissions', { clue: `Egyszerre ${i}`, answer: 'SZÓ' }, { cookie: rhJar.header() })));
+check('4 párhuzamos beküldésből pontosan egy megy át', rush.filter((x) => x.status === 200).length === 1 && rush.filter((x) => x.status === 429).length === 3, JSON.stringify(rush.map((x) => x.status)));
+
+// ---------------------------------------------------------------- KOMMENT: VÁRAKOZÁS, ISMÉTLÉS
+section('Komment: 30 mp várakozás és ismételt szöveg');
+await seedUser('csevego@teszt.hu', 'Csevego-Jelszo-1', { name: 'Csevegő Csaba' });
+const cmJar = (await credLogin('csevego@teszt.hu', 'Csevego-Jelszo-1')).jar;
+const cmId = JSON.parse(await redis.get('au:userByEmail:csevego@teszt.hu'));
+r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cmJar.header() });
+check('első komment: 200', r.status === 200, `(${r.status})`);
+r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cmJar.header() }); j = await r.json();
+check('ugyanaz a szöveg újra: 409 (ismétlés)', r.status === 409 && j.error === 'duplicate' && /már elküldted/.test(j.message || ''), JSON.stringify(j));
+r = await post('/api/comments', { text: 'Még egy gondolat' }, { cookie: cmJar.header() }); j = await r.json();
+check('más szöveg rögtön: 429, legfeljebb 30 mp várakozás', r.status === 429 && j.error === 'cooldown' && j.retryAfter > 0 && j.retryAfter <= 30 && /30 másodpercet/.test(j.message || ''), JSON.stringify(j));
+r = await post('/api/comments', { text: '   ' }, { cookie: cmJar.header() });
+check('üres komment várakozás közben is 400', r.status === 400, `(${r.status})`);
+await redis.del(`rl:cd:comment:user:${cmId}`); // a 30 mp leteltét szimuláljuk
+r = await post('/api/comments', { text: 'Még egy gondolat' }, { cookie: cmJar.header() });
+check('a várakozás után: 200', r.status === 200, `(${r.status})`);
+await redis.del(`rl:cd:comment:user:${cmId}`);
+r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cmJar.header() });
+check('a korábbi szöveg várakozás után is ismétlésnek számít: 409', r.status === 409, `(${r.status})`);
+await redis.del(`rl:cd:comment:user:${otherId}`); // a korábbi kommentje óta eltelt időt szimuláljuk
+r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cA.header() });
+check('ugyanazt a szöveget más felhasználó elküldheti: 200', r.status === 200, `(${r.status})`);
+
+// ---------------------------------------------------------------- ADMIN: FIÓKTILTÁS
+section('Admin: fióktiltás');
+const patchUser = (bodyObj, headers) => fetch(BASE + '/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(bodyObj) });
+await seedUser('tiltando@teszt.hu', 'Tiltando-Jelszo-1', { name: 'Tiltandó Tibor' });
+const tbId = JSON.parse(await redis.get('au:userByEmail:tiltando@teszt.hu'));
+const tbLogin = await credLogin('tiltando@teszt.hu', 'Tiltando-Jelszo-1');
+check('tiltás előtt be tud lépni', tbLogin.ok);
+r = await patchUser({ id: tbId, banned: true }, { cookie: cA.header() });
+check('tiltás nem adminként: 401', r.status === 401, `(${r.status})`);
+r = await patchUser({ id: meId, banned: true }, adm); j = await r.json();
+check('saját fiók tiltása: 409', r.status === 409 && j.error === 'self-ban', JSON.stringify(j));
+await seedUser('admin3@teszt.hu', 'Admin-Harom-Jelszo-1', { role: 'admin' });
+const adm3Id = JSON.parse(await redis.get('au:userByEmail:admin3@teszt.hu'));
+r = await patchUser({ id: adm3Id, banned: true }, adm); j = await r.json();
+check('admin fiók tiltása: 409 (előbb az admin jogot kell visszavonni)', r.status === 409 && j.error === 'admin' && !JSON.parse(await redis.get(`au:user:${adm3Id}`)).banned, JSON.stringify(j));
+r = await patchUser({ id: 'nincs-ilyen', banned: true }, adm); check('nem létező fiók: 404', r.status === 404, `(${r.status})`);
+r = await patchUser({ id: tbId, banned: 'igen' }, adm); check('hibás tiltás-érték: 400', r.status === 400, `(${r.status})`);
+r = await patchUser({ id: tbId, banned: true }, adm);
+check('tiltás adminként: 200', r.status === 200, `(${r.status})`);
+const tbRec = JSON.parse(await redis.get(`au:user:${tbId}`));
+check('a fiókon tárolva a tiltás időpontja és az admin', !!tbRec.banned?.at && tbRec.banned.by === meId && tbRec.passwordHash, JSON.stringify(tbRec.banned));
+let ul = await (await fetch(BASE + '/api/admin/users', { headers: adm })).json();
+check('a felhasználólista jelzi a tiltást', ul.users.find((x) => x.id === tbId)?.banned === true && ul.users.find((x) => x.id === meId)?.banned === false);
+let tbSess = await (await fetch(BASE + '/api/auth/session', { headers: { cookie: tbLogin.jar.header() } })).json();
+check('a meglévő munkamenet azonnal megszűnik', !tbSess?.user, JSON.stringify(tbSess));
+r = await post('/api/comments', { text: 'Tiltva is írnék' }, { cookie: tbLogin.jar.header() });
+check('a régi sütivel sem kommentelhet: 401', r.status === 401, `(${r.status})`);
+r = await post('/api/submissions', { clue: 'Tiltva', answer: 'NEM' }, { cookie: tbLogin.jar.header() });
+check('a régi sütivel sem küldhet be rejtvényt: 401', r.status === 401, `(${r.status})`);
+check('helyes jelszóval sem léphet be', !(await credLogin('tiltando@teszt.hu', 'Tiltando-Jelszo-1')).ok);
+const rawLogin = async (pw) => {
+  const jar = newJar();
+  let x = await fetch(BASE + '/api/auth/csrf'); jar.take(x);
+  const { csrfToken } = await x.json();
+  x = await fetch(BASE + '/api/auth/callback/credentials', { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: jar.header() }, body: new URLSearchParams({ csrfToken, email: 'tiltando@teszt.hu', password: pw, json: 'true' }) });
+  const loc = x.headers.get('location') || (await x.json().catch(() => ({}))).url || '';
+  return loc;
+};
+check('helyes jelszónál a válasz jelzi a tiltást (error=banned)', /error=banned/.test(await rawLogin('Tiltando-Jelszo-1')));
+check('hibás jelszónál nem derül ki a tiltás', !/banned/.test(await rawLogin('Rossz-Jelszo-999')));
+r = await patchUser({ id: tbId, role: 'admin' }, adm); j = await r.json();
+check('tiltott fióknak nem adható admin jog: 409', r.status === 409 && j.error === 'banned' && JSON.parse(await redis.get(`au:user:${tbId}`)).role === 'user', JSON.stringify(j));
+r = await patchUser({ id: tbId, banned: false }, adm);
+check('tiltás feloldása: 200', r.status === 200 && !JSON.parse(await redis.get(`au:user:${tbId}`)).banned, `(${r.status})`);
+check('feloldás után újra be tud lépni', (await credLogin('tiltando@teszt.hu', 'Tiltando-Jelszo-1')).ok);
+check('a tiltás nem nyúlt a jelszóhoz és az adatokhoz', JSON.parse(await redis.get(`au:user:${tbId}`)).passwordHash === tbRec.passwordHash && JSON.parse(await redis.get(`au:user:${tbId}`)).name === 'Tiltandó Tibor');
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

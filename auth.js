@@ -5,6 +5,7 @@ import { RedisAdapter } from './lib/authAdapter';
 import { kv } from './lib/kv';
 import { MAX_PASSWORD_LENGTH, burnPasswordCheck, verifyPassword } from './lib/password';
 import { clearFailures, clientIp, failures, isLimited, recordFailure } from './lib/rateLimit';
+import { isBannedEmail, isBannedId } from './lib/ban';
 
 // Jelszavas belépés: sikertelen próbák korlátja 15 percenként, címenként és IP-nként.
 // (A cím szerinti zárolás a jelszavas belépést blokkolja; a Google és a belépő link ettől
@@ -91,6 +92,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account }) {
+      // Tiltott fiók semmilyen módon (Google, belépő link, jelszó) nem léphet be. Jelszónál ez
+      // csak a helyes jelszó után derül ki, így a tiltás ténye nem tudható meg a jelszó nélkül.
+      if ((await isBannedId(user?.id)) || (await isBannedEmail(user?.email))) {
+        return '/login?error=banned';
+      }
       // A Google (és az email-linkes) bejelentkezés már önmagában igazolja az
       // email-cím tulajdonjogát, ezért ezeknél sosem kérünk külön visszaigazolást -
       // akkor sem, ha a fiók korábban (ennek a logikának a bevezetése előtt) jött létre.
@@ -121,6 +127,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.uid = user.id;
         token.verified = !!user.emailVerified;
       }
+      // A már bejelentkezett tiltott fiók munkamenete is azonnal megszűnik (null = kijelentkeztetés).
+      if (token?.uid && (await isBannedId(token.uid))) return null;
       return token;
     },
     async session({ session, token }) {

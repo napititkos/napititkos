@@ -4,9 +4,11 @@ import Icon from './Icon';
 // A rejtvény alatti gombsor: Keverés | Ellenőrzés | Tippek (x/y). Az Ellenőrzés pontosan
 // középen van; mindhárom gomb azonos színű és magasságú, a szélességük a felirathoz igazodik.
 // Amíg a sor nincs kitöltve, a Keverés és az Ellenőrzés halványabb, megnyomva üzenetet ad.
-export default function PlayActions({ rowFull, onShuffle, onCheck, onOpenHints, hintsUsed, hintsTotal, notify }) {
+// compact: szűkebb helyen (az archívum beágyazott lejátszójában) a Keverés felirata mobilon
+// rejtve marad, csak az ikon látszik; a főoldalon 390 px-től a felirat is kiírva.
+export default function PlayActions({ rowFull, onShuffle, onCheck, onOpenHints, hintsUsed, hintsTotal, notify, compact = false }) {
   return (
-    <div className="play-actions">
+    <div className={`play-actions${compact ? ' compact' : ''}`}>
       <div className="pa-left">
         <button
           className="primary play-btn"

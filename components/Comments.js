@@ -48,6 +48,8 @@ export default function Comments({ date, readOnly = false, onCountChange }) {
         setText('');
       } else if (data.error === 'unverified') {
         setError('Kommenteléshez erősítsd meg az e-mail-címedet.');
+      } else if (data.error === 'duplicate' || data.error === 'cooldown') {
+        setError(data.message || 'Túl sok komment rövid idő alatt - próbáld újra később.');
       } else if (res.status === 429) {
         setError('Túl sok komment rövid idő alatt - próbáld újra később.');
       } else {
