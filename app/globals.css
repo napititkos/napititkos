@@ -549,3 +549,20 @@ mark.hl-multi{ color: var(--ink); font-weight: 700; }
 .teaser-year > b{ font-size: 16px; }
 .teaser-months{ display:flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 6px; }
 .teaser-month{ font-size: 13.5px; background: var(--accent-soft); color: var(--accent-text); border-radius: 999px; padding: 3px 10px; }
+
+/* A rejtvény alatti gombsor: a középső (Ellenőrzés) pontosan középen. */
+.play-actions{ display:grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap: 8px; margin-top: 12px; }
+.pa-left{ display:flex; justify-content:flex-end; min-width: 0; }
+.pa-right{ display:flex; justify-content:flex-start; min-width: 0; }
+button.play-btn{ height: 40px; padding: 0 16px; font-size: 14px; white-space: nowrap; }
+@media (max-width: 420px){ button.play-btn{ padding: 0 12px; font-size: 13.5px; } }
+.play-btn .tips-icon{ display: none !important; }
+.play-btn .tips-label{ white-space: pre; }
+/* Nagyon keskeny képernyőn (pl. 320 px) a "Tippek" szó helyett ikon, hogy az Ellenőrzés
+   pontosan középen maradhasson és minden kiférjen. */
+@media (max-width: 340px){
+  .play-actions{ gap: 5px; }
+  button.play-btn{ padding: 0 10px; font-size: 13px; gap: 4px; }
+  .play-btn .tips-icon{ display: inline-block !important; }
+  .play-btn .tips-label{ display: none; }
+}
