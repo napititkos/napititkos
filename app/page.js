@@ -11,6 +11,7 @@ import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
 import LetterBoxes from '../components/LetterBoxes';
+import PlayActions from '../components/PlayActions';
 import ClueText from '../components/ClueText';
 import { HL_TYPES, highlightMap } from '../lib/clue';
 import { enumerationFor } from '../lib/format';
@@ -583,6 +584,10 @@ export default function HomePage() {
   const availableHints = HINT_ORDER.filter(
     (t) => t === 'betu' || (puzzle.hints?.[t]?.enabled && puzzle.hints[t].text)
   );
+  // Az összes lehetséges tipp: a szöveges tippek + annyi, ahány betű kérhető.
+  const hintsTotal =
+    availableHints.filter((t) => t !== 'betu').length +
+    (availableHints.includes('betu') ? Array.from(puzzle.answer).filter((c) => c !== ' ').length : 0);
 
   // A felfedett tippekhez (az admin felületen) kijelölt szavak kiemelése a tipp színével;
   // a tipp-ablak bezárása után is megmarad.
@@ -674,32 +679,18 @@ export default function HomePage() {
                   locked={lockedLetters}
                   onChange={setGuess}
                   disabled={answered}
-                  onEnter={() => checkAnswer(guess.join(''))}
-                  leftSlot={
-                    <button
-                      className="ghost small"
-                      aria-disabled={!isRowFull()}
-                      onClick={() => (isRowFull() ? shuffleGuess() : showToast('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
-                      title="A beírt betűk véletlenszerű összekeverése"
-                      style={{ padding: '9px 11px' }}
-                    >
-                      <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
-                    </button>
-                  }
+                  onEnter={() => (isRowFull() ? checkAnswer(guess.join('')) : showToast('Töltsd ki előbb, vagy használj tippet, ha elakadtál!'))}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-                <button className="primary" onClick={() => checkAnswer(guess.join(''))}>
-                  Ellenőrzés
-                </button>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-                {availableHints.length > 0 && (
-                  <button className="ghost small" onClick={() => setShowHintModal(true)}>
-                    <Icon src="/icons/Rejtveny_tippek.png" size={16} /> Tippek ({hintsUsed()} felhasználva)
-                  </button>
-                )}
-              </div>
+              <PlayActions
+                rowFull={isRowFull()}
+                onShuffle={shuffleGuess}
+                onCheck={() => checkAnswer(guess.join(''))}
+                onOpenHints={() => setShowHintModal(true)}
+                hintsUsed={hintsUsed()}
+                hintsTotal={hintsTotal}
+                notify={showToast}
+              />
               {revealed.filter((t) => t !== 'betu').map((t) => (
                 <div className={`hint-box${HL_TYPES.includes(t) ? ` hl-type-${t}` : ''}`} key={t}>
                   <>
