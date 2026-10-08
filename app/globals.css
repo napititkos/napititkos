@@ -52,6 +52,10 @@
   }
 }
 *{box-sizing:border-box;}
+/* Mobilon a böngésző koppintáskor egy félig átlátszó téglalapot villant a gombokon (tap
+   highlight) - ez nem követi a lekerekítést, ezért kikapcsoljuk. A billentyűzetes fókuszjelzés
+   (:focus-visible) ettől megmarad. */
+html{ -webkit-tap-highlight-color: transparent; }
 html,body{margin:0;padding:0; overflow-x: hidden;}
 body{
   background:var(--paper);
@@ -308,7 +312,11 @@ button:disabled{ opacity:0.4; cursor:default; }
 }
 .feedback{ margin-left:8px; margin-top:8px; font-size: 13.5px; padding: 9px 12px; border-radius: 12px; max-width: calc(100% - 8px); }
 .feedback.good{ background: var(--good-soft); color: var(--good-text); }
-.feedback.hint{ background: var(--warn-soft); color: var(--warn); }
+.feedback.hint{ background: var(--warn-soft); color: var(--warn-text); }
+/* A --warn (narancs) világos módban a halvány háttéren nem éri el a WCAG AA kontrasztot (kb. 1,9:1),
+   ezért a figyelmeztető szövegek a sötétebb --warn-text változatot kapják (sötét módban marad a --warn). */
+:root{ --warn-text:#9A5200; }
+@media (prefers-color-scheme: dark){ :root{ --warn-text: var(--warn); } }
 .locked-note{ font-size: 13.5px; color: var(--ink-soft); font-style: italic; }
 .result{ text-align:center; }
 .card.result{ padding: 16px; margin-bottom: 14px; }
@@ -575,3 +583,11 @@ button.play-btn{ height: 40px; padding: 0 16px; font-size: 14px; white-space: no
   .play-btn .tips-icon{ display: inline-block !important; }
   .play-btn .tips-label{ display: none; }
 }
+
+/* Szövegszerű gomb (pl. "Elfelejtetted a jelszavad?"). */
+button.link-btn{
+  background: none; border: none; padding: 2px 0; border-radius: 4px;
+  color: var(--accent-text); font-size: 13.5px; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+button.link-btn:hover:not(:disabled), button.link-btn:active:not(:disabled){ transform: none; }

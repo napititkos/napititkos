@@ -498,6 +498,49 @@ check('tiltás feloldása: 200', r.status === 200 && !JSON.parse(await redis.get
 check('feloldás után újra be tud lépni', (await credLogin('tiltando@teszt.hu', 'Tiltando-Jelszo-1')).ok);
 check('a tiltás nem nyúlt a jelszóhoz és az adatokhoz', JSON.parse(await redis.get(`au:user:${tbId}`)).passwordHash === tbRec.passwordHash && JSON.parse(await redis.get(`au:user:${tbId}`)).name === 'Tiltandó Tibor');
 
+// ---------------------------------------------------------------- ELFELEJTETT JELSZÓ
+section('Elfelejtett jelszó: visszaállító link');
+const fsMail = await import('node:fs');
+const mailsTo = (addr) => {
+  try {
+    return fsMail.readFileSync(process.env.MAIL_LOG, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((m) => m.to.includes(addr));
+  } catch { return []; }
+};
+const resetLink = (addr) => { const m = mailsTo(addr).at(-1); const x = m && /reset-password\?token=([a-f0-9]{64})/.exec(m.html); return x ? x[1] : null; };
+const forgot = (email, ip) => fetch(BASE + '/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-forwarded-for': ip || '10.9.0.1' }, body: JSON.stringify({ email }) });
+const resetPw = (token, password) => fetch(BASE + '/api/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, password }) });
+await seedUser('feledekeny@teszt.hu', 'Regi-Jelszo-123', { name: 'Feledékeny Feri', emailVerified: null });
+const fdId = JSON.parse(await redis.get('au:userByEmail:feledekeny@teszt.hu'));
+const fdOld = await credLogin('feledekeny@teszt.hu', 'Regi-Jelszo-123');
+check('a régi jelszóval be tud lépni (előtte)', fdOld.ok);
+r = await fetch(BASE + '/reset-password'); check('a /reset-password oldal elérhető', r.status === 200, `(${r.status})`);
+r = await forgot('nem-email'); check('érvénytelen cím: 400', r.status === 400, `(${r.status})`);
+r = await forgot('senki@nincs-ilyen.hu'); j = await r.json();
+check('nem létező cím: ugyanaz a válasz (200), levél nélkül', r.status === 200 && j.ok === true && mailsTo('senki@nincs-ilyen.hu').length === 0);
+r = await forgot('Feledekeny@Teszt.hu '); j = await r.json();
+const fdToken = resetLink('feledekeny@teszt.hu');
+check('létező cím (kis-nagybetű, szóköz mindegy): 200 és levél a linkkel', r.status === 200 && j.ok === true && !!fdToken);
+check('a token csak hash-elve van tárolva, 1 órás lejárattal', !(await redis.get(`pwreset:${fdToken}`)) && (await redis.keys('pwreset:*')).length >= 1 && (await redis.ttl((await redis.keys('pwreset:*'))[0])) <= 3600);
+r = await resetPw('nem-token', 'Uj-Jelszo-456'); j = await r.json(); check('hibás token: 400', r.status === 400 && j.error === 'expired');
+r = await resetPw('a'.repeat(64), 'Uj-Jelszo-456'); check('ismeretlen token: 400', r.status === 400);
+r = await resetPw(fdToken, 'rovid'); j = await r.json(); check('túl rövid jelszó: 400, a link nem vész el', r.status === 400 && j.error === 'short');
+r = await resetPw(fdToken, 'Uj-Jelszo-456'); j = await r.json();
+check('új jelszó beállítása: 200', r.status === 200 && j.ok === true, JSON.stringify(j));
+const fdRec = JSON.parse(await redis.get(`au:user:${fdId}`));
+check('a cím megerősítettnek számít, a többi adat megmaradt', !!fdRec.emailVerified && fdRec.name === 'Feledékeny Feri' && fdRec.sessionsValidAfter > 0);
+r = await resetPw(fdToken, 'Masik-Jelszo-789'); check('a link másodszor már nem használható: 400', r.status === 400);
+check('a régi jelszóval már nem lehet belépni', !(await credLogin('feledekeny@teszt.hu', 'Regi-Jelszo-123')).ok);
+const fdNew = await credLogin('feledekeny@teszt.hu', 'Uj-Jelszo-456');
+check('az új jelszóval be lehet lépni', fdNew.ok);
+let fdSess = await (await fetch(BASE + '/api/auth/session', { headers: { cookie: fdOld.jar.header() } })).json();
+check('a csere előtti munkamenet megszűnt', !fdSess?.user, JSON.stringify(fdSess));
+fdSess = await (await fetch(BASE + '/api/auth/session', { headers: { cookie: fdNew.jar.header() } })).json();
+check('a csere utáni munkamenet érvényes', fdSess?.user?.email === 'feledekeny@teszt.hu');
+await seedUser('tiltott-feledo@teszt.hu', 'Tiltott-Jelszo-1', { banned: { at: new Date().toISOString(), by: null } });
+r = await forgot('tiltott-feledo@teszt.hu'); check('tiltott fiók: ugyanaz a válasz, de nem megy levél', r.status === 200 && mailsTo('tiltott-feledo@teszt.hu').length === 0);
+await forgot('limit@teszt.hu', '10.9.0.2'); await forgot('limit@teszt.hu', '10.9.0.2'); await forgot('limit@teszt.hu', '10.9.0.2');
+r = await forgot('limit@teszt.hu', '10.9.0.2'); check('címenként óránként legfeljebb 3 kérés: a 4. 429', r.status === 429, `(${r.status})`);
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
