@@ -5,7 +5,7 @@ import { RedisAdapter } from './lib/authAdapter';
 import { kv } from './lib/kv';
 import { MAX_PASSWORD_LENGTH, burnPasswordCheck, verifyPassword } from './lib/password';
 import { clearFailures, clientIp, failures, isLimited, recordFailure } from './lib/rateLimit';
-import { isBannedEmail, isBannedId } from './lib/ban';
+import { isBannedEmail, isBannedId, isSessionRevoked } from './lib/ban';
 
 // Jelszavas belépés: sikertelen próbák korlátja 15 percenként, címenként és IP-nként.
 // (A cím szerinti zárolás a jelszavas belépést blokkolja; a Google és a belépő link ettől
@@ -126,9 +126,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role || 'user';
         token.uid = user.id;
         token.verified = !!user.emailVerified;
+        token.authAt = Date.now(); // a belépés ideje (ms), a jelszócsere előtti munkamenetek kizárásához
       }
-      // A már bejelentkezett tiltott fiók munkamenete is azonnal megszűnik (null = kijelentkeztetés).
-      if (token?.uid && (await isBannedId(token.uid))) return null;
+      // A már bejelentkezett tiltott fiók munkamenete is azonnal megszűnik (null = kijelentkeztetés),
+      // ahogy a jelszó-visszaállítás előtt indított munkamenetek is.
+      const issuedAtMs = typeof token?.authAt === 'number' ? token.authAt : typeof token?.iat === 'number' ? token.iat * 1000 : undefined;
+      if (token?.uid && (await isSessionRevoked(token.uid, issuedAtMs))) return null;
       return token;
     },
     async session({ session, token }) {

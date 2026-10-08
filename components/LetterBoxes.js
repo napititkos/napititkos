@@ -140,6 +140,34 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
     return p;
   }
 
+  // A natív input-eseményhez mindig a friss értékek kellenek (a figyelőt csak egyszer kötjük be).
+  const latest = useRef({ value, locked, chars });
+  latest.current = { value, locked, chars };
+
+  // Ha a mezőben már ugyanaz a betű van, amit beír (pl. az 5. helyen T volt, és újra T-t üt),
+  // a React onChange nem fut le, mert az érték nem változott - így nem léptetett tovább, a kurzor
+  // pedig a betű mögé került, és a maxLength miatt utána semmit nem lehetett beírni. A natív
+  // input-esemény viszont ilyenkor is lefut: ebből léptetünk tovább (vagy jelöljük ki újra a
+  // mezőt, ha ez volt az utolsó).
+  useEffect(() => {
+    const root = outerRef.current;
+    if (!root) return;
+    const onNativeInput = (e) => {
+      const el = e.target;
+      const idx = Number(el?.dataset?.idx);
+      if (!Number.isInteger(idx)) return;
+      const { value: cur, locked: lk, chars: cs } = latest.current;
+      const v = (el.value || '').toUpperCase().slice(-1);
+      if (el.value.length !== 1 || !v || v !== (cur[idx] || '')) return; // a változást az onChange kezeli
+      let n = idx + 1;
+      while (n < cs.length && (cs[n] === ' ' || lk[n])) n++;
+      if (n < cs.length && refs.current[n]) refs.current[n].focus();
+      else el.select();
+    };
+    root.addEventListener('input', onNativeInput);
+    return () => root.removeEventListener('input', onNativeInput);
+  }, []);
+
   const { rows, tile, side } = computeLayout(chars, box.width, leftSlot ? box.slot : 0);
 
   const renderInput = (idx) => (
@@ -148,24 +176,52 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
       ref={(el) => (refs.current[idx] = el)}
       type="text"
       inputMode="text"
-      maxLength={1}
+      data-idx={idx}
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="characters"
+      spellCheck={false}
       className={`letter-box${locked[idx] ? ' locked' : ''}`}
       disabled={disabled || locked[idx]}
       value={value[idx] || ''}
       onFocus={(e) => e.target.select()}
       onClick={(e) => e.target.select()}
       onChange={(e) => {
-        const v = e.target.value.toUpperCase().slice(-1);
+        // Nincs maxLength: ha a kijelölés elveszett, és a kurzor a meglévő betű elé vagy mögé
+        // került, a mezőbe két betű kerül - ilyenkor a régi betűt elhagyva az újat vesszük
+        // (ugyanaz a betű kétszer = maradt a régi). Korábban a maxLength ilyenkor minden további
+        // gépelést elnyelt, amíg újra bele nem kattintottak a mezőbe.
+        const raw = e.target.value.toUpperCase();
+        const prev = value[idx] || '';
+        let v = raw.slice(-1);
+        if (raw.length > 1 && prev) {
+          const at = raw.indexOf(prev);
+          v = (at >= 0 ? raw.slice(0, at) + raw.slice(at + 1) : raw).slice(-1) || prev;
+        }
         const next = [...value];
         next[idx] = v;
         onChange(next);
         if (v) {
           const n = nextEditable(idx + 1);
           if (n < chars.length) focusIndex(n);
+          // Az utolsó mezőben maradva a betű kijelölve marad, így rögtön átírható.
+          else requestAnimationFrame(() => e.target.select());
         }
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Backspace' && !value[idx]) {
+        const el = e.target;
+        if (
+          e.key.length === 1 &&
+          !e.ctrlKey && !e.metaKey && !e.altKey &&
+          value[idx] && e.key.toUpperCase() === value[idx] &&
+          el.selectionStart === 0 && el.selectionEnd === el.value.length
+        ) {
+          // Ugyanazt a betűt üti be, ami már ott van (és ki van jelölve): nincs mit átírni, csak lépünk.
+          e.preventDefault();
+          const n = nextEditable(idx + 1);
+          if (n < chars.length) focusIndex(n);
+          else el.select();
+        } else if (e.key === 'Backspace' && !value[idx]) {
           const p = prevEditable(idx - 1);
           if (p >= 0) focusIndex(p);
         } else if (e.key === 'Enter') {

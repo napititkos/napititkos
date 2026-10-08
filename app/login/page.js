@@ -18,7 +18,7 @@ function returnTo() {
 }
 
 export default function LoginPage() {
-  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'magic'
+  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'magic' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -102,6 +102,33 @@ export default function LoginPage() {
     }
   }
 
+  async function submitForgot(e) {
+    e.preventDefault();
+    setSending(true);
+    setStatus(null);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setStatus({
+          ok: true,
+          msg: 'Ha ehhez a címhez tartozik fiók, elküldtük a jelszó-visszaállító linket (nézd meg a spam mappát is). A link 1 óráig érvényes.',
+        });
+      } else if (res.status === 429) {
+        setStatus({ ok: false, msg: 'Túl sok kérés ehhez a címhez. Próbáld újra később.' });
+      } else {
+        setStatus({ ok: false, msg: data.error || 'Nem sikerült elküldeni a linket.' });
+      }
+    } catch {
+      setStatus({ ok: false, msg: 'Nem sikerült elküldeni. Ellenőrizd az internetkapcsolatot.' });
+    }
+    setSending(false);
+  }
+
   return (
     <div className="wrap">
       <h1 className="page-title">Bejelentkezés</h1>
@@ -141,13 +168,38 @@ export default function LoginPage() {
 
         {mode === 'login' && (
           <form onSubmit={submitLogin}>
-            <label className="field-label">Email cím</label>
-            <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <label className="field-label">Jelszó</label>
-            <input className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <label className="field-label" htmlFor="login-email">Email cím</label>
+            <input id="login-email" autoComplete="email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <label className="field-label" htmlFor="login-password">Jelszó</label>
+            <input id="login-password" autoComplete="current-password" className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <div style={{ marginTop: 16 }}>
               <button className="primary" type="submit" disabled={sending}>
                 {sending ? 'Belépés…' : 'Belépés'}
+              </button>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <button type="button" className="link-btn" onClick={() => { setMode('forgot'); setStatus(null); }}>
+                Elfelejtetted a jelszavad?
+              </button>
+            </div>
+          </form>
+        )}
+
+        {mode === 'forgot' && (
+          <form onSubmit={submitForgot}>
+            <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
+              Add meg a fiókodhoz tartozó email címet, és küldünk egy linket, amivel új jelszót állíthatsz be.
+            </p>
+            <label className="field-label" htmlFor="forgot-email">Email cím</label>
+            <input id="forgot-email" autoComplete="email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <div style={{ marginTop: 16 }}>
+              <button className="primary" type="submit" disabled={sending}>
+                {sending ? 'Küldés…' : 'Visszaállító link küldése'}
+              </button>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <button type="button" className="link-btn" onClick={() => { setMode('login'); setStatus(null); }}>
+                Vissza a belépéshez
               </button>
             </div>
           </form>
@@ -155,12 +207,12 @@ export default function LoginPage() {
 
         {mode === 'register' && (
           <form onSubmit={submitRegister}>
-            <label className="field-label">Neved (opcionális)</label>
-            <input className="form-input" type="text" value={name} onChange={(e) => setName(e.target.value)} />
-            <label className="field-label">Email cím</label>
-            <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <label className="field-label">Jelszó (legalább 8 karakter)</label>
-            <input className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+            <label className="field-label" htmlFor="reg-name">Neved (opcionális)</label>
+            <input id="reg-name" className="form-input" type="text" value={name} onChange={(e) => setName(e.target.value)} />
+            <label className="field-label" htmlFor="reg-email">Email cím</label>
+            <input id="reg-email" autoComplete="email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <label className="field-label" htmlFor="reg-password">Jelszó (legalább 8 karakter)</label>
+            <input id="reg-password" autoComplete="new-password" className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
             <div style={{ marginTop: 16 }}>
               <button className="primary" type="submit" disabled={sending}>
                 {sending ? 'Regisztráció…' : 'Regisztráció'}
@@ -174,8 +226,8 @@ export default function LoginPage() {
             <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
               Nincs szükséged jelszóra - küldünk egy belépő linket emailben.
             </p>
-            <label className="field-label">Email cím</label>
-            <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <label className="field-label" htmlFor="magic-email">Email cím</label>
+            <input id="magic-email" autoComplete="email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <div style={{ marginTop: 16 }}>
               <button className="primary" type="submit" disabled={sending}>
                 {sending ? 'Küldés…' : 'Belépő link kérése'}
