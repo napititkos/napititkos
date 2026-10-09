@@ -5,7 +5,7 @@ import { RedisAdapter } from './lib/authAdapter';
 import { kv } from './lib/kv';
 import { MAX_PASSWORD_LENGTH, burnPasswordCheck, verifyPassword } from './lib/password';
 import { clearFailures, clientIp, failures, isLimited, recordFailure } from './lib/rateLimit';
-import { isBannedEmail, isBannedId, isSessionRevoked } from './lib/ban';
+import { isBannedEmail, isBannedId, isSessionRevoked, sessionStatus } from './lib/ban';
 
 // Jelszavas belépés: sikertelen próbák korlátja 15 percenként, címenként és IP-nként.
 // (A cím szerinti zárolás a jelszavas belépést blokkolja; a Google és a belépő link ettől
@@ -131,7 +131,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // A már bejelentkezett tiltott fiók munkamenete is azonnal megszűnik (null = kijelentkeztetés),
       // ahogy a jelszó-visszaállítás előtt indított munkamenetek is.
       const issuedAtMs = typeof token?.authAt === 'number' ? token.authAt : typeof token?.iat === 'number' ? token.iat * 1000 : undefined;
-      if (token?.uid && (await isSessionRevoked(token.uid, issuedAtMs))) return null;
+      if (token?.uid) {
+        const st = await sessionStatus(token.uid, issuedAtMs);
+        if (st.revoked) return null;
+        // Az e-mail-megerősítés élőben követve (a jelző korábban csak belépéskor frissült).
+        if (typeof st.verified === 'boolean') token.verified = st.verified;
+      }
       return token;
     },
     async session({ session, token }) {

@@ -541,6 +541,69 @@ r = await forgot('tiltott-feledo@teszt.hu'); check('tiltott fiók: ugyanaz a vá
 await forgot('limit@teszt.hu', '10.9.0.2'); await forgot('limit@teszt.hu', '10.9.0.2'); await forgot('limit@teszt.hu', '10.9.0.2');
 r = await forgot('limit@teszt.hu', '10.9.0.2'); check('címenként óránként legfeljebb 3 kérés: a 4. 429', r.status === 429, `(${r.status})`);
 
+// ---------------------------------------------------------------- JELSZÓ MÓDOSÍTÁSA
+section('Profil: jelszó módosítása');
+const pwApi = (bodyObj, jar) => fetch(BASE + '/api/account/password', { method: 'POST', headers: { 'Content-Type': 'application/json', cookie: jar.header() }, body: JSON.stringify(bodyObj) });
+r = await fetch(BASE + '/api/account/password'); check('vendégként: 401', r.status === 401, `(${r.status})`);
+await seedUser('jelszocsere@teszt.hu', 'Regi-Jelszo-111');
+const pcA = await credLogin('jelszocsere@teszt.hu', 'Regi-Jelszo-111');
+const pcB = await credLogin('jelszocsere@teszt.hu', 'Regi-Jelszo-111');
+j = await (await fetch(BASE + '/api/account/password', { headers: { cookie: pcA.jar.header() } })).json();
+check('jelszavas fióknál hasPassword: true', j.hasPassword === true);
+r = await pwApi({ currentPassword: 'Rossz-Jelszo-0', newPassword: 'Uj-Jelszo-222', newPassword2: 'Uj-Jelszo-222' }, pcA.jar); j = await r.json();
+check('hibás jelenlegi jelszó: 400', r.status === 400 && j.error === 'wrong-password');
+r = await pwApi({ currentPassword: 'Regi-Jelszo-111', newPassword: 'Uj-Jelszo-222', newPassword2: 'Uj-Jelszo-333' }, pcA.jar); j = await r.json();
+check('eltérő új jelszavak: 400', r.status === 400 && j.error === 'mismatch');
+r = await pwApi({ currentPassword: 'Regi-Jelszo-111', newPassword: 'rovid', newPassword2: 'rovid' }, pcA.jar);
+check('túl rövid új jelszó: 400', r.status === 400);
+r = await pwApi({ currentPassword: 'Regi-Jelszo-111', newPassword: 'Uj-Jelszo-222', newPassword2: 'Uj-Jelszo-222' }, pcA.jar);
+check('jelszócsere: 200', r.status === 200, `(${r.status})`);
+check('a régi jelszó már nem jó', !(await credLogin('jelszocsere@teszt.hu', 'Regi-Jelszo-111')).ok);
+check('az új jelszó jó', (await credLogin('jelszocsere@teszt.hu', 'Uj-Jelszo-222')).ok);
+const pcBSess = await (await fetch(BASE + '/api/auth/session', { headers: { cookie: pcB.jar.header() } })).json();
+check('a többi eszköz munkamenete megszűnt', !pcBSess?.user);
+
+// ---------------------------------------------------------------- E-MAIL-MEGERŐSÍTÉS
+section('Regisztrációhoz kötött funkciók csak megerősített e-mail-címmel');
+await seedUser('nemerositett@teszt.hu', 'Nem-Erositett-1', { emailVerified: null, name: 'Nem Erősített' });
+const nvId = JSON.parse(await redis.get('au:userByEmail:nemerositett@teszt.hu'));
+const nv = await credLogin('nemerositett@teszt.hu', 'Nem-Erositett-1');
+r = await fetch(BASE + '/api/archive', { headers: { cookie: nv.jar.header() } }); j = await r.json();
+check('archívum meg nem erősítve: 403 unverified', r.status === 403 && j.error === 'unverified', `(${r.status})`);
+r = await post('/api/archive/solve', { date: '2026-01-01' }, { cookie: nv.jar.header() });
+check('archív megfejtés meg nem erősítve: 403', r.status === 403, `(${r.status})`);
+r = await post('/api/comments', { text: 'Megerősítés nélkül' }, { cookie: nv.jar.header() });
+check('komment meg nem erősítve: 403', r.status === 403, `(${r.status})`);
+r = await post('/api/submissions', { clue: 'X', answer: 'Y' }, { cookie: nv.jar.header() });
+check('beküldés meg nem erősítve: 403', r.status === 403, `(${r.status})`);
+await post('/api/leaderboard', { name: guest, hintsUsed: 0, elapsed: 4000 }, { cookie: nv.jar.header() });
+check('a ranglistára nem kerül fel a meg nem erősített fiók neve', !JSON.stringify(await lbGet()).includes('Nem Erősített'));
+r = await fetch(BASE + '/api/account/export', { headers: { cookie: nv.jar.header() } });
+check('a saját adatok exportja megerősítés nélkül is elérhető (GDPR)', r.status === 200, `(${r.status})`);
+const nvRec = JSON.parse(await redis.get(`au:user:${nvId}`)); nvRec.emailVerified = new Date().toISOString(); await redis.set(`au:user:${nvId}`, JSON.stringify(nvRec));
+r = await fetch(BASE + '/api/archive', { headers: { cookie: nv.jar.header() } });
+check('a megerősítés után ugyanabban a munkamenetben azonnal elérhető (újrabelépés nélkül)', r.status === 200, `(${r.status})`);
+const nvSess = await (await fetch(BASE + '/api/auth/session', { headers: { cookie: nv.jar.header() } })).json();
+check('a munkamenet is megerősítettnek látja', nvSess?.user?.verified === true);
+
+section('Regisztráció: a jelszót kétszer kell megadni');
+r = await fetch(BASE + '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '10.9.1.1' }, body: JSON.stringify({ email: 'ketszer@teszt.hu', password: 'Elso-Jelszo-1', password2: 'Masik-Jelszo-2', name: 'K' }) }); j = await r.json();
+check('eltérő jelszavak: 400', r.status === 400 && /nem egyezik/.test(j.error || ''), JSON.stringify(j));
+r = await fetch(BASE + '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '10.9.1.1' }, body: JSON.stringify({ email: 'ketszer@teszt.hu', password: 'Elso-Jelszo-1', password2: 'Elso-Jelszo-1', name: 'K' }) });
+check('egyező jelszavak: 200', r.status === 200, `(${r.status})`);
+
+section('Tutorial oldal, oldaltérkép, favicon');
+r = await fetch(BASE + '/tutorial'); check('a /tutorial oldal elérhető', r.status === 200 && /Tutorial/.test(await r.text()));
+r = await fetch(BASE + '/sitemap.xml'); check('az oldaltérképen szerepel a /tutorial', /napititkos\.hu\/tutorial/.test(await r.text()));
+r = await fetch(BASE + '/icon.png'); check('a favicon (a logóból, icon.png) elérhető', r.status === 200 && /png/.test(r.headers.get('content-type') || ''));
+r = await fetch(BASE + '/'); const homeHtml = await r.text();
+check('a főoldal a favicont és az Apple-ikont is hirdeti', /rel="icon"[^>]*icon\.png/.test(homeHtml) && /apple-touch-icon/.test(homeHtml));
+r = await fetch(BASE + '/logo-192.png'); check('a logó képfájl elérhető', r.status === 200);
+check('a láblécben szerepel a logó készítője', /Logó: bundaskifli/.test(homeHtml));
+r = await fetch(BASE + '/help'); const helpHtml = await r.text();
+check('a Súgó elmondja a három tipptípust és linkel az archívumra', /három típusa/.test(helpHtml) && /href="\/archive"/.test(helpHtml));
+check('a Súgó szerint betűfelfedés minden rejtvénynél van', /minden rejtvénynél kérhetsz betűfelfedést/.test(helpHtml));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

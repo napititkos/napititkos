@@ -143,10 +143,19 @@ export default function BetujatekExample({ onProgress }) {
               onEnter={checkAnswer}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-            <button className="primary small" onClick={checkAnswer}>
-              Ellenőrzés
-            </button>
+          {/* Ugyanolyan gombsor, mint a játékban: az Ellenőrzés középen, a tipp jobbra. */}
+          <div className="play-actions-wrap">
+            <div className="play-actions tutorial-actions">
+              <div className="pa-left"></div>
+              <button className="primary play-btn" onClick={checkAnswer}>
+                Ellenőrzés
+              </button>
+              <div className="pa-right">{stage < 2 && (
+                  <button className="primary play-btn" onClick={() => setStage(2)}>
+                    💡 Tipp
+                  </button>
+                )}</div>
+            </div>
           </div>
 
           {wrongTried && stage === 1 && (
@@ -155,13 +164,6 @@ export default function BetujatekExample({ onProgress }) {
             </div>
           )}
 
-          {stage < 2 && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-              <button className="ghost small" onClick={() => setStage(2)}>
-                💡 Mutató
-              </button>
-            </div>
-          )}
           {stage === 2 && (
             <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
               A "malom" szó középső betűje egy "l" - ha ez "elgörbül", olyan alakot vehet fel,
@@ -208,23 +210,30 @@ export default function BetujatekExample({ onProgress }) {
                   onEnter={checkAnswer2}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-                <button
-                  className={`ghost small${flashShuffle ? ' flash-once' : ''}`}
-                  aria-disabled={!isRowFull2()}
-                  onClick={() => (isRowFull2() ? shuffleGuess2() : showHint2('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
-                  title="A beírt betűk véletlenszerű összekeverése"
-                >
-                  <Icon src="/icons/Rejtveny_Keveres.png" size={16} /> <span className="keveres-label">Keverés</span>
-                </button>
-                <button className="primary small" onClick={checkAnswer2}>
-                  Ellenőrzés
-                </button>
-                {!showHelp2 && (
-                  <button className="ghost small" onClick={() => setShowHelp2(true)}>
-                    Segítség kérése
+              <div className="play-actions-wrap">
+                <div className="play-actions tutorial-actions">
+                  <div className="pa-left">
+                    <button
+                      className={`primary play-btn${flashShuffle ? ' flash-once' : ''}`}
+                      aria-disabled={!isRowFull2()}
+                      onClick={() => (isRowFull2() ? shuffleGuess2() : showHint2('Töltsd ki a megoldást, hogy tudd keverni a betűket anagrammákat keresve!'))}
+                      title="A beírt betűk véletlenszerű összekeverése"
+                      aria-label="Keverés"
+                    >
+                      <Icon src="/icons/Rejtveny_Keveres.png" size={16} className="icon-on-accent" /> <span className="keveres-label">Keverés</span>
+                    </button>
+                  </div>
+                  <button className="primary play-btn" onClick={checkAnswer2}>
+                    Ellenőrzés
                   </button>
-                )}
+                  <div className="pa-right">
+                    {!showHelp2 && (
+                      <button className="primary play-btn" onClick={() => setShowHelp2(true)}>
+                        💡 Tipp
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className={`inline-toast${toast2 ? ' show' : ''}`}>{toast2}</div>

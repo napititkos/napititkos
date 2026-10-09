@@ -4,6 +4,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
 import Icon from './Icon';
+import Logo from './Logo';
+
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
@@ -23,6 +25,8 @@ export default function Nav() {
     await signOut({ callbackUrl: '/' });
   }
 
+  // (A tutorial már külön oldal, a menü közvetlenül oda linkel; ez a kezelő a régi,
+  // eseményalapú megnyitáshoz maradt meg.)
   function handleTutorialClick(e) {
     e.preventDefault();
     setOpen(false);
@@ -36,7 +40,7 @@ export default function Nav() {
 
   return (
     <>
-      <nav className="topnav">
+      <nav className="topnav topnav-c">
         <button
           className="hamburger-btn"
           aria-label="Menü megnyitása"
@@ -46,20 +50,23 @@ export default function Nav() {
           <span />
           <span />
         </button>
-        <a href="/" style={{ textDecoration: 'none' }}>
-          <div className="brand">Titkos<span>írás</span></div>
+        {/* Fejléc: csupa nagybetűs TITKOSÍRÁS, az O helyén gyűrűben a logó, pontosan középen. */}
+        <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
+          <div className="brand brand-mid brand-c" aria-hidden="true">
+            <span className="bm-left">TITK</span>
+            <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
+            <span className="bm-right">S<span>ÍRÁS</span></span>
+          </div>
         </a>
-        <div style={{ marginLeft: 'auto' }}>
+        <div className="topnav-account">
           {status !== 'loading' && (
             session?.user ? (
-              <a href="/account" className="account-badge" title="Profilom">
-                <Icon src="/icons/Fiok.png" size={16} />
-                <span className="account-badge-label">Profilom</span>
+              <a href="/account" className="account-badge" title="Profilom" aria-label="Profilom">
+                <Icon src="/icons/Fiok.png" size={18} />
               </a>
             ) : (
-              <a href={loginHref} className="account-badge" title="Bejelentkezés">
-                <Icon src="/icons/Fiok.png" size={16} />
-                <span className="account-badge-label">Belépés</span>
+              <a href={loginHref} className="account-badge" title="Bejelentkezés" aria-label="Bejelentkezés">
+                <Icon src="/icons/Fiok.png" size={18} />
               </a>
             )
           )}
@@ -82,7 +89,7 @@ export default function Nav() {
           <a href="/help" onClick={() => setOpen(false)}>
             <Icon src="/icons/Sugo.png" /> Súgó
           </a>
-          <a href="#" onClick={handleTutorialClick} className="tutorial-link">
+          <a href="/tutorial" onClick={() => setOpen(false)} className="tutorial-link">
             <Icon src="/icons/Tutorial.png" /> Tutorial{' '}
             <span className="progress-badge">{tutorialDone}/{TUTORIAL_SECTIONS.length}</span>
           </a>

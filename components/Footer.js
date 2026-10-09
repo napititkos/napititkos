@@ -12,6 +12,7 @@ export default function Footer() {
         <a href="https://www.flaticon.com" target="_blank" rel="noopener noreferrer">
           Flaticon
         </a>
+        {' · '}Logó: bundaskifli
       </div>
     </footer>
   );

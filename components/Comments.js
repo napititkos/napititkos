@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import ResendVerification from './ResendVerification';
 import { useSession } from 'next-auth/react';
 
 function formatTs(ts) {
@@ -17,6 +18,7 @@ export default function Comments({ date, readOnly = false, onCountChange }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [needsVerify, setNeedsVerify] = useState(false);
   const isAdmin = session?.user?.role === 'admin';
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function Comments({ date, readOnly = false, onCountChange }) {
         setText('');
       } else if (data.error === 'unverified') {
         setError('Kommenteléshez erősítsd meg az e-mail-címedet.');
+        setNeedsVerify(true);
       } else if (data.error === 'duplicate' || data.error === 'cooldown') {
         setError(data.message || 'Túl sok komment rövid idő alatt - próbáld újra később.');
       } else if (res.status === 429) {
@@ -125,6 +128,11 @@ export default function Comments({ date, readOnly = false, onCountChange }) {
           {error && (
             <div className="feedback hint" style={{ marginLeft: 0, marginTop: 8 }}>
               {error}
+            </div>
+          )}
+          {needsVerify && (
+            <div style={{ marginTop: 10 }}>
+              <ResendVerification text="Ha nem találod a megerősítő levelet, kérhetsz újat:" />
             </div>
           )}
         </div>

@@ -1,54 +1,61 @@
 :root{
-  /* Szövegként használt színek: a díszítő alapszínek sötétebb, olvasható változatai
+  /* Színskála a logóból: a kos két színe (halvány levendula #F0F0FC és mályva #D9BCD3), a
+     háttér lilája (#A98CBA) és a körvonalak fekete színe. Világos módban a papír a kos
+     levendulája, sötét módban a fekete és a lila keverékéből jön a háttér.
+     Szövegként használt színek: a díszítő alapszínek sötétebb, olvasható változatai
      (WCAG AA: legalább 4,5:1 a fehér, a papír és a halvány hátterek előtt is). */
-  --accent-text:#B83665;
-  --accent2-text:#18738A;
+  --accent-text:#8A3D74;
+  --accent2-text:#664C7C;
   --good-text:#167B58;
-  --paper:#FFF7F2;
+  --paper:#F0F0FC;
   --card:#FFFFFF;
-  --ink:#3D3452;
-  --ink-soft:#6A6384;
-  --line:#E8CFF0;
-  --accent:#FF6F91;
-  --accent-strong:#D6456B;
-  --accent-soft:#FFE1E8;
-  --accent2:#4EC3E0;
-  --accent2-soft:#D8F3FA;
-  --accent3:#9AA6FF;
-  --accent3-soft:#E7E9FF;
-  --good:#22C08A;
-  --good-soft:#DFF9EE;
-  --warn:#FFA82E;
+  --ink:#1F1A2B;
+  --ink-soft:#5A5270;
+  --line:#DCD3E8;
+  --accent:#B970A3;
+  --accent-strong:#94507F;
+  --accent-soft:#F4E7F1;
+  --accent2:#A98CBA;
+  --accent2-soft:#ECE5F3;
+  --accent3:#8F88C8;
+  --accent3-soft:#E6E4F6;
+  --good:#3FB58C;
+  --good-soft:#DFF6EC;
+  --warn:#F0A23A;
   --warn-soft:#FFF0D6;
-  --bad:#FF5C7A;
-  --bad-soft:#FFE3E3;
-  --shadow: 0 2px 10px rgba(140, 100, 160, 0.10);
+  --bad:#E0607E;
+  --bad-soft:#FBE4EA;
+  /* A "TITKOSÍRÁS" felirat ÍRÁS része: a logó hátterének lilája (logó-feliratként a
+     kontrasztkövetelmény nem vonatkozik rá). */
+  --brand-iras:#A98CBA;
+  --shadow: 0 2px 10px rgba(80, 60, 110, 0.12);
   --radius: 18px;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --accent-text: var(--accent);
-    --accent2-text: var(--accent2);
+    --accent2-text:#C3ABD4;
     --good-text: var(--good);
-    --paper:#231D33;
-    --card:#2D2645;
-    --ink:#F3EFFA;
-    --ink-soft:#B7AFD1;
-    --line:#453A63;
-    --accent:#FFB4C6;
-    --accent-strong:#E8829B;
-    --accent-soft:#4A2F3B;
-    --accent2:#9FDCEE;
-    --accent2-soft:#1F3A45;
-    --accent3:#C7CDFF;
-    --accent3-soft:#2E2F52;
+    --paper:#16121E;
+    --card:#231D2F;
+    --ink:#F0F0FC;
+    --ink-soft:#BDB4CF;
+    --line:#3A3148;
+    --accent:#D9BCD3;
+    --accent-strong:#C59BBD;
+    --accent-soft:#3A2A39;
+    --accent2:#A98CBA;
+    --accent2-soft:#2D2540;
+    --accent3:#B7B2EA;
+    --accent3-soft:#2B2A45;
     --good:#7EE6C0;
-    --good-soft:#1F3C34;
+    --good-soft:#1E3A33;
     --warn:#FFD98A;
-    --warn-soft:#4A3B1E;
+    --warn-soft:#463A1F;
     --bad:#FF9AA8;
-    --bad-soft:#4A2530;
-    --shadow: 0 2px 10px rgba(0,0,0,0.35);
+    --bad-soft:#46252F;
+    --brand-iras:#A98CBA;
+    --shadow: 0 2px 10px rgba(0,0,0,0.4);
   }
 }
 *{box-sizing:border-box;}
@@ -61,15 +68,20 @@ body{
   background:var(--paper);
   color:var(--ink);
   font-family:var(--font-nunito), 'Nunito', sans-serif;
+  /* A lábléc mindig az oldal alján: rövid oldalon a képernyő aljára kerül (és nem lehet
+     görgetni), hosszú oldalon a tartalom után. dvh: mobilon a ténylegesen látható magasság. */
   min-height:100vh;
+  min-height:100dvh;
+  display: flex; flex-direction: column;
   background-image: radial-gradient(circle, var(--line) 1.6px, transparent 1.6px);
   background-size: 26px 26px;
   background-attachment: fixed;
 }
 a{ color: inherit; }
-.wrap{ max-width: 640px; margin: 0 auto; padding: 24px 14px 80px; overflow-x: hidden; }
+.wrap{ max-width: 640px; width: 100%; margin: 0 auto; padding: 24px 14px 28px; overflow-x: hidden; }
+nav.topnav{ width: 100%; }
 .brand{ font-family:var(--font-fredoka), 'Fredoka', sans-serif; font-weight:700; font-size: 28px; letter-spacing: 0.01em; }
-.brand span{ color: var(--accent); }
+.brand span{ color: var(--brand-iras); }
 nav.topnav{
   display:flex; align-items:center; gap: 12px;
   max-width: 640px; margin: 0 auto; padding: 18px 14px 0;
@@ -85,22 +97,18 @@ nav.topnav{
   background: var(--ink); border-radius: 2px;
 }
 .account-badge{
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; justify-content: center;
   text-decoration: none; color: var(--ink);
   background: var(--card); border: 2px solid var(--line);
-  border-radius: 999px; padding: 6px 12px;
-  font-size: 13px; font-weight: 700;
-  max-width: 140px;
+  /* Csak ikon (mobilon és asztalin is), a menügombbal azonos méretben. */
+  width: 38px; height: 38px; border-radius: 10px; padding: 0; box-sizing: border-box;
 }
 .account-badge-name, .account-badge-label{
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-@media (max-width: 420px){
-  .account-badge-name{ display: none; }
-  .account-badge{ padding: 6px 10px; }
-}
+
 .drawer-overlay{
-  position: fixed; inset: 0; background: rgba(61,52,82,0.45);
+  position: fixed; inset: 0; background: var(--overlay);
   z-index: 90;
 }
 .drawer-panel{
@@ -221,16 +229,9 @@ nav.topnav{
   text-align: left;
 }
 .clue-box .clue-text{ padding-top: 0; }
-/* A Keverés felirata: a főoldalon 390 px-től kifér (az Ellenőrzés középen marad), az archívum
-   szűkebb, beágyazott lejátszójában (compact) csak 480 px fölött. Alatta csak az ikon látszik. */
-@media (max-width: 389px){
-  .keveres-label{ display: none; }
-}
-@media (max-width: 480px){
-  .play-actions.compact .keveres-label{ display: none; }
-}
 .answer-row{ display:flex; gap:8px; margin-top:10px; margin-left: 8px; flex-wrap:wrap; align-items:center; justify-content:center; max-width: calc(100% - 8px); }
-input[type=text], input[type=password], textarea{
+/* Minden beviteli mező (az e-mail-mező is) ugyanazt a háttérszínt és keretet kapja. */
+input[type=text], input[type=password], input[type=email], textarea{
   font-family:var(--font-nunito), 'Nunito', sans-serif; font-size: 15px; padding: 9px 12px;
   border-radius: 12px; border: 2px solid var(--line); background: var(--paper); color: var(--ink);
   width: 100%;
@@ -296,10 +297,9 @@ button{
 }
 button:hover:not(:disabled){ transform: translateY(-1px) scale(1.03); }
 button:active:not(:disabled){ transform: translateY(0) scale(0.98); }
-/* A fehér feliratú rózsaszín gombok színe. Sötét módban sötétebb árnyalat, hogy a fehér
-   felirat jól olvasható legyen (kontraszt 4,7:1 a korábbi 2,6:1 helyett). */
-:root{ --btn-primary: #D33861; }
-@media (prefers-color-scheme: dark){ :root{ --btn-primary: #BF4A70; } }
+/* A fehér feliratú fő gombok színe: a logó mályvájának mély árnyalata (fehér felirattal 6:1). */
+:root{ --btn-primary: #8E4C80; }
+@media (prefers-color-scheme: dark){ :root{ --btn-primary: #8E4C80; } }
 button.primary{ background: var(--btn-primary); color: #fff; border-color: var(--btn-primary); }
 button.ghost{ border-color: var(--line); color: var(--ink-soft); }
 button.small{ padding: 5px 12px; font-size:12.5px; }
@@ -331,6 +331,7 @@ button:disabled{ opacity:0.4; cursor:default; }
 footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px; margin-top: 20px; }
 .site-footer{
   text-align: center; padding: 24px 14px 30px; color: var(--ink-soft); font-size: 13px;
+  margin-top: auto; /* a body flex oszlopában a maradék helyet a lábléc fölé teszi */
 }
 .site-footer-links{ display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
 .site-footer-links a{ color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid transparent; }
@@ -361,12 +362,12 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
   border-bottom: 2px solid var(--accent);
 }
 .modal-overlay{
-  position: fixed; inset: 0; background: rgba(61, 52, 82, 0.45);
+  position: fixed; inset: 0; background: var(--overlay);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center;
   z-index: 100; padding: 20px;
 }
 .hint-modal-overlay{
-  background: rgba(61, 52, 82, 0.12);
   align-items: flex-start;
   padding-top: 90px;
 }
@@ -567,7 +568,13 @@ mark.hl-multi{ color: var(--ink); font-weight: 700; }
 button.ghost.danger{ border-color: var(--bad); color: var(--bad-text); }
 .user-actions{ display:flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; max-width: 55%; }
 
-/* A rejtvény alatti gombsor: a középső (Ellenőrzés) pontosan középen. */
+/* A rejtvény alatti gombsor: a középső (Ellenőrzés) pontosan középen. A méretezés a gombsor
+   tényleges szélességéhez igazodik (container query), nem a képernyőéhez, így a főoldalon, az
+   archívum beágyazott lejátszójában és a tutorialban is ugyanúgy viselkedik, és sehol nem lóg ki:
+   - a Keverés felirata csak 340 px-es gombsortól látszik (a főoldalon ez kb. 390 px-es kijelző),
+   - a "Tippek" szó ikonra vált, ha nem férne ki (kétjegyű tippszámnál hamarabb),
+   - nagyon keskeny helyen a gombok egyszerű, tördelhető sorba rendeződnek. */
+.play-actions-wrap{ container-type: inline-size; }
 .play-actions{ display:grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap: 8px; margin-top: 12px; }
 .pa-left{ display:flex; justify-content:flex-end; min-width: 0; }
 .pa-right{ display:flex; justify-content:flex-start; min-width: 0; }
@@ -575,13 +582,23 @@ button.play-btn{ height: 40px; padding: 0 16px; font-size: 14px; white-space: no
 @media (max-width: 420px){ button.play-btn{ padding: 0 12px; font-size: 13.5px; } }
 .play-btn .tips-icon{ display: none !important; }
 .play-btn .tips-label{ white-space: pre; }
-/* Nagyon keskeny képernyőn (pl. 320 px) a "Tippek" szó helyett ikon, hogy az Ellenőrzés
-   pontosan középen maradhasson és minden kiférjen. */
-@media (max-width: 340px){
+@container (max-width: 339px){
+  .keveres-label{ display: none; }
+}
+@container (max-width: 389px){
+  .play-actions.long-tips .play-btn .tips-icon{ display: inline-block !important; }
+  .play-actions.long-tips .play-btn .tips-label{ display: none; }
+}
+@container (max-width: 324px){
   .play-actions{ gap: 5px; }
   button.play-btn{ padding: 0 10px; font-size: 13px; gap: 4px; }
   .play-btn .tips-icon{ display: inline-block !important; }
   .play-btn .tips-label{ display: none; }
+}
+@container (max-width: 294px){
+  .play-actions{ display: flex; flex-wrap: wrap; justify-content: center; }
+  .pa-left, .pa-right{ display: contents; }
+  button.play-btn{ padding: 0 9px; font-size: 12.5px; }
 }
 
 /* Szövegszerű gomb (pl. "Elfelejtetted a jelszavad?"). */
@@ -591,3 +608,68 @@ button.link-btn{
   text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
 }
 button.link-btn:hover:not(:disabled), button.link-btn:active:not(:disabled){ transform: none; }
+
+/* ---- Logó és fejléc ---------------------------------------------------------------- */
+/* Kör alakú helyőrző a végleges logóig (components/Logo.js). */
+.logo-placeholder{ display: inline-block; flex-shrink: 0; vertical-align: middle; }
+img.site-logo{ display: block; width: 100%; height: 100%; object-fit: contain; }
+.brand-link{ display: flex; align-items: center; text-decoration: none; color: inherit; min-width: 0; }
+.topnav-account{ margin-left: auto; }
+
+
+/* Felugró ablakok háttere: sötétebb, enyhén homályosított, hogy az ablak ne olvadjon össze a mögötte lévő tartalommal. */
+:root{ --overlay: rgba(31, 26, 43, 0.6); --overlay-light: rgba(31, 26, 43, 0.22); }
+@media (prefers-color-scheme: dark){ :root{ --overlay: rgba(8, 5, 16, 0.7); --overlay-light: rgba(8, 5, 16, 0.32); } }
+
+/* Üdvözlő ablak: a logó a keret felső vonalán, középen ül, a keret körbefut rajta. */
+.modal-card.intro-card{
+  position: relative; overflow: visible; margin-top: 60px;
+  border: 2px solid var(--accent); padding-top: 66px;
+}
+/* A teljes logó (a korongból kinyúló szarvakkal és nagyítóval együtt) a körön belül marad:
+   a kép a korong középpontjára van vágva, így 102 px-es képpel minden része a 108 px-es
+   belső körön belül, a határhoz közel van. */
+.intro-logo{
+  position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
+  width: 112px; height: 112px; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid var(--accent); background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* A játék alsó gombsorának (Keverés, Ellenőrzés, Tippek) is legyen jól érezhető visszajelzése
+   lenyomáskor - a halványabb (még nem használható) gomboknál is. */
+button.play-btn{ transition: transform 0.08s ease, filter 0.08s ease; }
+button.play-btn:active:not(:disabled),
+button.play-btn[aria-disabled="true"]:active{ transform: scale(0.93); filter: brightness(0.9); }
+.tutorial-actions{ margin-top: 10px; }
+
+/* Fejléc: csupa nagybetűs TITKOSÍRÁS, az O helyén gyűrűben a logó, a logó pontosan a fejléc
+   közepén (a felirat két része tőle balra és jobbra, háromoszlopos rácsban). A gombok a két
+   szélen, a felirathoz függőlegesen középre igazítva. */
+nav.topnav.topnav-c{
+  display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px;
+  padding-top: 18px; padding-bottom: 4px;
+}
+.topnav-c .topnav-account{ margin-left: 0; justify-self: end; }
+.topnav-c .brand-link{ justify-content: center; font-size: min(calc((50vw - 56px) / 3.36), 50px); }
+.brand.brand-mid{
+  font-size: 1em; line-height: 1; white-space: nowrap; letter-spacing: 0.03em;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%;
+}
+.brand-mid .bm-left{ justify-self: end; color: var(--ink); }
+.brand-mid .bm-right{ justify-self: start; color: var(--ink); }
+.brand-mid .bm-right > span{ color: var(--brand-iras); }
+/* A gyűrű a betűkkel azonos színű és vastagságú. A logó lila korongja pontosan kitölti a
+   gyűrű belsejét (nem marad üres csík); a korongból kinyúló szarvak és a nagyító a logó saját
+   stílusa szerint átnyúlnak a gyűrűn. A kép a korong középpontjára van vágva, a korong a kép
+   71,06%-a, ezért a kép a lyuk 140,7%-a. */
+.brand-c .brand-o{
+  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  width: 1.14em; height: 1.14em; margin: 0 0.03em;
+  border: 0.12em solid var(--ink); border-radius: 50%; overflow: visible;
+}
+.brand-c .brand-o-logo{ width: 140.7%; height: 140.7%; flex: none; position: relative; z-index: 1; }
+@media (min-width: 640px){
+  .topnav-c .brand-link{ font-size: 58px; }
+  nav.topnav.topnav-c{ padding-top: 24px; }
+}

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import PasswordChange from '../../components/PasswordChange';
 import { loadProgress, solvedCount } from '../../lib/progress';
 import { ACHIEVEMENTS } from '../../lib/achievements';
 import { enumerationFor } from '../../lib/format';
@@ -73,6 +74,8 @@ export default function AccountPage() {
           <p style={{ margin: 0 }}>{session.user.email}</p>
         </div>
       </div>
+
+      <PasswordChange email={session.user.email} />
 
       <div className="card">
         <div className="help-block" style={{ marginBottom: 0 }}>

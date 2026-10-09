@@ -1,4 +1,5 @@
 'use client';
+import ResendVerification from '../../components/ResendVerification';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { enumerationFor } from '../../lib/format';
@@ -15,6 +16,7 @@ export default function ArchivePage() {
   const { status } = useSession();
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
+  const [unverified, setUnverified] = useState(false);
   const [history, setHistory] = useState({});
   const [archiveSolved, setArchiveSolved] = useState([]);
   const [openYears, setOpenYears] = useState({});
@@ -40,7 +42,10 @@ export default function ArchivePage() {
     setArchiveSolved(prog.archiveSolved || []);
     fetch('/api/archive', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((data) => setItems(data.archive || []))
+      .then((data) => {
+        if (data.error === 'unverified') setUnverified(true);
+        else setItems(data.archive || []);
+      })
       .catch(() => setError('Nem sikerült betölteni az archívumot.'));
   }, [status]);
 
@@ -128,6 +133,9 @@ export default function ArchivePage() {
       <h1 className="page-title">Korábbi titkosírások</h1>
       <div className="card">
         {error && <p style={{ color: 'var(--bad)' }}>{error}</p>}
+        {unverified && (
+          <ResendVerification text="A korábbi titkosírások megerősített e-mail-címmel érhetők el. Nézd meg a postaládádat, vagy kérj új visszaigazoló levelet:" />
+        )}
         {items === null && !error && <p>Betöltés…</p>}
         {items && items.length === 0 && (
           <p style={{ color: 'var(--ink-soft)' }}>

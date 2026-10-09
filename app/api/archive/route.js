@@ -53,6 +53,10 @@ export async function GET() {
   if (!session?.user) {
     return Response.json({ error: 'unauthenticated' }, { status: 401, headers: { 'Cache-Control': 'private, no-store' } });
   }
+  // Regisztrációhoz kötött funkció: csak megerősített e-mail-címmel.
+  if (!session.user.verified) {
+    return Response.json({ error: 'unverified' }, { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+  }
   const history = (await kv.get('rotation:history')) || [];
   // Az utolsó bejegyzés mindig a jelenleg AKTÍV titkosírás - azt nem mutatjuk,
   // nehogy lelőjük a ma megfejtendő rejtvény válaszát.
