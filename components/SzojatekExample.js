@@ -76,7 +76,7 @@ export default function SzojatekExample({ onProgress }) {
               </button>
               <div className="pa-right">{stage < 2 && (
                   <button className="primary play-btn" onClick={() => setStage(2)}>
-                    💡 Mutató
+                    💡 Tipp
                   </button>
                 )}</div>
             </div>

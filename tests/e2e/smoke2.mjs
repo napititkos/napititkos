@@ -595,9 +595,14 @@ check('egyező jelszavak: 200', r.status === 200, `(${r.status})`);
 section('Tutorial oldal, oldaltérkép, favicon');
 r = await fetch(BASE + '/tutorial'); check('a /tutorial oldal elérhető', r.status === 200 && /Tutorial/.test(await r.text()));
 r = await fetch(BASE + '/sitemap.xml'); check('az oldaltérképen szerepel a /tutorial', /napititkos\.hu\/tutorial/.test(await r.text()));
-r = await fetch(BASE + '/icon.svg'); check('a favicon (icon.svg) elérhető', r.status === 200 && /svg/.test(r.headers.get('content-type') || ''));
+r = await fetch(BASE + '/icon.png'); check('a favicon (a logóból, icon.png) elérhető', r.status === 200 && /png/.test(r.headers.get('content-type') || ''));
+r = await fetch(BASE + '/'); const homeHtml = await r.text();
+check('a főoldal a favicont és az Apple-ikont is hirdeti', /rel="icon"[^>]*icon\.png/.test(homeHtml) && /apple-touch-icon/.test(homeHtml));
+r = await fetch(BASE + '/logo-192.png'); check('a logó képfájl elérhető', r.status === 200);
+check('a láblécben szerepel a logó készítője', /Logó: bundaskifli/.test(homeHtml));
 r = await fetch(BASE + '/help'); const helpHtml = await r.text();
 check('a Súgó elmondja a három tipptípust és linkel az archívumra', /három típusa/.test(helpHtml) && /href="\/archive"/.test(helpHtml));
+check('a Súgó szerint betűfelfedés minden rejtvénynél van', /minden rejtvénynél kérhetsz betűfelfedést/.test(helpHtml));
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

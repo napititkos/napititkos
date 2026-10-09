@@ -61,7 +61,7 @@ export default function JokerExample({ onProgress }) {
               </button>
               <div className="pa-right">{!showHelp && (
                   <button className="primary play-btn" onClick={() => setShowHelp(true)}>
-                    Segítség
+                    💡 Tipp
                   </button>
                 )}</div>
             </div>
@@ -74,8 +74,9 @@ export default function JokerExample({ onProgress }) {
           )}
           {showHelp && (
             <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
-              A "Na, na!" nem csak egy felkiáltás - mondd ki hangosan: ez egy "PÁR NA", vagyis két
-              "na" egymás mellett. Ez adja a válasz elejét és a folytatását is.
+              A „Na, na!” nem csak egy felkiáltás: ez két darab „na”. Hogyan lehetne ezt
+              másképp, egyetlen szóval leírni? És mi köze lehet ennek a definícióhoz: „hol hajtsak
+              fejet?”
             </div>
           )}
         </>

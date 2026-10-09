@@ -665,7 +665,8 @@ export default function HomePage() {
           <div className="timer topbar-timer">{formatTime(elapsed)}</div>
         </div>
 
-        <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0 }}>
+        {/* Megfejtés után a doboz alja közvetlenül a visszajelzés alá zárkózik fel. */}
+        <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0, paddingBottom: answered ? 0 : undefined }}>
           <div className="clue-box">
             <div className="clue-text">
               <ClueText clue={puzzle.clue} marks={marks} />{' '}

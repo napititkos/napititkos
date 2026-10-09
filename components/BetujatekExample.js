@@ -152,7 +152,7 @@ export default function BetujatekExample({ onProgress }) {
               </button>
               <div className="pa-right">{stage < 2 && (
                   <button className="primary play-btn" onClick={() => setStage(2)}>
-                    💡 Mutató
+                    💡 Tipp
                   </button>
                 )}</div>
             </div>
@@ -229,7 +229,7 @@ export default function BetujatekExample({ onProgress }) {
                   <div className="pa-right">
                     {!showHelp2 && (
                       <button className="primary play-btn" onClick={() => setShowHelp2(true)}>
-                        Segítség
+                        💡 Tipp
                       </button>
                     )}
                   </div>

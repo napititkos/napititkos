@@ -22,9 +22,9 @@ export default function HelpPage() {
           <p>
             Ha elakadsz, tippet kérhetsz. A tippeknek <b>három típusa</b> van: a <b>Definíció</b>,
             a <b>Mutató</b> és a <b>Készlet</b>. Mindegyik a rejtvény egy-egy részét fedi fel, és a
-            hozzá tartozó szavak a rejtvényben a tipp színével kiemelve jelennek meg. Egyes
-            rejtvényeknél ezeken felül alternatív tipp és betűfelfedés is kérhető. Lássuk sorban, mit
-            jelent a három típus!
+            hozzá tartozó szavak a rejtvényben a tipp színével kiemelve jelennek meg. Ezeken felül
+            minden rejtvénynél kérhetsz betűfelfedést is, egyes rejtvényeknél pedig alternatív tippet.
+            Lássuk sorban, mit jelent a három típus!
           </p>
         </div>
         <div className="help-block">

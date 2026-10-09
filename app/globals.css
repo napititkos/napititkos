@@ -223,7 +223,8 @@ nav.topnav{
 }
 .clue-box .clue-text{ padding-top: 0; }
 .answer-row{ display:flex; gap:8px; margin-top:10px; margin-left: 8px; flex-wrap:wrap; align-items:center; justify-content:center; max-width: calc(100% - 8px); }
-input[type=text], input[type=password], textarea{
+/* Minden beviteli mező (az e-mail-mező is) ugyanazt a háttérszínt és keretet kapja. */
+input[type=text], input[type=password], input[type=email], textarea{
   font-family:var(--font-nunito), 'Nunito', sans-serif; font-size: 15px; padding: 9px 12px;
   border-radius: 12px; border: 2px solid var(--line); background: var(--paper); color: var(--ink);
   width: 100%;
@@ -361,10 +362,6 @@ label.field-label{ font-size: 13px; color: var(--ink-soft); display:block; margi
   z-index: 100; padding: 20px;
 }
 .hint-modal-overlay{
-  /* A tipp-ablak mögött a feladványnak olvashatónak kell maradnia (a kiemelt szavak miatt),
-     ezért ez halványabb és nem homályosít. */
-  background: var(--overlay-light);
-  -webkit-backdrop-filter: none; backdrop-filter: none;
   align-items: flex-start;
   padding-top: 90px;
 }
@@ -608,10 +605,8 @@ button.link-btn:hover:not(:disabled), button.link-btn:active:not(:disabled){ tra
 
 /* ---- Logó és fejléc ---------------------------------------------------------------- */
 /* Kör alakú helyőrző a végleges logóig (components/Logo.js). */
-.logo-placeholder{
-  display: inline-block; flex-shrink: 0; border-radius: 50%; vertical-align: middle;
-  background: radial-gradient(circle at 36% 34%, var(--accent) 0 30%, var(--accent2) 31% 100%);
-}
+.logo-placeholder{ display: inline-block; flex-shrink: 0; vertical-align: middle; }
+img.site-logo{ display: block; width: 100%; height: 100%; object-fit: contain; }
 .brand-link{ display: flex; align-items: center; text-decoration: none; color: inherit; min-width: 0; }
 .topnav-account{ margin-left: auto; }
 
@@ -623,7 +618,9 @@ nav.topnav.topnav-a{
   display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px;
   padding-top: 20px; padding-bottom: 4px;
 }
-.topnav-a .brand-link{ justify-content: center; font-size: clamp(27px, 8.6vw, 36px); }
+/* Mobilon a lehető legnagyobb felirat, amely mellett a logó még nem ér a menügombhoz:
+   a felirat fele + logó + rés = 3,305 em, ennek kell elférnie a képernyő felén a gomb után. */
+.topnav-a .brand-link{ justify-content: center; font-size: min(calc((50vw - 54px) / 3.305), 52px); }
 .topnav-a .topnav-account{ margin-left: 0; justify-self: end; }
 .topnav-a .brand{ font-size: 1em; line-height: 1; white-space: nowrap; position: relative; }
 .topnav-a .brand-a-logo{
@@ -637,7 +634,8 @@ nav.topnav.topnav-b{
   display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px;
   padding-top: 18px; padding-bottom: 4px;
 }
-.topnav-b .brand-link{ justify-content: center; font-size: clamp(24px, 8.4vw, 38px); }
+/* A csupa nagybetűs felirat 5,81 em széles; a két gomb (és a rés) melletti helyet tölti ki. */
+.topnav-b .brand-link{ justify-content: center; font-size: min(calc((100vw - 120px) / 5.9), 50px); }
 .topnav-b .topnav-account{ margin-left: 0; justify-self: end; }
 .brand.brand-b{ font-size: 1em; line-height: 1; white-space: nowrap; letter-spacing: 0.03em; display: flex; align-items: center; }
 .brand-b .brand-o{
@@ -648,8 +646,8 @@ nav.topnav.topnav-b{
 .brand-b .brand-o-logo{ width: 100%; height: 100%; }
 
 @media (min-width: 640px){
-  .topnav-a .brand-link{ font-size: 46px; }
-  .topnav-b .brand-link{ font-size: 52px; }
+  .topnav-a .brand-link{ font-size: 58px; }
+  .topnav-b .brand-link{ font-size: 65px; }
   nav.topnav.topnav-a, nav.topnav.topnav-b{ padding-top: 24px; }
 }
 
