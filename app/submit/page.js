@@ -188,7 +188,7 @@ export default function SubmitPage() {
             <span className="hl-dot" />
             Definíció (opcionális tipp)
           </label>
-          <textarea value={form.definicio} onChange={(e) => update('definicio', e.target.value)} />
+          <textarea aria-label="Definíció (opcionális tipp)" value={form.definicio} onChange={(e) => update('definicio', e.target.value)} />
           {form.definicio.trim() && (
             <HintWordPicker clue={form.clue} type="definicio" words={words.definicio} onChange={(v) => setWords((w) => ({ ...w, definicio: v }))} />
           )}
@@ -197,7 +197,7 @@ export default function SubmitPage() {
             <span className="hl-dot" />
             Mutató (opcionális tipp)
           </label>
-          <textarea value={form.indikator} onChange={(e) => update('indikator', e.target.value)} />
+          <textarea aria-label="Mutató (opcionális tipp)" value={form.indikator} onChange={(e) => update('indikator', e.target.value)} />
           {form.indikator.trim() && (
             <HintWordPicker clue={form.clue} type="indikator" words={words.indikator} onChange={(v) => setWords((w) => ({ ...w, indikator: v }))} />
           )}
@@ -206,13 +206,13 @@ export default function SubmitPage() {
             <span className="hl-dot" />
             Készlet (opcionális tipp)
           </label>
-          <textarea value={form.fodder} onChange={(e) => update('fodder', e.target.value)} />
+          <textarea aria-label="Készlet (opcionális tipp)" value={form.fodder} onChange={(e) => update('fodder', e.target.value)} />
           {form.fodder.trim() && (
             <HintWordPicker clue={form.clue} type="fodder" words={words.fodder} onChange={(v) => setWords((w) => ({ ...w, fodder: v }))} />
           )}
 
           <label className="field-label">Alternatív tipp (opcionális)</label>
-          <textarea value={form.alternativ} onChange={(e) => update('alternativ', e.target.value)} />
+          <textarea aria-label="Alternatív tipp (opcionális)" value={form.alternativ} onChange={(e) => update('alternativ', e.target.value)} />
 
           <div className="checkbox-row" style={{ marginTop: 16, alignItems: 'flex-start' }}>
             <input

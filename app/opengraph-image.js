@@ -19,8 +19,8 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#FFF7F2',
-          backgroundImage: 'radial-gradient(circle, #E8CFF0 2.4px, transparent 2.4px)',
+          backgroundColor: '#F0F0FC',
+          backgroundImage: 'radial-gradient(circle, #DCD3E8 2.4px, transparent 2.4px)',
           backgroundSize: '42px 42px',
         }}
       >
@@ -30,9 +30,9 @@ export default async function Image() {
             alignItems: 'center',
             padding: '48px 72px',
             background: '#FFFFFF',
-            border: '3px solid #E8CFF0',
+            border: '3px solid #DCD3E8',
             borderRadius: 32,
-            boxShadow: '0 10px 40px rgba(140,100,160,0.15)',
+            boxShadow: '0 10px 40px rgba(80,60,110,0.15)',
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -42,18 +42,18 @@ export default async function Image() {
                 fontSize: 96,
                 fontFamily: 'Fredoka',
                 fontWeight: 700,
-                color: '#3D3452',
+                color: '#1F1A2B',
                 letterSpacing: 1,
               }}
             >
-              Titkos<span style={{ color: '#D6456B' }}>írás</span>
+              Titkos<span style={{ color: '#A98CBA' }}>írás</span>
             </div>
             <div
               style={{
                 fontSize: 30,
                 fontFamily: 'Fredoka',
                 fontWeight: 500,
-                color: '#8B84A3',
+                color: '#5A5270',
                 marginTop: 10,
               }}
             >

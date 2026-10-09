@@ -6,29 +6,10 @@ import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from 
 import Icon from './Icon';
 import Logo from './Logo';
 
-// Fejléc-változatok kipróbálásra: A = nagyobb, középre igazított felirat, tőle balra a logó; B = középre
-// igazított, csupa nagybetűs TITKOSÍRÁS, ahol az O betű a logó. Váltás: ?fejlec=a vagy ?fejlec=b
-// (az eszköz megjegyzi). C = mint a B, de másfélszer nagyobb, a fejléc közepére igazított O-logóval;
-// D = TITKOS [logó] ÍRÁS, a logó a fejléc közepén. ?fejlec=c / ?fejlec=d. A döntés után a többi törölhető.
-const HEADER_VARIANTS = ['a', 'b', 'c', 'd'];
-function readHeaderVariant() {
-  try {
-    const q = new URLSearchParams(window.location.search).get('fejlec');
-    if (q && HEADER_VARIANTS.includes(q.toLowerCase())) {
-      localStorage.setItem('fejlec-valtozat', q.toLowerCase());
-      return q.toLowerCase();
-    }
-    const saved = localStorage.getItem('fejlec-valtozat');
-    return HEADER_VARIANTS.includes(saved) ? saved : 'a';
-  } catch {
-    return 'a';
-  }
-}
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
   const [tutorialDone, setTutorialDone] = useState(0);
-  const [variant, setVariant] = useState('a');
   const { data: session, status } = useSession();
   // Bejelentkezés után ugyanarra az oldalra térjen vissza, ahonnan indult.
   const pathname = usePathname() || '/';
@@ -36,7 +17,6 @@ export default function Nav() {
 
   useEffect(() => {
     setTutorialDone(completedSectionsCount(loadTutorialProgress()));
-    setVariant(readHeaderVariant());
   }, []);
 
   async function handleLogout(e) {
@@ -60,7 +40,7 @@ export default function Nav() {
 
   return (
     <>
-      <nav className={`topnav topnav-${variant}`}>
+      <nav className="topnav topnav-c">
         <button
           className="hamburger-btn"
           aria-label="Menü megnyitása"
@@ -70,36 +50,14 @@ export default function Nav() {
           <span />
           <span />
         </button>
-        {variant === 'c' ? (
-          <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
-            <div className="brand brand-mid brand-c" aria-hidden="true">
-              <span className="bm-left">TITK</span>
-              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
-              <span className="bm-right">S<span>ÍRÁS</span></span>
-            </div>
-          </a>
-        ) : variant === 'd' ? (
-          <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
-            <div className="brand brand-mid brand-d" aria-hidden="true">
-              <span className="bm-left">TITKOS</span>
-              <Logo size={null} className="brand-d-logo" />
-              <span className="bm-right"><span>ÍRÁS</span></span>
-            </div>
-          </a>
-        ) : variant === 'b' ? (
-          <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
-            <div className="brand brand-b" aria-hidden="true">
-              TITK<span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>S<span>ÍRÁS</span>
-            </div>
-          </a>
-        ) : (
-          <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
-            <div className="brand brand-a" aria-hidden="true">
-              <Logo size={null} className="brand-a-logo" />
-              Titkos<span>írás</span>
-            </div>
-          </a>
-        )}
+        {/* Fejléc: csupa nagybetűs TITKOSÍRÁS, az O helyén gyűrűben a logó, pontosan középen. */}
+        <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
+          <div className="brand brand-mid brand-c" aria-hidden="true">
+            <span className="bm-left">TITK</span>
+            <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
+            <span className="bm-right">S<span>ÍRÁS</span></span>
+          </div>
+        </a>
         <div className="topnav-account">
           {status !== 'loading' && (
             session?.user ? (

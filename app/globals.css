@@ -1,54 +1,61 @@
 :root{
-  /* Szövegként használt színek: a díszítő alapszínek sötétebb, olvasható változatai
+  /* Színskála a logóból: a kos két színe (halvány levendula #F0F0FC és mályva #D9BCD3), a
+     háttér lilája (#A98CBA) és a körvonalak fekete színe. Világos módban a papír a kos
+     levendulája, sötét módban a fekete és a lila keverékéből jön a háttér.
+     Szövegként használt színek: a díszítő alapszínek sötétebb, olvasható változatai
      (WCAG AA: legalább 4,5:1 a fehér, a papír és a halvány hátterek előtt is). */
-  --accent-text:#B83665;
-  --accent2-text:#18738A;
+  --accent-text:#8A3D74;
+  --accent2-text:#664C7C;
   --good-text:#167B58;
-  --paper:#FFF7F2;
+  --paper:#F0F0FC;
   --card:#FFFFFF;
-  --ink:#3D3452;
-  --ink-soft:#6A6384;
-  --line:#E8CFF0;
-  --accent:#FF6F91;
-  --accent-strong:#D6456B;
-  --accent-soft:#FFE1E8;
-  --accent2:#4EC3E0;
-  --accent2-soft:#D8F3FA;
-  --accent3:#9AA6FF;
-  --accent3-soft:#E7E9FF;
-  --good:#22C08A;
-  --good-soft:#DFF9EE;
-  --warn:#FFA82E;
+  --ink:#1F1A2B;
+  --ink-soft:#5A5270;
+  --line:#DCD3E8;
+  --accent:#B970A3;
+  --accent-strong:#94507F;
+  --accent-soft:#F4E7F1;
+  --accent2:#A98CBA;
+  --accent2-soft:#ECE5F3;
+  --accent3:#8F88C8;
+  --accent3-soft:#E6E4F6;
+  --good:#3FB58C;
+  --good-soft:#DFF6EC;
+  --warn:#F0A23A;
   --warn-soft:#FFF0D6;
-  --bad:#FF5C7A;
-  --bad-soft:#FFE3E3;
-  --shadow: 0 2px 10px rgba(140, 100, 160, 0.10);
+  --bad:#E0607E;
+  --bad-soft:#FBE4EA;
+  /* A "TITKOSÍRÁS" felirat ÍRÁS része: a logó hátterének lilája (logó-feliratként a
+     kontrasztkövetelmény nem vonatkozik rá). */
+  --brand-iras:#A98CBA;
+  --shadow: 0 2px 10px rgba(80, 60, 110, 0.12);
   --radius: 18px;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --accent-text: var(--accent);
-    --accent2-text: var(--accent2);
+    --accent2-text:#C3ABD4;
     --good-text: var(--good);
-    --paper:#231D33;
-    --card:#2D2645;
-    --ink:#F3EFFA;
-    --ink-soft:#B7AFD1;
-    --line:#453A63;
-    --accent:#FFB4C6;
-    --accent-strong:#E8829B;
-    --accent-soft:#4A2F3B;
-    --accent2:#9FDCEE;
-    --accent2-soft:#1F3A45;
-    --accent3:#C7CDFF;
-    --accent3-soft:#2E2F52;
+    --paper:#16121E;
+    --card:#231D2F;
+    --ink:#F0F0FC;
+    --ink-soft:#BDB4CF;
+    --line:#3A3148;
+    --accent:#D9BCD3;
+    --accent-strong:#C59BBD;
+    --accent-soft:#3A2A39;
+    --accent2:#A98CBA;
+    --accent2-soft:#2D2540;
+    --accent3:#B7B2EA;
+    --accent3-soft:#2B2A45;
     --good:#7EE6C0;
-    --good-soft:#1F3C34;
+    --good-soft:#1E3A33;
     --warn:#FFD98A;
-    --warn-soft:#4A3B1E;
+    --warn-soft:#463A1F;
     --bad:#FF9AA8;
-    --bad-soft:#4A2530;
-    --shadow: 0 2px 10px rgba(0,0,0,0.35);
+    --bad-soft:#46252F;
+    --brand-iras:#A98CBA;
+    --shadow: 0 2px 10px rgba(0,0,0,0.4);
   }
 }
 *{box-sizing:border-box;}
@@ -74,7 +81,7 @@ a{ color: inherit; }
 .wrap{ max-width: 640px; width: 100%; margin: 0 auto; padding: 24px 14px 28px; overflow-x: hidden; }
 nav.topnav{ width: 100%; }
 .brand{ font-family:var(--font-fredoka), 'Fredoka', sans-serif; font-weight:700; font-size: 28px; letter-spacing: 0.01em; }
-.brand span{ color: var(--accent); }
+.brand span{ color: var(--brand-iras); }
 nav.topnav{
   display:flex; align-items:center; gap: 12px;
   max-width: 640px; margin: 0 auto; padding: 18px 14px 0;
@@ -290,10 +297,9 @@ button{
 }
 button:hover:not(:disabled){ transform: translateY(-1px) scale(1.03); }
 button:active:not(:disabled){ transform: translateY(0) scale(0.98); }
-/* A fehér feliratú rózsaszín gombok színe. Sötét módban sötétebb árnyalat, hogy a fehér
-   felirat jól olvasható legyen (kontraszt 4,7:1 a korábbi 2,6:1 helyett). */
-:root{ --btn-primary: #D33861; }
-@media (prefers-color-scheme: dark){ :root{ --btn-primary: #BF4A70; } }
+/* A fehér feliratú fő gombok színe: a logó mályvájának mély árnyalata (fehér felirattal 6:1). */
+:root{ --btn-primary: #8E4C80; }
+@media (prefers-color-scheme: dark){ :root{ --btn-primary: #8E4C80; } }
 button.primary{ background: var(--btn-primary); color: #fff; border-color: var(--btn-primary); }
 button.ghost{ border-color: var(--line); color: var(--ink-soft); }
 button.small{ padding: 5px 12px; font-size:12.5px; }
@@ -610,60 +616,22 @@ img.site-logo{ display: block; width: 100%; height: 100%; object-fit: contain; }
 .brand-link{ display: flex; align-items: center; text-decoration: none; color: inherit; min-width: 0; }
 .topnav-account{ margin-left: auto; }
 
-/* A változat: a "Titkosírás" felirat a fejléc közepén, a logó közvetlenül tőle balra (a
-   középre igazításba nem számít bele, így a felirat pontosan középen marad). A logót magát
-   középre tenni csak kisebb felirattal lehetne (mobilon a logó már most is a közép jobb oldalán
-   lenne), ezért a felirat került középre. */
-nav.topnav.topnav-a{
-  display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px;
-  padding-top: 20px; padding-bottom: 4px;
-}
-/* Mobilon a lehető legnagyobb felirat, amely mellett a logó még nem ér a menügombhoz:
-   a felirat fele + logó (1,29 em) + rés = 3,735 em, ennek kell elférnie a képernyő felén a gomb után. */
-.topnav-a .brand-link{ justify-content: center; font-size: min(calc((50vw - 54px) / 3.735), 52px); }
-.topnav-a .topnav-account{ margin-left: 0; justify-self: end; }
-.topnav-a .brand{ font-size: 1em; line-height: 1; white-space: nowrap; position: relative; }
-.topnav-a .brand-a-logo{
-  position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
-  margin-right: 0.16em; width: 1.29em; height: 1.29em; /* a felirat magasságának másfélszerese */
-}
-
-/* B változat: középre igazított, csupa nagybetűs felirat, az O betű helyén gyűrűs logó. A gyűrű
-   a betűkkel azonos színű és vastagságú (világos módban sötét, sötét módban világos). */
-nav.topnav.topnav-b, nav.topnav.topnav-c, nav.topnav.topnav-d{
-  display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px;
-  padding-top: 18px; padding-bottom: 4px;
-}
-/* A csupa nagybetűs felirat 5,81 em széles; a két gomb (és a rés) melletti helyet tölti ki. */
-.topnav-b .brand-link{ justify-content: center; font-size: min(calc((100vw - 120px) / 5.9), 50px); }
-.topnav-b .topnav-account, .topnav-c .topnav-account, .topnav-d .topnav-account{ margin-left: 0; justify-self: end; }
-.brand.brand-b{ font-size: 1em; line-height: 1; white-space: nowrap; letter-spacing: 0.03em; display: flex; align-items: center; }
-.brand-b .brand-o, .brand-c .brand-o{
-  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
-  width: 0.76em; height: 0.76em; margin: 0 0.03em;
-  border: 0.12em solid var(--ink); border-radius: 50%;
-}
-.brand-b .brand-o-logo, .brand-c .brand-o-logo{ width: 100%; height: 100%; }
-
-@media (min-width: 640px){
-  .topnav-a .brand-link{ font-size: 58px; }
-  .topnav-b .brand-link{ font-size: 65px; }
-  nav.topnav.topnav-a, nav.topnav.topnav-b, nav.topnav.topnav-c, nav.topnav.topnav-d{ padding-top: 24px; }
-}
 
 /* Felugró ablakok háttere: sötétebb, enyhén homályosított, hogy az ablak ne olvadjon össze a mögötte lévő tartalommal. */
-:root{ --overlay: rgba(40, 33, 58, 0.62); --overlay-light: rgba(40, 33, 58, 0.22); }
+:root{ --overlay: rgba(31, 26, 43, 0.6); --overlay-light: rgba(31, 26, 43, 0.22); }
 @media (prefers-color-scheme: dark){ :root{ --overlay: rgba(8, 5, 16, 0.7); --overlay-light: rgba(8, 5, 16, 0.32); } }
 
 /* Üdvözlő ablak: a logó a keret felső vonalán, középen ül, a keret körbefut rajta. */
 .modal-card.intro-card{
-  position: relative; overflow: visible; margin-top: 50px;
-  border: 2px solid var(--accent); padding-top: 56px;
+  position: relative; overflow: visible; margin-top: 60px;
+  border: 2px solid var(--accent); padding-top: 66px;
 }
-/* A logó (84 px) szorosan a kör határáig ér: 3 px rés + 2 px keret körben. */
+/* A teljes logó (a korongból kinyúló szarvakkal és nagyítóval együtt) a körön belül marad:
+   a kép a korong középpontjára van vágva, így 102 px-es képpel minden része a 108 px-es
+   belső körön belül, a határhoz közel van. */
 .intro-logo{
   position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
-  width: 94px; height: 94px; border-radius: 50%; box-sizing: border-box;
+  width: 112px; height: 112px; border-radius: 50%; box-sizing: border-box;
   border: 2px solid var(--accent); background: var(--card);
   display: flex; align-items: center; justify-content: center;
 }
@@ -675,21 +643,33 @@ button.play-btn:active:not(:disabled),
 button.play-btn[aria-disabled="true"]:active{ transform: scale(0.93); filter: brightness(0.9); }
 .tutorial-actions{ margin-top: 10px; }
 
-/* C és D változat: a logó pontosan a fejléc közepén (a felirat két része tőle balra és jobbra,
-   háromoszlopos rácsban), csupa nagybetűvel. C: a B gyűrűs O-ja másfélszeres méretben;
-   D: TITKOS [logó] ÍRÁS, gyűrű nélkül. */
-.topnav-c .brand-link, .topnav-d .brand-link{ justify-content: center; }
+/* Fejléc: csupa nagybetűs TITKOSÍRÁS, az O helyén gyűrűben a logó, a logó pontosan a fejléc
+   közepén (a felirat két része tőle balra és jobbra, háromoszlopos rácsban). A gombok a két
+   szélen, a felirathoz függőlegesen középre igazítva. */
+nav.topnav.topnav-c{
+  display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px;
+  padding-top: 18px; padding-bottom: 4px;
+}
+.topnav-c .topnav-account{ margin-left: 0; justify-self: end; }
+.topnav-c .brand-link{ justify-content: center; font-size: min(calc((50vw - 56px) / 3.36), 50px); }
 .brand.brand-mid{
   font-size: 1em; line-height: 1; white-space: nowrap; letter-spacing: 0.03em;
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%;
 }
 .brand-mid .bm-left{ justify-self: end; color: var(--ink); }
 .brand-mid .bm-right{ justify-self: start; color: var(--ink); }
-.brand-c .brand-o{ width: 1.14em; height: 1.14em; border-width: 0.12em; margin: 0 0.03em; }
-.brand-d .brand-d-logo{ width: 1.15em; height: 1.15em; margin: 0 0.1em; }
-.topnav-c .brand-link{ font-size: min(calc((50vw - 56px) / 3.36), 50px); }
-.topnav-d .brand-link{ font-size: min(calc((50vw - 56px) / 4.17), 50px); }
+.brand-mid .bm-right > span{ color: var(--brand-iras); }
+/* A gyűrű a betűkkel azonos színű és vastagságú. A logó lila korongja pontosan kitölti a
+   gyűrű belsejét (nem marad üres csík); a korongból kinyúló szarvak és a nagyító a logó saját
+   stílusa szerint átnyúlnak a gyűrűn. A kép a korong középpontjára van vágva, a korong a kép
+   71,06%-a, ezért a kép a lyuk 140,7%-a. */
+.brand-c .brand-o{
+  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  width: 1.14em; height: 1.14em; margin: 0 0.03em;
+  border: 0.12em solid var(--ink); border-radius: 50%; overflow: visible;
+}
+.brand-c .brand-o-logo{ width: 140.7%; height: 140.7%; flex: none; position: relative; z-index: 1; }
 @media (min-width: 640px){
-  .topnav-c .brand-link, .topnav-d .brand-link{ font-size: 58px; }
-  nav.topnav.topnav-c, nav.topnav.topnav-d{ padding-top: 24px; }
+  .topnav-c .brand-link{ font-size: 58px; }
+  nav.topnav.topnav-c{ padding-top: 24px; }
 }

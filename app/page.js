@@ -606,7 +606,7 @@ export default function HomePage() {
           <div className="modal-card intro-card" onClick={(e) => e.stopPropagation()}>
             {/* A logó a keret felső vonalán ül, középen: a keret körbefut rajta. */}
             <div className="intro-logo">
-              <Logo size={84} />
+              <Logo size={102} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em', textAlign: 'center' }}>
               Üdv a Titkosírásban!

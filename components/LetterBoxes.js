@@ -177,6 +177,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
       type="text"
       inputMode="text"
       data-idx={idx}
+      aria-label={`${idx + 1}. betű`}
       autoComplete="off"
       autoCorrect="off"
       autoCapitalize="characters"
