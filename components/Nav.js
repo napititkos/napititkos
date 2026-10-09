@@ -8,8 +8,9 @@ import Logo from './Logo';
 
 // Fejléc-változatok kipróbálásra: A = nagyobb, középre igazított felirat, tőle balra a logó; B = középre
 // igazított, csupa nagybetűs TITKOSÍRÁS, ahol az O betű a logó. Váltás: ?fejlec=a vagy ?fejlec=b
-// (az eszköz megjegyzi). A döntés után a másik változat törölhető.
-const HEADER_VARIANTS = ['a', 'b'];
+// (az eszköz megjegyzi). C = mint a B, de másfélszer nagyobb, a fejléc közepére igazított O-logóval;
+// D = TITKOS [logó] ÍRÁS, a logó a fejléc közepén. ?fejlec=c / ?fejlec=d. A döntés után a többi törölhető.
+const HEADER_VARIANTS = ['a', 'b', 'c', 'd'];
 function readHeaderVariant() {
   try {
     const q = new URLSearchParams(window.location.search).get('fejlec');
@@ -69,7 +70,23 @@ export default function Nav() {
           <span />
           <span />
         </button>
-        {variant === 'b' ? (
+        {variant === 'c' ? (
+          <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
+            <div className="brand brand-mid brand-c" aria-hidden="true">
+              <span className="bm-left">TITK</span>
+              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
+              <span className="bm-right">S<span>ÍRÁS</span></span>
+            </div>
+          </a>
+        ) : variant === 'd' ? (
+          <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
+            <div className="brand brand-mid brand-d" aria-hidden="true">
+              <span className="bm-left">TITKOS</span>
+              <Logo size={null} className="brand-d-logo" />
+              <span className="bm-right"><span>ÍRÁS</span></span>
+            </div>
+          </a>
+        ) : variant === 'b' ? (
           <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
             <div className="brand brand-b" aria-hidden="true">
               TITK<span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>S<span>ÍRÁS</span>
