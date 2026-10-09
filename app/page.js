@@ -418,6 +418,9 @@ export default function HomePage() {
       elapsed: finalElapsed,
       ...(session?.user ? {} : { guest: true, undo }),
     };
+    // "Elkeseredett" trófea: a rejtvény összes tippjét (a betűfelfedéseket is) felhasználta.
+    const usedHintsOnly = revealed.filter((t) => t !== 'betu').length + betuCount;
+    if (hintsTotal > 0 && usedHintsOnly >= hintsTotal) prog.usedAllHints = true;
     if (wasCorrect) {
       prog.totalSolved = (prog.totalSolved || 0) + 1;
       if (totalHints === 0) prog.noHintSolves = (prog.noHintSolves || 0) + 1;
@@ -433,6 +436,7 @@ export default function HomePage() {
         noHintSolves: prog.noHintSolves || 0,
         submittedPuzzle: prog.submittedPuzzle || false,
         readHelp: prog.readHelp || false,
+        usedAllHints: prog.usedAllHints || false,
       },
       prog.unlocked
     );

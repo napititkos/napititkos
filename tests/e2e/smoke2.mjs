@@ -604,6 +604,22 @@ r = await fetch(BASE + '/help'); const helpHtml = await r.text();
 check('a Súgó elmondja a három tipptípust és linkel az archívumra', /három típusa/.test(helpHtml) && /href="\/archive"/.test(helpHtml));
 check('a Súgó szerint betűfelfedés minden rejtvénynél van', /minden rejtvénynél kérhetsz betűfelfedést/.test(helpHtml));
 
+// ---------------------------------------------------------------- ELKESEREDETT TRÓFEA, MEGOSZTÁSI KÉP
+section('Elkeseredett trófea (az összes tipp felhasználva) és megosztási kép');
+await seedUser('elkeseredett@teszt.hu', 'Elkeseredett-1');
+const ekJar = (await credLogin('elkeseredett@teszt.hu', 'Elkeseredett-1')).jar;
+r = await post('/api/account/progress', { streak: 1, usedAllHints: true, unlocked: ['all_hints'] }, { cookie: ekJar.header() });
+check('a haladás a jelzővel együtt menthető: 200', r.status === 200, `(${r.status})`);
+j = await (await fetch(BASE + '/api/account/progress', { headers: { cookie: ekJar.header() } })).json();
+const ekProg = j.progress || j;
+check('a szerver megőrzi az "összes tipp felhasználva" jelzőt és a trófeát (más eszközre is átmegy)', ekProg.usedAllHints === true && (ekProg.unlocked || []).includes('all_hints'), JSON.stringify(ekProg).slice(0, 200));
+r = await post('/api/account/progress', { usedAllHints: 'igen' }, { cookie: ekJar.header() });
+j = await (await fetch(BASE + '/api/account/progress', { headers: { cookie: ekJar.header() } })).json();
+check('hibás típusú jelző nem kerül be igaznak', (j.progress || j).usedAllHints !== 'igen');
+r = await fetch(BASE + '/opengraph-image');
+const ogBuf = Buffer.from(await r.arrayBuffer());
+check('a megosztási kép (1200×630 PNG) elkészül', r.status === 200 && /png/.test(r.headers.get('content-type') || '') && ogBuf.readUInt32BE(16) === 1200 && ogBuf.readUInt32BE(20) === 630);
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
