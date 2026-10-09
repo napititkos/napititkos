@@ -18,6 +18,16 @@ export default function HelpPage() {
           </p>
         </div>
         <div className="help-block">
+          <h3>Tippek a játékban</h3>
+          <p>
+            Ha elakadsz, tippet kérhetsz. A tippeknek <b>három típusa</b> van: a <b>Definíció</b>,
+            a <b>Mutató</b> és a <b>Készlet</b>. Mindegyik a rejtvény egy-egy részét fedi fel, és a
+            hozzá tartozó szavak a rejtvényben a tipp színével kiemelve jelennek meg. Egyes
+            rejtvényeknél ezeken felül alternatív tipp és betűfelfedés is kérhető. Lássuk sorban, mit
+            jelent a három típus!
+          </p>
+        </div>
+        <div className="help-block">
           <h3>Definíció</h3>
           <p>A rejtvény azon szava vagy kifejezése, ami közvetlenül, szó szerint jelenti a választ - pont úgy, mint egy hagyományos keresztrejtvényben.</p>
         </div>
@@ -39,6 +49,15 @@ export default function HelpPage() {
             Olvasd el a rejtvényt kétszer: először a jelentését keresve, másodszor a szavak
             szerkezetére figyelve. Ha elakadtál, kérj egy tippet - nincs abban semmi szégyellnivaló,
             a kriptikus rejtvények nehezek, főleg az elején. A gyakorlat a legjobb tanár.
+          </p>
+        </div>
+        <div className="help-block">
+          <h3>Gyakorlás</h3>
+          <p>
+            A <a href="/tutorial" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>Tutorialban</a>{' '}
+            lépésről lépésre végigmehetsz az alapokon, a{' '}
+            <a href="/archive" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>Korábbi titkosírások</a>{' '}
+            menüpontban pedig kipróbálhatod az összes eddigi rejtvényt.
           </p>
         </div>
       </div>

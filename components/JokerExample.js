@@ -53,15 +53,18 @@ export default function JokerExample({ onProgress }) {
               onEnter={checkAnswer}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 10 }}>
-            <button className="primary small" onClick={checkAnswer}>
-              Ellenőrzés
-            </button>
-            {!showHelp && (
-              <button className="ghost small" onClick={() => setShowHelp(true)}>
-                Segítség kérése
+<div className="play-actions-wrap">
+            <div className="play-actions tutorial-actions">
+              <div className="pa-left"></div>
+              <button className="primary play-btn" onClick={checkAnswer}>
+                Ellenőrzés
               </button>
-            )}
+              <div className="pa-right">{!showHelp && (
+                  <button className="primary play-btn" onClick={() => setShowHelp(true)}>
+                    Segítség
+                  </button>
+                )}</div>
+            </div>
           </div>
 
           {wrongTried && (

@@ -67,10 +67,19 @@ export default function SzojatekExample({ onProgress }) {
               onEnter={checkAnswer}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-            <button className="primary small" onClick={checkAnswer}>
-              Ellenőrzés
-            </button>
+          {/* Ugyanolyan gombsor, mint a játékban: az Ellenőrzés középen, a tipp jobbra. */}
+          <div className="play-actions-wrap">
+            <div className="play-actions tutorial-actions">
+              <div className="pa-left"></div>
+              <button className="primary play-btn" onClick={checkAnswer}>
+                Ellenőrzés
+              </button>
+              <div className="pa-right">{stage < 2 && (
+                  <button className="primary play-btn" onClick={() => setStage(2)}>
+                    💡 Mutató
+                  </button>
+                )}</div>
+            </div>
           </div>
 
           {wrongTried && stage === 1 && (
@@ -80,13 +89,6 @@ export default function SzojatekExample({ onProgress }) {
             </div>
           )}
 
-          {stage < 2 && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-              <button className="ghost small" onClick={() => setStage(2)}>
-                💡 Mutató
-              </button>
-            </div>
-          )}
           {stage === 2 && (
             <div className="hint-box" style={{ marginLeft: 0, marginTop: 10 }}>
               A "háborúban" szó közepén ott bújik a "bor" - ez lesz a válasz eleje. Utána egy

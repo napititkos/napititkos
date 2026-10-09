@@ -21,6 +21,8 @@ export default function LoginPage() {
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'magic' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
+  const [regSent, setRegSent] = useState(false);
   const [name, setName] = useState('');
   const [status, setStatus] = useState(null);
   const [sending, setSending] = useState(false);
@@ -69,12 +71,16 @@ export default function LoginPage() {
       setStatus({ ok: false, msg: 'A jelszónak legalább 8 karakteresnek kell lennie.' });
       return;
     }
+    if (password !== password2) {
+      setStatus({ ok: false, msg: 'A két jelszó nem egyezik.' });
+      return;
+    }
     setSending(true);
     setStatus(null);
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, password2, name }),
     });
     const data = await res.json().catch(() => ({}));
     setSending(false);
@@ -83,6 +89,7 @@ export default function LoginPage() {
       return;
     }
     // A fiók csak az emailben küldött link megerősítése után jön létre.
+    setRegSent(true);
     setStatus({
       ok: true,
       msg: 'Elküldtük a megerősítő linket az email címedre (a spam mappát is nézd meg). Kattints rá, utána be tudsz lépni. Ha ehhez a címhez már van fiók, lépj be Google-lal vagy belépő linkkel.',
@@ -213,9 +220,11 @@ export default function LoginPage() {
             <input id="reg-email" autoComplete="email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <label className="field-label" htmlFor="reg-password">Jelszó (legalább 8 karakter)</label>
             <input id="reg-password" autoComplete="new-password" className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+            <label className="field-label" htmlFor="reg-password2">Jelszó még egyszer</label>
+            <input id="reg-password2" autoComplete="new-password" className="form-input" type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} required minLength={8} />
             <div style={{ marginTop: 16 }}>
               <button className="primary" type="submit" disabled={sending}>
-                {sending ? 'Regisztráció…' : 'Regisztráció'}
+                {sending ? 'Regisztráció…' : regSent ? 'Új visszaigazoló email küldése' : 'Regisztráció'}
               </button>
             </div>
           </form>

@@ -33,6 +33,10 @@ export async function POST(req) {
   if (password.length > 200) {
     return Response.json({ ok: false, error: 'A jelszó legfeljebb 200 karakter lehet.' }, { status: 400 });
   }
+  // Ha a kliens küldi a jelszó megismétlését, a kettőnek egyeznie kell (a felület mindig küldi).
+  if (body.password2 !== undefined && String(body.password2) !== password) {
+    return Response.json({ error: 'A két jelszó nem egyezik.' }, { status: 400 });
+  }
 
   // Levélbombázás és költség ellen: címenként 3, IP-nként 10 regisztráció óránként.
   // (A cím létezésétől függetlenül számolunk, így a korlát sem árul el semmit.)

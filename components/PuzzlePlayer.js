@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LetterBoxes from './LetterBoxes';
 import PlayActions from './PlayActions';
 import ClueText from './ClueText';
@@ -21,6 +21,9 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
   const [revealed, setRevealed] = useState([]);
   const [betuCount, setBetuCount] = useState(0);
   const [answered, setAnswered] = useState(initiallySolved);
+  useEffect(() => {
+    if (answered && document.activeElement?.classList?.contains('letter-box')) document.activeElement.blur();
+  }, [answered]);
   const [correct, setCorrect] = useState(initiallySolved);
   const [showHintModal, setShowHintModal] = useState(false);
   const [toast, setToast] = useState('');

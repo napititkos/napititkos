@@ -8,19 +8,26 @@ import BetujatekExample from './BetujatekExample';
 import SzojatekExample from './SzojatekExample';
 import JokerExample from './JokerExample';
 
+// A tutorial külön oldalra költözött (/tutorial). A régi "open-tutorial" esemény (pl. régebbi
+// linkekből) mostantól oda navigál, így a meglévő hívások továbbra is működnek.
 export default function TutorialModal() {
-  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    function handleOpen() {
+      window.location.assign('/tutorial');
+    }
+    window.addEventListener('open-tutorial', handleOpen);
+    return () => window.removeEventListener('open-tutorial', handleOpen);
+  }, []);
+  return null;
+}
+
+export function TutorialContent() {
   const [progress, setProgress] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
   const [newAchievementToast, setNewAchievementToast] = useState('');
 
   useEffect(() => {
-    function handleOpen() {
-      setProgress(loadTutorialProgress());
-      setOpen(true);
-    }
-    window.addEventListener('open-tutorial', handleOpen);
-    return () => window.removeEventListener('open-tutorial', handleOpen);
+    setProgress(loadTutorialProgress());
   }, []);
 
   function handleTutorialProgress(newTutorialProgress) {
@@ -53,15 +60,12 @@ export default function TutorialModal() {
     }
   }
 
-  if (!open || !progress) return null;
+  if (!progress) return null;
+  const allDone = completedSectionsCount(progress) === TUTORIAL_SECTIONS.length;
 
   return (
-    <div className="modal-overlay" onClick={() => setOpen(false)}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
-          <Icon src="/icons/Tutorial.png" size={24} /> Tutorial
-        </h2>
-        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: -6 }}>
+    <div className="card">
+        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 0 }}>
           Három rész segít felkészülni a kriptikus rejtvényekre. A haladásod (vendégként is) itt
           fog megjelenni.
         </p>
@@ -108,17 +112,19 @@ export default function TutorialModal() {
             );
           })}
         </div>
-        <div className="actions" style={{ marginTop: 18 }}>
-          <button className="primary" onClick={() => setOpen(false)}>
-            Bezárás
-          </button>
-        </div>
+        {allDone && (
+          <div className="feedback good tutorial-done" style={{ marginLeft: 0, marginTop: 16 }}>
+            <b>Gratulálunk, végigcsináltad a tutorialt!</b> Most már készen állsz a napi
+            titkosírásra. Ha még gyakorolnál, a{' '}
+            <a href="/archive" style={{ color: 'inherit', fontWeight: 800 }}>Korábbi titkosírások</a>{' '}
+            menüpontban kipróbálhatod az összes eddigi rejtvényt.
+          </div>
+        )}
         {newAchievementToast && (
           <div className="feedback good" style={{ marginLeft: 0, marginTop: 12 }}>
             {newAchievementToast}
           </div>
         )}
-      </div>
     </div>
   );
 }

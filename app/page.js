@@ -10,6 +10,7 @@ import { deviceId } from '../lib/device';
 import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
+import Logo from '../components/Logo';
 import LetterBoxes from '../components/LetterBoxes';
 import PlayActions from '../components/PlayActions';
 import ClueText from '../components/ClueText';
@@ -82,6 +83,11 @@ export default function HomePage() {
   const [revealed, setRevealed] = useState([]);
   const [betuCount, setBetuCount] = useState(0);
   const [answered, setAnswered] = useState(false);
+  // Megfejtés után a betűmező fókusza megszűnik, így a mobil billentyűzet bezárul (nyitva
+  // maradva a billentyűzet a megváltozott oldal egy részét takarhatta).
+  useEffect(() => {
+    if (answered && document.activeElement?.classList?.contains('letter-box')) document.activeElement.blur();
+  }, [answered]);
   const [correct, setCorrect] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -597,9 +603,13 @@ export default function HomePage() {
     <div className="wrap" style={{ paddingTop: 10 }}>
       {showIntro && (
         <div className="modal-overlay" onClick={dismissIntro}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
-              Üdv a Titkosírásban! <Icon src="/icons/Udvozlo_uzenet.png" size={22} />
+          <div className="modal-card intro-card" onClick={(e) => e.stopPropagation()}>
+            {/* A logó a keret felső vonalán ül, középen: a keret körbefut rajta. */}
+            <div className="intro-logo">
+              <Logo size={56} />
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em', textAlign: 'center' }}>
+              Üdv a Titkosírásban!
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
               A Titkosírás a találós kérdések egy különleges formája, ahol a gyakorlott szem
@@ -612,22 +622,15 @@ export default function HomePage() {
               </a>{' '}
               és a{' '}
               <a
-                href="#"
+                href="/tutorial"
                 style={{ color: 'var(--accent-text)', fontWeight: 700 }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  dismissIntro();
-                  window.dispatchEvent(new Event('open-tutorial'));
-                }}
+                onClick={dismissIntro}
               >
                 Tutorialt
               </a>{' '}
               – kattints rájuk, vagy bármikor megtalálod őket a menüben is.
             </p>
             <div className="actions" style={{ marginTop: 18 }}>
-              <a href="/help" style={{ textDecoration: 'none' }} onClick={dismissIntro}>
-                <button className="ghost">Súgó megnyitása</button>
-              </a>
               <button className="primary" onClick={dismissIntro}>
                 Értem, kezdjünk neki!
               </button>
@@ -655,7 +658,7 @@ export default function HomePage() {
               Napi titkosírás{puzzleMeta?.dayNumber ? ` #${puzzleMeta.dayNumber}` : ''}
             </div>
             <div className="topbar-sub">
-              <span>minden nap új!</span>
+              <span>{puzzleMeta?.date ? formatHuDate(puzzleMeta.date) : 'minden nap új!'}</span>
               {puzzle.submittedBy && <span className="submitted-by">Beküldte: {puzzle.submittedBy}</span>}
             </div>
           </div>
@@ -793,11 +796,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {puzzleMeta?.date && (
-            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 12, marginLeft: 8 }}>
-              <Icon src="/icons/Rejtveny_datum.png" size={14} /> {formatHuDate(puzzleMeta.date)}
-            </div>
-          )}
         </div>
       </div>
 

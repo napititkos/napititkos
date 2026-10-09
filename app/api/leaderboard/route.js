@@ -34,7 +34,9 @@ export async function POST(req) {
   const session = await auth();
   let playerKey;
   let name;
-  if (session?.user?.name) {
+  // A saját nevével csak megerősített fiók kerülhet a ranglistára; a meg nem erősített
+  // fiók vendégként (generált névvel) szerepel.
+  if (session?.user?.name && session.user.verified) {
     playerKey = `u:${session.user.id || session.user.email}`;
     name = cleanName(session.user.name);
   } else {
