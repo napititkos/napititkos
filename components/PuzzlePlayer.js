@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import LetterBoxes from './LetterBoxes';
 import PlayActions from './PlayActions';
+import LookupHint from './LookupHint';
 import ClueText from './ClueText';
 import { HL_TYPES, highlightMap } from '../lib/clue';
 import Icon from './Icon';
@@ -174,6 +175,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
             <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0 }}>
               <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Tippek
             </h2>
+            <LookupHint lookup={puzzle.lookup} />
             {availableHints.some((t) => t !== 'betu' && !revealed.includes(t)) && (
               <button
                 className="primary small"

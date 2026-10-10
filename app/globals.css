@@ -673,3 +673,12 @@ nav.topnav.topnav-c{
   .topnav-c .brand-link{ font-size: 58px; }
   nav.topnav.topnav-c{ padding-top: 24px; }
 }
+
+/* "Nézz utána!" doboz a tipp-ablakban (nem tipp, hanem ismeretterjesztő segítség). */
+.lookup-hint{
+  background: var(--accent3-soft); border-left: 4px solid var(--accent3); border-radius: 12px;
+  padding: 10px 12px; margin: 0 0 14px; font-size: 14px; color: var(--ink);
+}
+.lookup-hint-title{ font-weight: 800; margin-bottom: 4px; }
+.lookup-hint p{ margin: 0 0 6px; }
+.lookup-hint a{ color: var(--accent-text); font-weight: 700; word-break: break-word; }

@@ -601,8 +601,8 @@ check('a főoldal a favicont és az Apple-ikont is hirdeti', /rel="icon"[^>]*ico
 r = await fetch(BASE + '/logo-192.png'); check('a logó képfájl elérhető', r.status === 200);
 check('a láblécben szerepel a logó készítője', /Logó: bundaskifli/.test(homeHtml));
 r = await fetch(BASE + '/help'); const helpHtml = await r.text();
-check('a Súgó elmondja a három tipptípust és linkel az archívumra', /három típusa/.test(helpHtml) && /href="\/archive"/.test(helpHtml));
-check('a Súgó szerint betűfelfedés minden rejtvénynél van', /minden rejtvénynél kérhetsz betűfelfedést/.test(helpHtml));
+check('a Kisokos elmondja a három tipptípust és linkel az archívumra', /három típusa/.test(helpHtml) && /href="\/archive"/.test(helpHtml));
+check('a Kisokos szerint betűfelfedés minden rejtvénynél van', /minden rejtvénynél kérhetsz betűfelfedést/.test(helpHtml));
 
 // ---------------------------------------------------------------- ELKESEREDETT TRÓFEA, MEGOSZTÁSI KÉP
 section('Elkeseredett trófea (az összes tipp felhasználva) és megosztási kép');
@@ -619,6 +619,29 @@ check('hibás típusú jelző nem kerül be igaznak', (j.progress || j).usedAllH
 r = await fetch(BASE + '/opengraph-image');
 const ogBuf = Buffer.from(await r.arrayBuffer());
 check('a megosztási kép (1200×630 PNG) elkészül', r.status === 200 && /png/.test(r.headers.get('content-type') || '') && ogBuf.readUInt32BE(16) === 1200 && ogBuf.readUInt32BE(20) === 630);
+
+// ---------------------------------------------------------------- NÉZZ UTÁNA!, KISOKOS, IKONOK
+section('Nézz utána! (nem tipp), Kisokos, ikonok');
+let plist = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+const withLookup = plist.map((pz, i) => ({ ...pz, lookup: i === 0 ? { text: 'A kos a juh hímje.', url: 'javascript:alert(1)' } : { text: 'Olvass a juhokról.', url: 'https://hu.wikipedia.org/wiki/Juh' } }));
+r = await post('/api/admin/puzzles', { puzzles: withLookup }, adm);
+check('rejtvények mentése "Nézz utána!" mezővel: 200', r.status === 200, `(${r.status})`);
+plist = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+check('a javascript: link kiszűrve, a szöveg megmarad', plist[0].lookup?.text === 'A kos a juh hímje.' && plist[0].lookup?.url === '');
+check('a https link megmarad', plist[1]?.lookup?.url === 'https://hu.wikipedia.org/wiki/Juh');
+r = await post('/api/admin/puzzles', { puzzles: plist.map((pz, i) => (i === 1 ? { ...pz, lookup: { text: '  ', url: '' } } : pz)) }, adm);
+plist = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+check('üres "Nézz utána!" nem kerül mentésre', r.status === 200 && plist[1] && !('lookup' in plist[1]));
+j = await (await fetch(BASE + '/api/puzzle')).json();
+const lkp = plist.find((pz) => pz.id === j.puzzle?.id)?.lookup;
+check('a napi rejtvény a "Nézz utána!" adatot is kiadja (ha van)', JSON.stringify(j.puzzle?.lookup || null) === JSON.stringify(lkp || null), JSON.stringify(j.puzzle?.lookup));
+r = await fetch(BASE + '/help'); const kisHtml = await r.text();
+check('a Kisokos oldal címe és fejléce: Kisokos', /<title>Kisokos - Titkosírás<\/title>/.test(kisHtml) && /Kisokos<\/h1>/.test(kisHtml) && !/Súgó/.test(kisHtml));
+r = await fetch(BASE + '/manifest.webmanifest'); j = await r.json();
+check('a webalkalmazás-leíró nagy (192, 512, maskable) ikonokat ad', r.status === 200 && j.icons?.some((i) => i.sizes === '512x512' && i.purpose === 'maskable') && j.icons?.some((i) => i.sizes === '192x192'));
+for (const ic of ['/icon-192.png', '/icon-512.png', '/icon-maskable-512.png']) { r = await fetch(BASE + ic); check(`az ikon elérhető: ${ic}`, r.status === 200); }
+r = await fetch(BASE + '/icon.png'); const icBuf = Buffer.from(await r.arrayBuffer());
+check('a favicon 192 px-es (nem apró)', icBuf.readUInt32BE(16) === 192);
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

@@ -87,7 +87,7 @@ export default function Nav() {
             <Icon src="/icons/Korabbi_titkosirasok.png" /> Korábbi titkosírások
           </a>
           <a href="/help" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Sugo.png" /> Súgó
+            <Icon src="/icons/Sugo.png" /> Kisokos
           </a>
           <a href="/tutorial" onClick={() => setOpen(false)} className="tutorial-link">
             <Icon src="/icons/Tutorial.png" /> Tutorial{' '}
