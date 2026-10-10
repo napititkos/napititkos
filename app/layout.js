@@ -7,6 +7,8 @@ import TutorialModal from '../components/TutorialModal';
 import AuthProvider from '../components/AuthProvider';
 import ProgressSync from '../components/ProgressSync';
 import { Analytics } from '@vercel/analytics/next';
+// Valós felhasználói sebességmérés (Core Web Vitals) oldalanként; csak a Vercelen élesben gyűjt.
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import localFont from 'next/font/local';
 
 // A betűtípus-fájlok a repóban vannak (app/fonts, SIL Open Font License), így a build
@@ -50,6 +52,7 @@ export default function RootLayout({ children }) {
           <TutorialModal />
         </AuthProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

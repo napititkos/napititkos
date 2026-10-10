@@ -1,4 +1,4 @@
-export const metadata = { title: 'Súgó - Titkosírás' };
+export const metadata = { title: 'Kisokos - Titkosírás' };
 
 import TrackHelpVisit from '../../components/TrackHelpVisit';
 
@@ -6,7 +6,7 @@ export default function HelpPage() {
   return (
     <div className="wrap">
       <TrackHelpVisit />
-      <h1 className="page-title">Súgó</h1>
+      <h1 className="page-title">Kisokos</h1>
       <div className="card">
         <div className="help-block">
           <h3>Mi az a kriptikus (cryptic) rejtvény?</h3>

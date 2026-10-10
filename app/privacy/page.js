@@ -89,8 +89,9 @@ export default function PrivacyPage() {
           <h3>Sütik (cookie-k)</h3>
           <p>
             A bejelentkezési munkameneten kívül nem használunk követő vagy hirdetési célú
-            sütiket. A látogatottsági statisztikákat (Vercel Web Analytics) anonim, összesített
-            formában gyűjtjük, egyetlen látogató sem azonosítható belőle.
+            sütiket. A látogatottsági statisztikákat (Vercel Web Analytics) és az oldal betöltési
+            sebességének méréseit (Vercel Speed Insights) anonim, összesített formában gyűjtjük,
+            sütik nélkül; egyetlen látogató sem azonosítható belőlük.
           </p>
         </div>
         <div className="help-block">
@@ -108,8 +109,8 @@ export default function PrivacyPage() {
           <h3>Adatkezelő és adatfeldolgozók</h3>
           <p>
             Az adatkezelő az oldal üzemeltetője (elérhetősége lent). Az adatok kezelésében a
-            következő szolgáltatók működnek közre: a Vercel (tárhely és névtelen látogatottsági
-            statisztika), egy adatbázis-szolgáltató (a fiókok és a játékadatok tárolása), a Resend
+            következő szolgáltatók működnek közre: a Vercel (tárhely, névtelen látogatottsági
+            statisztika és sebességmérés), egy adatbázis-szolgáltató (a fiókok és a játékadatok tárolása), a Resend
             (a megerősítő és belépő emailek küldése), valamint a Google (kizárólag akkor, ha
             Google-fiókkal lépsz be). Az oldal betűtípusait a saját szerverünkről szolgáljuk ki,
             ezért a látogatók IP-címe emiatt nem kerül a Google-hoz.

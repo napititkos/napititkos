@@ -758,6 +758,34 @@ export default function AdminPage() {
                     <label>Helyes betű tipp elérhető (automatikus, mindig jelen van)</label>
                   </div>
 
+                  {/* "Nézz utána!": nem számít tippnek, a tipp-ablakban kérés nélkül látszik. */}
+                  <div className="lookup-editor" style={{ marginTop: 14 }}>
+                    <label className="field-label" htmlFor={`lookup-text-${ei}`} style={{ marginTop: 0 }}>
+                      Nézz utána! (opcionális, nem számít tippnek - a tipp-ablakban mindig látszik)
+                    </label>
+                    <textarea
+                      id={`lookup-text-${ei}`}
+                      value={e.lookup?.text || ''}
+                      placeholder="Pl. egy rövid ismeretterjesztő mondat, ami segít elindulni…"
+                      onChange={(ev) =>
+                        updateEntry(ei, (en) => ({ ...en, lookup: { ...(en.lookup || {}), text: capitalizeFirst(ev.target.value) } }))
+                      }
+                    />
+                    <input
+                      type="text"
+                      aria-label="Nézz utána! hivatkozás"
+                      value={e.lookup?.url || ''}
+                      placeholder="https://… (ismeretterjesztő link, opcionális)"
+                      onChange={(ev) => updateEntry(ei, (en) => ({ ...en, lookup: { ...(en.lookup || {}), url: ev.target.value.trim() } }))}
+                      style={{ marginTop: 6 }}
+                    />
+                    {e.lookup?.url && !/^https?:\/\//i.test(e.lookup.url) && (
+                      <div className="feedback hint" style={{ marginLeft: 0, marginTop: 6 }}>
+                        A link csak http:// vagy https:// kezdetű lehet, különben mentéskor kimarad.
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{ marginTop: 16 }}>
                     <button className="primary small" onClick={saveAll} disabled={loading}>
                       {loading ? 'Mentés…' : 'Mentés'}

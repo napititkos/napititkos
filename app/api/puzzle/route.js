@@ -15,6 +15,7 @@ function clientPuzzle(p) {
     parHints: p.parHints,
     submittedBy: p.submittedBy || '',
     hints: p.hints,
+    ...(p.lookup ? { lookup: p.lookup } : {}),
   };
 }
 
@@ -106,6 +107,7 @@ async function rotate(prevState, puzzles, scheduledToday, rotationBoundary, now)
         answer: currentPuzzle.answer,
         parHints: currentPuzzle.parHints,
         hints: currentPuzzle.hints,
+        ...(currentPuzzle.lookup ? { lookup: currentPuzzle.lookup } : {}),
         submittedBy: currentPuzzle.submittedBy || '',
         shownDate: today,
       },

@@ -11,6 +11,7 @@ import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from '../components/Icon';
 import Logo from '../components/Logo';
+import LookupHint from '../components/LookupHint';
 import LetterBoxes from '../components/LetterBoxes';
 import PlayActions from '../components/PlayActions';
 import ClueText from '../components/ClueText';
@@ -622,7 +623,7 @@ export default function HomePage() {
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
               Ahhoz, hogy belekezdj, először nézd át a{' '}
               <a href="/help" style={{ color: 'var(--accent-text)', fontWeight: 700 }} onClick={dismissIntro}>
-                Súgót
+                Kisokost
               </a>{' '}
               és a{' '}
               <a
@@ -719,6 +720,7 @@ export default function HomePage() {
                 <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
                   <Icon src="/icons/Rejtveny_tippek.png" size={22} /> Melyik tippet kéred?
                 </h2>
+                <LookupHint lookup={puzzle.lookup} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {availableHints.map((t) => {
                     const isBetu = t === 'betu';
@@ -913,7 +915,7 @@ export default function HomePage() {
       <footer className="page-footer">
         Új titkosírás minden nap éjfélkor (magyar idő szerint). Elakadtál? Nézd meg a{' '}
         <a href="/help" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>
-          Súgót
+          Kisokost
         </a>
         .
       </footer>
