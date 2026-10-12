@@ -405,8 +405,12 @@ export default function AdminPage() {
     setJustAddedId(fresh.id);
   }
   function removeEntry(ei) {
-    if (!confirm('Biztosan törlöd ezt a titkosírást?')) return;
-    setEntries((prev) => prev.filter((_, i) => i !== ei));
+    if (!confirm('Biztosan törlöd ezt a titkosírást? A törlés azonnal mentésre kerül.')) return;
+    // A törlés azonnal mentődik (korábban csak az "Összes mentése" gombbal, így mentés nélkül
+    // újratöltve a törölt titkosírás visszajött, és a darabszám is visszaállt).
+    const next = entries.filter((_, i) => i !== ei);
+    setEntries(next);
+    saveList(next);
   }
   // A sorban (nem archivált) lévő titkosírások indexei a lista sorrendjében; a napi
   // váltás ebben a sorrendben választ.
@@ -445,9 +449,13 @@ export default function AdminPage() {
   }
 
   async function saveAll() {
+    return saveList(entries);
+  }
+  // A megadott lista mentése (a saveAll és az azonnal mentődő törlés közös része).
+  async function saveList(list) {
     setLoading(true);
     setSaveStatus(null);
-    const normalized = entries.map((en) => ({
+    const normalized = list.map((en) => ({
       ...en,
       answer: (en.answerWords || splitAnswerWords(en.answer)).join(' ').trim(),
       parHints: en.parHints === '' || en.parHints == null ? 0 : en.parHints,
@@ -880,8 +888,12 @@ export default function AdminPage() {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
           <b>
-            {freshEntries(entries, sortMode, sortDirection, justAddedId, shownDateById, currentActiveId).length} db
+            {/* A sorban várók száma: a ma futó titkosírás nincs benne (azt külön jelezzük). */}
+            {freshEntries(entries, sortMode, sortDirection, justAddedId, shownDateById, currentActiveId).filter(({ entry }) => entry.id !== currentActiveId).length} db
             titkosírás a sorban
+            {entries.some((en) => en.id === currentActiveId) && (
+              <span style={{ fontWeight: 400, fontSize: 13, color: 'var(--ink-soft)' }}> (+ 1 ma fut)</span>
+            )}
           </b>
           {archivedList(entries, shownDateById, currentActiveId).length > 0 && (
             <span style={{ fontSize: 13, color: 'var(--ink-soft)', marginLeft: 6 }}>

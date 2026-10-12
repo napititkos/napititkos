@@ -339,12 +339,17 @@ footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px
 .site-footer .dot{ opacity: 0.5; }
 .site-footer-copy{ font-size: 12px; opacity: 0.7; }
 .toast{
-  position: fixed; bottom: 22px; left:50%; transform: translateX(-50%); background: var(--ink); color: var(--paper);
+  /* A képernyő alján, de a billentyűzet és a rendszersáv fölött: a --kb-offset a nyitott
+     mobil billentyűzet magassága (components/ViewportVars.js), a safe-area a telefon alsó
+     sávja. Így gépelés közben is látszanak a gombokból érkező üzenetek. */
+  position: fixed; bottom: calc(22px + var(--kb-offset, 0px) + env(safe-area-inset-bottom, 0px));
+  left:50%; transform: translateX(-50%); background: var(--ink); color: var(--paper);
   /* A szövege szélességéig nő (nem nyomódik össze a képernyő felére), és csak akkor
      tördel, ha a képernyőn sem fér ki. */
   width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box;
   padding: 11px 22px; border-radius: 22px; font-size: 13.5px; line-height: 1.4; text-align: center;
-  opacity:0; pointer-events:none; transition: opacity 0.25s ease; z-index: 50;
+  /* A felugró ablakok (z-index 100) fölött, hogy az ablakban lévő gombok üzenetei is látszanak. */
+  opacity:0; pointer-events:none; transition: opacity 0.25s ease; z-index: 200;
 }
 .toast.show{ opacity:1; }
 h1.page-title{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 26px; margin: 4px 0 18px; color: var(--accent-text); letter-spacing: 0.015em; }
@@ -654,7 +659,10 @@ nav.topnav.topnav-c{
 .topnav-c .brand-link{ justify-content: center; font-size: min(calc((50vw - 56px) / 3.36), 50px); }
 .brand.brand-mid{
   font-size: 1em; line-height: 1; white-space: nowrap; letter-spacing: 0.03em;
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%;
+  /* minmax(0, 1fr): a két oldalsó oszlop mindig pontosan egyforma széles marad, akkor is, ha a
+     felirat egy pillanatra szélesebb (betöltéskor, amíg a tartalék betűtípus látszik) - így a
+     logó nem ugrik el a közepéről. */
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; width: 100%;
 }
 .brand-mid .bm-left{ justify-self: end; color: var(--ink); }
 .brand-mid .bm-right{ justify-self: start; color: var(--ink); }

@@ -645,6 +645,7 @@ export default function HomePage() {
       )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
+        <span className="pill"><Icon src="/icons/Streak.png" size={15} /> {progress.streak} napos sorozat</span>
         <button
           className="pill"
           style={{ border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
@@ -652,7 +653,6 @@ export default function HomePage() {
         >
           <Icon src="/icons/Ranglista.png" size={16} /> Ranglista
         </button>
-        <span className="pill"><Icon src="/icons/Streak.png" size={15} /> {progress.streak} napos sorozat</span>
         <NotificationsButton />
       </div>
 
@@ -856,6 +856,10 @@ export default function HomePage() {
             <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
               <Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Következő titkosírás:{' '}
               <b style={{ color: 'var(--accent2-text)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
+              <div style={{ marginTop: 6 }}>
+                Ha tetszett, addig is nézd meg a{' '}
+                <a href="/archive" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>korábbi titkosírásokat</a>!
+              </div>
             </div>
           )}
         </div>
