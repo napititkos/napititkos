@@ -3,10 +3,13 @@
 // jelenik meg, nem egy kis favicon egy nagy dobozban.
 export default function manifest() {
   return {
+    id: '/',
     name: 'Titkosírás - napi kriptikus rejtvény',
     short_name: 'Titkosírás',
     description: 'Minden nap új kriptikus rejtvény.',
     start_url: '/',
+    scope: '/',
+    lang: 'hu',
     display: 'standalone',
     background_color: '#F0F0FC',
     theme_color: '#A98CBA',

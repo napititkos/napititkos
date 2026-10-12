@@ -643,6 +643,11 @@ for (const ic of ['/icon-192.png', '/icon-512.png', '/icon-maskable-512.png']) {
 r = await fetch(BASE + '/icon.png'); const icBuf = Buffer.from(await r.arrayBuffer());
 check('a favicon 192 px-es (nem apró)', icBuf.readUInt32BE(16) === 192);
 
+section('Telepíthető webalkalmazás (manifest)');
+r = await fetch(BASE + '/manifest.webmanifest'); j = await r.json();
+check('a manifest telepíthető alkalmazást ír le (id, scope, magyar nyelv, önálló ablak)', j.id === '/' && j.scope === '/' && j.lang === 'hu' && j.display === 'standalone' && j.start_url === '/');
+r = await fetch(BASE + '/'); check('a főoldal hirdeti a manifestet', /rel="manifest"[^>]*manifest\.webmanifest/.test(await r.text()));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
