@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import PasswordChange from '../../components/PasswordChange';
+import SubmissionFeedback from '../../components/SubmissionFeedback';
 import { loadProgress, solvedCount } from '../../lib/progress';
 import { ACHIEVEMENTS } from '../../lib/achievements';
 import { enumerationFor } from '../../lib/format';
@@ -139,6 +140,7 @@ export default function AccountPage() {
                     {sub.shownDate ? `✓ ${sub.shownDate}` : 'beütemezve'}
                   </span>
                 </div>
+                {sub.feedback && <SubmissionFeedback feedback={sub.feedback} />}
               </div>
             ))}
         </div>

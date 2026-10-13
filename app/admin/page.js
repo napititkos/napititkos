@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { enumerationFor, splitAnswerWords } from '../../lib/format';
 import { HL_TYPES, clueTokens } from '../../lib/clue';
+import SubmissionFeedbackModal from '../../components/SubmissionFeedbackModal';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
@@ -185,6 +186,7 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(null);
   const [entries, setEntries] = useState([]);
+  const [feedbackFor, setFeedbackFor] = useState(null); // az átemelés előtti visszajelzés-ablak beküldése
   const [submissions, setSubmissions] = useState([]);
   const [users, setUsers] = useState([]);
   const [usersExpanded, setUsersExpanded] = useState(false);
@@ -469,7 +471,9 @@ export default function AdminPage() {
     setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
   }
 
-  function convertSubmissionToEntry(s) {
+  // opts.feedback: az elfogadáskor írt visszajelzés; ilyenkor a titkosírás a sor VÉGÉRE kerül
+  // (nem ugrik a lista elejére), és a függvény visszaadja az új bejegyzést.
+  function convertSubmissionToEntry(s, opts = {}) {
     const fresh = {
       id: generateId(),
       clue: capitalizeFirst(s.clue || ''),
@@ -486,11 +490,41 @@ export default function AdminPage() {
         betu: { enabled: true },
       },
     };
+    if (opts.toQueueEnd) return fresh;
     setEntries((prev) => [...prev, fresh]);
     setExpandedId(fresh.id);
     setJustAddedId(fresh.id);
     setSortMode('manual');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    return fresh;
+  }
+
+  // Átemelés visszajelzéssel: a visszajelzés-ablak elküldése után kerül a titkosírás a sor
+  // végére (azonnal mentve), majd a szerver hozzáteszi a visszajelzést a beküldő admin
+  // nevével, és személyes értesítést küld a beküldőnek.
+  async function acceptSubmissionWithFeedback(s, items) {
+    const fresh = convertSubmissionToEntry(s, { toQueueEnd: true });
+    const next = [...entries, fresh];
+    setEntries(next);
+    await saveList(next);
+    const res = await fetch('/api/admin/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ puzzleId: fresh.id, items }),
+    }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
+    if (res?.ok && data.feedback) {
+      // A helyi listába is bekerül, hogy egy későbbi "Összes mentése" ne törölje ki.
+      setEntries((prev) => prev.map((en) => (en.id === fresh.id ? { ...en, feedback: data.feedback } : en)));
+      setSaveStatus(
+        data.notified
+          ? 'Átemelve a sor végére, a visszajelzést és az értesítést elküldtük a beküldőnek.'
+          : 'Átemelve a sor végére, a visszajelzés elmentve (a beküldőnek nincs fiókhoz kötött e-mail-címe, értesítés nem ment).'
+      );
+    } else {
+      setSaveStatus('A titkosírás a sor végére került, de a visszajelzést nem sikerült elmenteni.');
+    }
+    setFeedbackFor(null);
   }
 
   async function deleteSubmission(id) {
@@ -911,6 +945,13 @@ export default function AdminPage() {
           Minden nap éjfélkor (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
           listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
         </p>
+        {feedbackFor && (
+          <SubmissionFeedbackModal
+            submission={feedbackFor}
+            onCancel={() => setFeedbackFor(null)}
+            onSubmit={(items) => acceptSubmissionWithFeedback(feedbackFor, items)}
+          />
+        )}
         {saveStatus && (
           <div className="feedback good" style={{ marginLeft: 0, marginTop: 14, display: 'inline-block' }}>
             {saveStatus}
@@ -1085,7 +1126,7 @@ export default function AdminPage() {
             {s.hints?.fodder && <div>Készlet: {s.hints.fodder}</div>}
             {s.hints?.alternativ && <div>Alternatív: {s.hints.alternativ}</div>}
             <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-              <button className="ghost small" onClick={() => convertSubmissionToEntry(s)}>
+              <button className="ghost small" onClick={() => setFeedbackFor(s)}>
                 ✏️ Átemelés rejtvénynek
               </button>
               <button className="ghost small" onClick={() => deleteSubmission(s.id)}>Törlés</button>

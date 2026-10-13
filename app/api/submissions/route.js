@@ -26,6 +26,11 @@ export async function POST(req) {
       { status: 403 }
     );
   }
+  // E-mail-cím nélkül nem lehet beküldeni (a visszajelzés és az értesítés ehhez kötődik).
+  // Minden belépési mód ad e-mail-címet; ez csak védőkorlát, ha valaha mégsem így lenne.
+  if (!session.user.email) {
+    return Response.json({ error: 'no-email', message: 'A beküldéshez e-mail-címmel rendelkező fiók kell.' }, { status: 403 });
+  }
   // Spam ellen: felhasználónként óránként 10 beküldés.
   if (await isLimited('submit:user', session.user.id || session.user.email, 10, 3600)) return tooMany(3600);
 

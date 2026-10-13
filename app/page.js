@@ -467,11 +467,21 @@ export default function HomePage() {
       // Soha nem tesszük ki az email címet a ranglistára - ha van fiókhoz tartozó
       // név (pl. Google-lal automatikusan kapott), azt használjuk, egyébként
       // ugyanaz a véletlenszerűen generált azonosító jár, mint a vendégeknek.
+      // Ismételt megfejtésnél (ma már vendégként megfejtette, most bejelentkezve újra) a
+      // vendégként elért eredmény marad, csak a profil nevével: a szerver ugyanarról az
+      // eszközről átnevezi a vendégbejegyzést, nem vesz fel egy másodikat.
       const displayName = session?.user?.name || getIdentity().name;
       fetch('/api/leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: today, name: displayName, hintsUsed: totalHints, elapsed: finalElapsed }),
+        body: JSON.stringify({
+          date: today,
+          name: displayName,
+          hintsUsed: totalHints,
+          elapsed: finalElapsed,
+          device: dev || '',
+          ...(repeat ? { repeat: true, guestName: getIdentity().name } : {}),
+        }),
       }).catch(() => {});
     }
 

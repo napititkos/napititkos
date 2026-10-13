@@ -21,7 +21,9 @@ export async function GET() {
     clue: p.clue,
     answer: p.answer,
     shownDate: shownDateById[p.id] || null,
+    // Az elfogadáskor kapott visszajelzés (csak a beküldő látja).
+    feedback: p.feedback || null,
   }));
 
-  return Response.json({ submissions: result });
+  return Response.json({ submissions: result }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

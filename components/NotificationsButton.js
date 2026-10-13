@@ -33,10 +33,16 @@ export default function NotificationsButton() {
     try {
       setSeenTs(Number(localStorage.getItem(SEEN_KEY)) || 0);
     } catch {}
-    fetch('/api/notifications')
+    // A mindenkinek szóló és (bejelentkezve) a személyes értesítések együtt, időrendben.
+    const all = fetch('/api/notifications')
       .then((r) => r.json())
-      .then((d) => setItems(d.notifications || []))
-      .catch(() => {});
+      .then((d) => d.notifications || [])
+      .catch(() => []);
+    const mine = fetch('/api/notifications/mine', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { notifications: [] }))
+      .then((d) => (d.notifications || []).map((n) => ({ ...n, personal: true })))
+      .catch(() => []);
+    Promise.all([all, mine]).then(([a, m]) => setItems([...m, ...a].sort((x, y) => (y.ts || 0) - (x.ts || 0)).slice(0, 25)));
   }, []);
 
   useEffect(() => {
@@ -87,9 +93,17 @@ export default function NotificationsButton() {
             <div className="notif-empty">Nincs értesítés.</div>
           ) : (
             items.map((n) => (
-              <div className="notif-item" key={n.id}>
-                <div className="notif-time">{formatTs(n.ts)}</div>
-                <div className="notif-text">{n.text}</div>
+              <div className={`notif-item${n.personal ? ' personal' : ''}`} key={n.id}>
+                <div className="notif-time">{formatTs(n.ts)}{n.personal ? ' · neked szól' : ''}</div>
+                <div className="notif-text">
+                  {n.text}
+                  {n.href && (
+                    <>
+                      {' '}
+                      <a href={n.href} className="notif-link">Megnézem →</a>
+                    </>
+                  )}
+                </div>
               </div>
             ))
           )}

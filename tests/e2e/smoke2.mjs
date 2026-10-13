@@ -648,6 +648,67 @@ r = await fetch(BASE + '/manifest.webmanifest'); j = await r.json();
 check('a manifest telepíthető alkalmazást ír le (id, scope, magyar nyelv, önálló ablak)', j.id === '/' && j.scope === '/' && j.lang === 'hu' && j.display === 'standalone' && j.start_url === '/');
 r = await fetch(BASE + '/'); check('a főoldal hirdeti a manifestet', /rel="manifest"[^>]*manifest\.webmanifest/.test(await r.text()));
 
+// ---------------------------------------------------------------- BEKÜLDÉS ELFOGADÁSA VISSZAJELZÉSSEL
+section('Beküldés elfogadása visszajelzéssel, személyes értesítés');
+await seedUser('bekuldo@teszt.hu', 'Bekuldo-Jelszo-1', { name: 'Beküldő Béla' });
+const bkJar = (await credLogin('bekuldo@teszt.hu', 'Bekuldo-Jelszo-1')).jar;
+await seedUser('masik-olvaso@teszt.hu', 'Masik-Olvaso-1');
+const moJar = (await credLogin('masik-olvaso@teszt.hu', 'Masik-Olvaso-1')).jar;
+let fbList = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+fbList.push({ id: 'fb1', clue: 'Beküldött kérdés?', answer: 'VÁLASZ', answerWords: ['VÁLASZ'], parHints: 2, submittedBy: 'Beküldő Béla', submittedByEmail: 'bekuldo@teszt.hu', scheduledDate: '', hints: { definicio: { enabled: true, text: 'def' }, betu: { enabled: true } } });
+r = await post('/api/admin/puzzles', { puzzles: fbList }, adm); check('a beküldött rejtvény a sor végére mentve: 200', r.status === 200);
+r = await post('/api/admin/feedback', { puzzleId: 'fb1', items: { clue: 'Szép!' } }, { cookie: cA.header() });
+check('visszajelzés nem adminként: 401', r.status === 401, `(${r.status})`);
+r = await post('/api/admin/feedback', { puzzleId: 'nincs-ilyen', items: {} }, adm); check('nem létező rejtvény: 404', r.status === 404, `(${r.status})`);
+r = await post('/api/admin/feedback', { puzzleId: 'fb1', items: { clue: '  Nagyon ötletes!  ', answer: '', definicio: 'x'.repeat(2000), hamis: 'nem kell', by: 'Hamis Admin' } }, adm); j = await r.json();
+const admName = JSON.parse(await redis.get(`au:user:${meId}`)).name;
+check('visszajelzés mentése: 200, a visszajelző az admin neve a fiókjából', r.status === 200 && j.feedback?.by === admName && j.feedback.by !== 'Hamis Admin', JSON.stringify(j).slice(0, 160));
+check('csak a rejtvény részeihez tartozó, nem üres szövegek maradnak (max. 1000 karakter)', j.feedback.items.clue === 'Nagyon ötletes!' && !('answer' in j.feedback.items) && !('hamis' in j.feedback.items) && j.feedback.items.definicio.length === 1000);
+check('a beküldő értesítést kapott', j.notified === true);
+fbList = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+check('a visszajelzés a rejtvénynél tárolva', fbList.find((x) => x.id === 'fb1')?.feedback?.items?.clue === 'Nagyon ötletes!');
+r = await post('/api/admin/puzzles', { puzzles: fbList }, adm);
+fbList = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+check('az "Összes mentése" megőrzi a visszajelzést', fbList.find((x) => x.id === 'fb1')?.feedback?.by === admName);
+check('a napi rejtvény nyilvános adataiban nincs visszajelzés', !JSON.stringify(await (await fetch(BASE + '/api/puzzle')).json()).includes('Nagyon ötletes'));
+j = await (await fetch(BASE + '/api/account/my-submissions', { headers: { cookie: bkJar.header() } })).json();
+check('a beküldő a Profilomban látja a visszajelzést', j.submissions?.find((x) => x.id === 'fb1')?.feedback?.items?.clue === 'Nagyon ötletes!');
+r = await fetch(BASE + '/api/notifications/mine', { headers: { cookie: bkJar.header() } }); j = await r.json();
+check('a beküldő személyes értesítése a Profilomra mutat, nem gyorsítótárazható', r.status === 200 && j.notifications?.[0]?.href === '/account' && /Elfogadtuk/.test(j.notifications[0].text) && /no-store/.test(r.headers.get('cache-control') || ''));
+j = await (await fetch(BASE + '/api/notifications/mine', { headers: { cookie: moJar.header() } })).json();
+check('más felhasználó nem kapja meg', (j.notifications || []).length === 0);
+r = await fetch(BASE + '/api/notifications/mine'); check('vendégként: 401', r.status === 401);
+j = await (await fetch(BASE + '/api/notifications')).json();
+check('a mindenkinek szóló értesítések közé nem kerül be', !JSON.stringify(j).includes('Elfogadtuk'));
+r = await fetch(BASE + '/api/account/export', { headers: { cookie: bkJar.header() } });
+check('az adatexportban benne vannak a személyes értesítések', /Elfogadtuk/.test(await r.text()));
+
+// ---------------------------------------------------------------- RANGLISTA: ISMÉTELT MEGFEJTÉS
+section('Ranglista: ismételt megfejtés a vendégeredménnyel, a profil nevével');
+await seedUser('atvevo@teszt.hu', 'Atvevo-Jelszo-1', { name: 'Átvevő Ágota' });
+const avJar = (await credLogin('atvevo@teszt.hu', 'Atvevo-Jelszo-1')).jar;
+const D1 = 'a'.repeat(32), D2 = 'b'.repeat(32);
+const lbPost = (bodyObj, headers = {}) => fetch(BASE + '/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '10.9.3.3', ...headers }, body: JSON.stringify(bodyObj) });
+const lbCount = async () => (await lbGet()).entries.length;
+r = await lbPost({ name: 'Vendég Vince', hintsUsed: 1, elapsed: 5000, device: D1 });
+check('vendégként a ranglistára kerül', r.status === 200 && (await lbGet()).entries.some((e) => e.name === 'Vendég Vince'));
+const lbBefore = await lbCount();
+r = await lbPost({ name: 'Átvevő Ágota', hintsUsed: 0, elapsed: 1000, device: D2, repeat: true, guestName: 'Vendég Vince' }, { cookie: avJar.header() }); j = await r.json();
+check('másik eszközről nem lehet átvenni a vendégeredményt', j.claimed === false && (await lbGet()).entries.some((e) => e.name === 'Vendég Vince') && !(await lbGet()).entries.some((e) => e.name === 'Átvevő Ágota'));
+r = await lbPost({ name: 'Vendég Vince', hintsUsed: 0, elapsed: 1000, device: D1, repeat: true, guestName: 'Vendég Vince' }); j = await r.json();
+check('bejelentkezés nélkül az ismétlés nem kerül fel', j.claimed === false && (await lbCount()) === lbBefore);
+r = await lbPost({ name: 'Átvevő Ágota', hintsUsed: 0, elapsed: 1000, device: D1, repeat: true, guestName: 'Vendég Vince' }, { cookie: avJar.header() }); j = await r.json();
+let lbe = (await lbGet()).entries;
+const mine = lbe.find((e) => e.name === 'Átvevő Ágota');
+check('ugyanarról az eszközről: a vendégeredmény a profil nevével szerepel', j.claimed === true && mine && mine.hintsUsed === 1 && mine.elapsed === 5000, JSON.stringify(mine));
+check('a vendégbejegyzés eltűnt, a létszám nem nőtt', !lbe.some((e) => e.name === 'Vendég Vince') && lbe.length === lbBefore, `(${lbe.length} / ${lbBefore})`);
+r = await lbPost({ name: 'Átvevő Ágota', hintsUsed: 0, elapsed: 1000, device: D1, repeat: true, guestName: 'Vendég Vince' }, { cookie: avJar.header() }); j = await r.json();
+check('másodszor már nincs mit átvenni, nem kerül fel újra', j.claimed === false && (await lbCount()) === lbBefore);
+
+section('Beküldés csak e-mail-címes, bejelentkezett fiókkal');
+r = await post('/api/submissions', { clue: 'Vendégként?', answer: 'NEM' });
+check('bejelentkezés nélkül nem lehet beküldeni: 401', r.status === 401, `(${r.status})`);
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

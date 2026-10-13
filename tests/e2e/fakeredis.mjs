@@ -79,6 +79,8 @@ function run(a) {
       const withScores = a.slice(4).some((x) => x.toUpperCase() === 'WITHSCORES');
       return arr(slice.flatMap(([m, s]) => (withScores ? [m, String(s)] : [m])));
     }
+    // A ranglista vendég-eredményének fiókhoz kapcsolása használja (valódi Redis-parancs).
+    case 'ZSCORE': { const e = get(a[1], 'zset'); return e && e.v.has(a[2]) ? bulk(String(e.v.get(a[2]))) : bulk(null); }
     case 'ZREM': { const e = get(a[1], 'zset'); let n = 0; if (e) for (const m of a.slice(2)) if (e.v.delete(m)) n++; return int(n); }
     // Lista-parancsok (a kommentek használják).
     case 'RPUSH': { const e = get(a[1], 'list', true); e.v.push(...a.slice(2)); return int(e.v.length); }

@@ -690,3 +690,14 @@ nav.topnav.topnav-c{
 .lookup-hint-title{ font-weight: 800; margin-bottom: 4px; }
 .lookup-hint p{ margin: 0 0 6px; }
 .lookup-hint a{ color: var(--accent-text); font-weight: 700; word-break: break-word; }
+
+/* Személyes értesítés és a beküldés visszajelzése. */
+.notif-item.personal{ border-left: 3px solid var(--accent); padding-left: 8px; }
+.notif-link{ color: var(--accent-text); font-weight: 700; white-space: nowrap; }
+.sub-feedback{ margin-top: 6px; }
+.sub-feedback-body{ margin-top: 6px; padding: 10px 12px; border-radius: 12px; background: var(--accent2-soft); font-size: 14px; }
+.sub-feedback-body p{ margin: 0; }
+.sub-feedback-item{ margin-bottom: 6px; }
+.sub-feedback-meta{ font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+.feedback-part{ margin-top: 12px; }
+.feedback-original{ font-size: 13.5px; color: var(--ink-soft); background: var(--paper); border-radius: 10px; padding: 6px 10px; margin: 4px 0 6px; }
