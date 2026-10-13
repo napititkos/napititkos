@@ -709,6 +709,19 @@ section('Beküldés csak e-mail-címes, bejelentkezett fiókkal');
 r = await post('/api/submissions', { clue: 'Vendégként?', answer: 'NEM' });
 check('bejelentkezés nélkül nem lehet beküldeni: 401', r.status === 401, `(${r.status})`);
 
+section('Beküldés: személyes értesítés a sikeres beküldésről');
+await seedUser('uj-bekuldo@teszt.hu', 'Uj-Bekuldo-1', { name: 'Új Beküldő' });
+const ubJar = (await credLogin('uj-bekuldo@teszt.hu', 'Uj-Bekuldo-1')).jar;
+r = await post('/api/submissions', { clue: 'Értesítést kapok?', answer: 'IGEN' }, { cookie: ubJar.header() });
+check('beküldés: 200', r.status === 200, `(${r.status})`);
+j = await (await fetch(BASE + '/api/notifications/mine', { headers: { cookie: ubJar.header() } })).json();
+check('a beküldő értesítést kap: sikeres beküldés, értékelés alatt', /Sikeres beküldés/.test(j.notifications?.[0]?.text || '') && /értékelés alatt/.test(j.notifications[0].text) && /Értesítést kapok\?/.test(j.notifications[0].text));
+j = await (await fetch(BASE + '/api/notifications/mine', { headers: { cookie: moJar.header() } })).json();
+check('más nem kapja meg', !(j.notifications || []).some((n) => /Értesítést kapok/.test(n.text)));
+const subId = JSON.parse(await redis.get('submissions:list')).find((x) => x.clue === 'Értesítést kapok?')?.id;
+r = await fetch(BASE + `/api/submissions?id=${subId}`, { method: 'DELETE', headers: adm });
+check('átemelés után a beküldés törölhető a listából (adminként)', r.status === 200 && !JSON.parse(await redis.get('submissions:list')).some((x) => x.id === subId));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
