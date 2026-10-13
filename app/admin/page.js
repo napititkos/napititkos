@@ -469,6 +469,7 @@ export default function AdminPage() {
     });
     setLoading(false);
     setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
+    return res.ok;
   }
 
   // opts.feedback: az elfogadáskor írt visszajelzés; ilyenkor a titkosírás a sor VÉGÉRE kerül
@@ -506,7 +507,16 @@ export default function AdminPage() {
     const fresh = convertSubmissionToEntry(s, { toQueueEnd: true });
     const next = [...entries, fresh];
     setEntries(next);
-    await saveList(next);
+    const saved = await saveList(next);
+    if (!saved) {
+      // A sor nem mentődött: a beküldés a listában marad, a visszajelzés sem megy ki.
+      setEntries((prev) => prev.filter((en) => en.id !== fresh.id));
+      setSaveStatus('Nem sikerült menteni, a beküldés a listában maradt. Próbáld újra.');
+      setFeedbackFor(null);
+      return;
+    }
+    // A beküldés átkerült a sorba, ezért kikerül a "Beküldött fanmade rejtvények" listából.
+    await deleteSubmission(s.id);
     const res = await fetch('/api/admin/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
