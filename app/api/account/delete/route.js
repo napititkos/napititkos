@@ -28,7 +28,7 @@ export async function POST(req) {
   const emailKeys = [...new Set([user?.email, email].filter(Boolean).map((e) => `au:userByEmail:${e}`))];
   const ownedEmailKeys = [];
   for (const k of emailKeys) if ((await kv.get(k)) === id) ownedEmailKeys.push(k);
-  await r.del(`au:user:${id}`, `progress:${id}`, `tutorial:${id}`, ...ownedEmailKeys, ...linked);
+  await r.del(`au:user:${id}`, `progress:${id}`, `tutorial:${id}`, `notifications:user:${email}`, ...ownedEmailKeys, ...linked);
 
   // Függőben lévő beküldések törlése.
   await kv.withLock('submissions', async () => {
@@ -47,6 +47,7 @@ export async function POST(req) {
         ownPuzzleIds.add(p.id);
         p.submittedBy = '';
         p.submittedByEmail = '';
+        delete p.feedback; // a neki szóló visszajelzés is személyes adat
         changed = true;
       }
     }

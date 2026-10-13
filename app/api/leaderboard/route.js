@@ -32,6 +32,36 @@ export async function POST(req) {
   // vendégnél - a kliens által generált vendégnév jár. Az e-mail-cím (vagy annak bármely
   // része) sosem jelenik meg a ranglistán.
   const session = await auth();
+  const r = kv.raw();
+  const date = todayStr();
+  const zKey = `leaderboard:z:${date}`;
+  const nKey = `leaderboard:n:${date}`;
+  const dKey = `leaderboard:d:${date}`;
+  // Az eszköz azonosítója (a kliens véletlenszerű, helyben tárolt azonosítója): a vendégként
+  // elért eredmény ehhez kötődik, így később csak ugyanarról az eszközről lehet a fiókhoz
+  // kapcsolni - egy másik játékos vendégeredményét a nyilvános neve alapján nem lehet átvenni.
+  const device = typeof body.device === 'string' && /^[A-Za-z0-9_-]{8,80}$/.test(body.device) ? body.device : '';
+
+  // Ismételt megfejtés: aki ma vendégként már megfejtette, majd bejelentkezve újra, annak
+  // a vendégként elért eredménye marad a ranglistán, de mostantól a profilja nevével.
+  if (body.repeat === true) {
+    if (session?.user?.name && session.user.verified && device) {
+      const guestKey = `g:${cleanName(body.guestName)}`;
+      const guestScore = await r.zscore(zKey, guestKey);
+      const guestDevice = await r.hget(dKey, guestKey);
+      if (guestScore !== null && guestDevice === device) {
+        const userKey = `u:${session.user.id || session.user.email}`;
+        await r.zadd(zKey, 'NX', Number(guestScore), userKey);
+        await r.hset(nKey, userKey, cleanName(session.user.name));
+        await r.zrem(zKey, guestKey);
+        await r.hdel(nKey, guestKey);
+        await r.hdel(dKey, guestKey);
+        return Response.json({ ok: true, claimed: true });
+      }
+    }
+    // Egyébként az ismétlés nem kerül fel újra (a vendégeredmény marad, ahogy volt).
+    return Response.json({ ok: true, claimed: false });
+  }
   let playerKey;
   let name;
   // A saját nevével csak megerősített fiók kerülhet a ranglistára; a meg nem erősített
@@ -45,16 +75,14 @@ export async function POST(req) {
   }
 
   // A dátum mindig a szerver mai napja, a kliens nem választhat kulcsot.
-  const date = todayStr();
   const score = hintsUsed * SCORE_BASE + Math.min(Math.floor(elapsed), MAX_ELAPSED_MS);
-  const r = kv.raw();
-  const zKey = `leaderboard:z:${date}`;
-  const nKey = `leaderboard:n:${date}`;
   // NX: játékosonként csak az első eredmény számít.
-  await r.zadd(zKey, 'NX', score, playerKey);
+  const added = await r.zadd(zKey, 'NX', score, playerKey);
   await r.hset(nKey, playerKey, name);
+  if (added && playerKey.startsWith('g:') && device) await r.hset(dKey, playerKey, device);
   await r.expire(zKey, LEADERBOARD_TTL_SECONDS);
   await r.expire(nKey, LEADERBOARD_TTL_SECONDS);
+  await r.expire(dKey, LEADERBOARD_TTL_SECONDS);
   return Response.json({ ok: true });
 }
 
