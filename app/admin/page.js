@@ -2,8 +2,6 @@
 import { useEffect, useState } from 'react';
 import { enumerationFor, splitAnswerWords } from '../../lib/format';
 import { HL_TYPES, clueTokens } from '../../lib/clue';
-import SubmissionFeedbackModal from '../../components/SubmissionFeedbackModal';
-import SubmissionRejectModal from '../../components/SubmissionRejectModal';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
@@ -187,9 +185,6 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(null);
   const [entries, setEntries] = useState([]);
-  const [feedbackFor, setFeedbackFor] = useState(null);
-  const [rejectFor, setRejectFor] = useState(null); // az elutasítás (törlés) indoklás-ablakának beküldése // az átemelés előtti visszajelzés-ablak beküldése
-  const [submissions, setSubmissions] = useState([]);
   const [users, setUsers] = useState([]);
   const [usersExpanded, setUsersExpanded] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -224,21 +219,12 @@ export default function AdminPage() {
       const migrated = migrateOldFormat(data.puzzles || []);
       setEntries(migrated);
       setAuthed(true);
-      loadSubmissions();
       loadHistory();
       loadUsers();
       loadNotifications();
       return { ok: true };
     } catch (err) {
       return { ok: false, msg: `Hálózati vagy feldolgozási hiba: ${err.message}` };
-    }
-  }
-
-  async function loadSubmissions() {
-    const res = await fetch('/api/submissions');
-    if (res.ok) {
-      const data = await res.json();
-      setSubmissions(data.submissions || []);
     }
   }
 
@@ -472,93 +458,6 @@ export default function AdminPage() {
     setLoading(false);
     setSaveStatus(res.ok ? 'Mentve!' : 'Nem sikerült menteni.');
     return res.ok;
-  }
-
-  // opts.feedback: az elfogadáskor írt visszajelzés; ilyenkor a titkosírás a sor VÉGÉRE kerül
-  // (nem ugrik a lista elejére), és a függvény visszaadja az új bejegyzést.
-  function convertSubmissionToEntry(s, opts = {}) {
-    const fresh = {
-      id: generateId(),
-      clue: capitalizeFirst(s.clue || ''),
-      answer: (s.answer || '').toUpperCase(),
-      answerWords: splitAnswerWords((s.answer || '').toUpperCase()),
-      parHints: 3,
-      submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
-      submittedByEmail: s.submitterEmail || '',
-      hints: {
-        definicio: { enabled: !!s.hints?.definicio, text: capitalizeFirst(s.hints?.definicio || ''), words: s.hintWords?.definicio || [] },
-        indikator: { enabled: !!s.hints?.indikator, text: capitalizeFirst(s.hints?.indikator || ''), words: s.hintWords?.indikator || [] },
-        fodder: { enabled: !!s.hints?.fodder, text: capitalizeFirst(s.hints?.fodder || ''), words: s.hintWords?.fodder || [] },
-        alternativ: { enabled: !!s.hints?.alternativ, text: capitalizeFirst(s.hints?.alternativ || '') },
-        betu: { enabled: true },
-      },
-    };
-    if (opts.toQueueEnd) return fresh;
-    setEntries((prev) => [...prev, fresh]);
-    setExpandedId(fresh.id);
-    setJustAddedId(fresh.id);
-    setSortMode('manual');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    return fresh;
-  }
-
-  // Elutasítás (törlés) opcionális indoklással; indoklásnál a beküldő értesítést kap.
-  async function rejectSubmission(s, reason) {
-    const res = await fetch('/api/admin/reject', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: s.id, reason }),
-    }).catch(() => null);
-    const data = res ? await res.json().catch(() => ({})) : {};
-    if (res?.ok) {
-      setSaveStatus(reason ? (data.notified ? 'Elutasítva, az indoklást és az értesítést elküldtük.' : 'Elutasítva, az indoklás elmentve.') : 'A beküldés törölve.');
-      await loadSubmissions();
-    } else {
-      setSaveStatus('Nem sikerült elutasítani a beküldést.');
-    }
-    setRejectFor(null);
-  }
-
-  // Átemelés visszajelzéssel: a visszajelzés-ablak elküldése után kerül a titkosírás a sor
-  // végére (azonnal mentve), majd a szerver hozzáteszi a visszajelzést a beküldő admin
-  // nevével, és személyes értesítést küld a beküldőnek.
-  async function acceptSubmissionWithFeedback(s, items) {
-    const fresh = convertSubmissionToEntry(s, { toQueueEnd: true });
-    const next = [...entries, fresh];
-    setEntries(next);
-    const saved = await saveList(next);
-    if (!saved) {
-      // A sor nem mentődött: a beküldés a listában marad, a visszajelzés sem megy ki.
-      setEntries((prev) => prev.filter((en) => en.id !== fresh.id));
-      setSaveStatus('Nem sikerült menteni, a beküldés a listában maradt. Próbáld újra.');
-      setFeedbackFor(null);
-      return;
-    }
-    // A beküldés átkerült a sorba, ezért kikerül a "Beküldött fanmade rejtvények" listából.
-    await deleteSubmission(s.id);
-    const res = await fetch('/api/admin/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ puzzleId: fresh.id, items }),
-    }).catch(() => null);
-    const data = res ? await res.json().catch(() => ({})) : {};
-    if (res?.ok && data.feedback) {
-      // A helyi listába is bekerül, hogy egy későbbi "Összes mentése" ne törölje ki.
-      setEntries((prev) => prev.map((en) => (en.id === fresh.id ? { ...en, feedback: data.feedback } : en)));
-      setSaveStatus(
-        data.notified
-          ? 'Átemelve a sor végére, a visszajelzést és az értesítést elküldtük a beküldőnek.'
-          : 'Átemelve a sor végére, a visszajelzés elmentve (a beküldőnek nincs fiókhoz kötött e-mail-címe, értesítés nem ment).'
-      );
-    } else {
-      setSaveStatus('A titkosírás a sor végére került, de a visszajelzést nem sikerült elmenteni.');
-    }
-    setFeedbackFor(null);
-  }
-
-  async function deleteSubmission(id) {
-    await fetch(`/api/submissions?id=${id}`, { method: 'DELETE' });
-    loadSubmissions();
   }
 
   async function logout() {
@@ -974,20 +873,6 @@ export default function AdminPage() {
           Minden nap éjfélkor (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
           listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
         </p>
-        {rejectFor && (
-          <SubmissionRejectModal
-            submission={rejectFor}
-            onCancel={() => setRejectFor(null)}
-            onSubmit={(reason) => rejectSubmission(rejectFor, reason)}
-          />
-        )}
-        {feedbackFor && (
-          <SubmissionFeedbackModal
-            submission={feedbackFor}
-            onCancel={() => setFeedbackFor(null)}
-            onSubmit={(items) => acceptSubmissionWithFeedback(feedbackFor, items)}
-          />
-        )}
         {saveStatus && (
           <div className="feedback good" style={{ marginLeft: 0, marginTop: 14, display: 'inline-block' }}>
             {saveStatus}
@@ -1147,29 +1032,6 @@ export default function AdminPage() {
         )}
       </div>
 
-      <div className="card">
-        <b>Beküldött fanmade rejtvények ({submissions.length})</b>
-        {submissions.length === 0 && (
-          <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még nincs beküldött rejtvény.</p>
-        )}
-        {submissions.map((s) => (
-          <div className="sub-item" key={s.id}>
-            <div><b>{s.name}</b> - {new Date(s.createdAt).toLocaleString('hu-HU')}</div>
-            <div style={{ margin: '6px 0' }}>{s.clue}</div>
-            <div>Válasz: <b>{s.answer}</b></div>
-            {s.hints?.definicio && <div>Definíció: {s.hints.definicio}</div>}
-            {s.hints?.indikator && <div>Mutató: {s.hints.indikator}</div>}
-            {s.hints?.fodder && <div>Készlet: {s.hints.fodder}</div>}
-            {s.hints?.alternativ && <div>Alternatív rejtvény: {s.hints.alternativ}</div>}
-            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-              <button className="ghost small" onClick={() => setFeedbackFor(s)}>
-                ✏️ Átemelés rejtvénynek
-              </button>
-              <button className="ghost small" onClick={() => setRejectFor(s)}>Elutasítás</button>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

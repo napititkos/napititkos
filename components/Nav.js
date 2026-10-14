@@ -86,6 +86,9 @@ export default function Nav() {
           <a href="/archive" onClick={() => setOpen(false)}>
             <Icon src="/icons/Korabbi_titkosirasok.png" /> Korábbi titkosírások
           </a>
+          <a href="/kozossegi" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Rejtveny_bekuldese.png" /> Közösségi titkosírások
+          </a>
           <a href="/help" onClick={() => setOpen(false)}>
             <Icon src="/icons/Sugo.png" /> Kisokos
           </a>

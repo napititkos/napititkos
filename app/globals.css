@@ -746,3 +746,69 @@ button.field-help-btn[aria-expanded="true"]{ background: var(--accent2-text); co
 .hint-check-row input[type=checkbox]{ width: 18px; height: 18px; margin: 0; accent-color: var(--btn-primary); flex: none; }
 .hint-check-row .hint-check-label{ cursor: pointer; }
 .hint-check-row + textarea{ margin-top: 6px; }
+
+/* Megfejtés utáni két fél szélességű doboz (korábbi és közösségi titkosírások). */
+.next-links{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.next-links .card.next-link{
+  margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  text-align: center; text-decoration: none; color: var(--ink); padding: 14px 10px;
+}
+.next-link b{ color: var(--accent-text); font-size: 15px; }
+.next-link span{ font-size: 12.5px; color: var(--ink-soft); }
+
+/* Közösségi titkosírások */
+a.community-cta{
+  display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;
+  background: var(--btn-primary); color: #fff; font-weight: 800; font-size: 18px;
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+a.community-cta:active{ transform: scale(0.98); }
+.community-sort{ display: flex; align-items: center; gap: 8px; margin: 0 2px 12px; font-size: 14px; }
+.community-sort select{
+  font: inherit; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--line);
+  background: var(--card); color: var(--ink);
+}
+.community-item{ padding: 0; overflow: hidden; }
+button.community-head{
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; text-align: left; padding: 16px 18px;
+  background: none; border: none; color: var(--ink); cursor: pointer; border-radius: 0; font: inherit;
+}
+button.community-head:hover:not(:disabled){ transform: none; background: var(--paper); }
+.community-clue{ font-size: 16.5px; font-weight: 600; line-height: 1.4; }
+.community-meta{ display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-soft); }
+.community-rating{ display: inline-flex; align-items: center; gap: 6px; }
+.community-rating.muted{ font-style: italic; }
+.community-badge{ align-self: flex-start; font-size: 12px; font-weight: 700; color: var(--good-text); background: var(--good-soft); padding: 2px 8px; border-radius: 999px; }
+.community-detail{ padding: 0 18px 18px; border-top: 1px solid var(--line); }
+.stars{ position: relative; display: inline-block; line-height: 1; letter-spacing: 1px; }
+.stars-bg{ color: var(--line); }
+.stars-fg{ position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; color: var(--star); }
+.community-rate, .community-admin{ margin-top: 16px; }
+.community-rate-title{ font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+.star-input{ display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+button.star-btn{
+  background: none; border: none; padding: 2px 3px; font-size: 26px; line-height: 1; color: var(--line); cursor: pointer;
+}
+button.star-btn.on{ color: var(--star); }
+button.star-btn:disabled{ cursor: default; opacity: 1; }
+.community-rate-sum{ font-size: 13px; color: var(--ink-soft); margin-left: 8px; }
+.reaction-row{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+button.reaction-btn{
+  display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border-radius: 999px;
+  border: 2px solid var(--line); background: var(--card); font-size: 17px; line-height: 1; cursor: pointer; color: var(--ink);
+}
+button.reaction-btn.on{ border-color: var(--accent2); background: var(--accent2-soft); }
+button.reaction-btn:disabled{ cursor: default; opacity: 1; }
+.reaction-count{ font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.community-rate-note{ font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
+.community-rate-note a{ color: var(--accent-text); font-weight: 700; }
+/* Csillagszín: legalább 3:1 kontraszt a kártya hátterén (WCAG nem szöveges elemekre). */
+:root{ --star: #B97A00; }
+@media (prefers-color-scheme: dark){ :root{ --star: #F2C14E; } }
+.stars-bg{ color: var(--line); }
+
+.community-teaser-count{ font-size: 20px; margin-bottom: 8px; }
+.community-teaser-count b{ font-size: 30px; color: var(--accent-text); }
+.my-sub{ display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.my-sub-main{ display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.my-sub-meta{ font-size: 12.5px; color: var(--ink-soft); }
