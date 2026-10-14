@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../../lib/kv';
 import { adminUser, isAdminRequest } from '../../../../lib/adminAuth';
 import { readJson, sanitizeFeedbackItems } from '../../../../lib/validate';
-import { pushUserNotification } from '../../../../lib/userNotifications';
+import { pushUserNotification, shortClue } from '../../../../lib/userNotifications';
 
 // Beküldött rejtvény elfogadása visszajelzéssel. Az admin felület előbb elmenti a sor végére
 // került rejtvényt, majd ezzel hozzáteszi a komponensenkénti visszajelzést. A visszajelző neve
@@ -34,8 +34,9 @@ export async function POST(req) {
 
   let notified = false;
   if (locked.value.email) {
-    const short = locked.value.clue.length > 60 ? `${locked.value.clue.slice(0, 57)}…` : locked.value.clue;
+    const short = shortClue(locked.value.clue);
     notified = await pushUserNotification(locked.value.email, {
+      ref: { type: 'accepted', puzzleId },
       text: `Elfogadtuk a beküldött titkosírásodat („${short}”)! ${feedback.by} visszajelzést írt hozzá - elolvashatod a Profilom oldalon, az Elfogadott beküldéseim között.`,
       href: '/account',
     });

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const SEEN_KEY = 'titkositas_notifications_seen_v1';
 // A személyes értesítések külön "látott" jelzője: új személyes értesítésnél a doboz magától
@@ -30,7 +30,23 @@ export default function NotificationsButton() {
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
   const [seenTs, setSeenTs] = useState(0);
+  // A doboz megnyitásakor érvényes "utoljára látott" időpont: az ennél újabb értesítések
+  // mellett piros pont jelzi, hogy újak (ugyanolyan, mint a csengő gombon).
+  const [newSince, setNewSince] = useState(Infinity);
   const wrapRef = useRef(null);
+  const btnRef = useRef(null);
+  // A doboz nyúlványa pontosan a csengő gomb közepére mutat (a gomb tényleges szélessége alapján).
+  const [arrowRight, setArrowRight] = useState(10);
+  const popRef = useRef(null);
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current || !popRef.current) return;
+    // A nyúlvány (24 px széles SVG) közepe a gomb közepére essen; a "right" a doboz belső
+    // (keret nélküli) jobb szélétől mérődik, a keret 2 px.
+    // (A transzformációtól - a kinyílás animációjától - független méretekből számolva.)
+    const wrapWidth = wrapRef.current ? wrapRef.current.clientWidth : 0;
+    const btnCenter = btnRef.current.offsetLeft + btnRef.current.offsetWidth / 2;
+    setArrowRight(Math.round(wrapWidth - 2 - btnCenter - 12));
+  }, [open]);
 
   useEffect(() => {
     try {
@@ -56,6 +72,11 @@ export default function NotificationsButton() {
       if (newestPersonal > personalSeen) {
         // Új személyes értesítés: első megjelenéskor nyitva mutatjuk; mellé kattintva bezárul.
         const newest = merged[0]?.ts || 0;
+        let prevSeen = 0;
+        try {
+          prevSeen = Number(localStorage.getItem(SEEN_KEY)) || 0;
+        } catch {}
+        setNewSince(prevSeen);
         setOpen(true);
         setSeenTs(newest);
         try {
@@ -88,6 +109,7 @@ export default function NotificationsButton() {
   function toggle() {
     const next = !open;
     setOpen(next);
+    if (next) setNewSince(seenTs);
     if (next && newest) {
       setSeenTs(newest);
       try {
@@ -99,6 +121,7 @@ export default function NotificationsButton() {
   return (
     <div className="notif-wrap" ref={wrapRef}>
       <button
+        ref={btnRef}
         className={`pill notif-btn${hasNew ? ' has-new' : ''}`}
         style={{ border: 'none', cursor: 'pointer' }}
         onClick={toggle}
@@ -109,13 +132,25 @@ export default function NotificationsButton() {
         <BellIcon size={17} />
       </button>
       {open && (
-        <div className="notif-pop" role="dialog" aria-label="Értesítések">
+        <div className="notif-pop" ref={popRef} role="dialog" aria-label="Értesítések">
+          {/* Lekerekített nyúlvány: a doboz kerete folytatólagosan fut fel a csúcsba és vissza
+              (a kitöltés eltakarja alatta a doboz keretének egyenes szakaszát). */}
+          <svg className="notif-arrow" style={{ right: arrowRight }} width="24" height="13" viewBox="0 0 24 13" aria-hidden="true">
+            <path className="notif-arrow-fill" d="M0 13 L0 12 C5 12 7.5 9.5 9.5 5.5 Q12 0.5 14.5 5.5 C16.5 9.5 19 12 24 12 L24 13 Z" />
+            <path className="notif-arrow-line" d="M0 12 C5 12 7.5 9.5 9.5 5.5 Q12 0.5 14.5 5.5 C16.5 9.5 19 12 24 12" />
+          </svg>
+          {/* A görgetés a belső részen van, hogy a nyúlványt a doboz széle ne vágja le. */}
+          <div className="notif-scroll">
           {items.length === 0 ? (
             <div className="notif-empty">Nincs értesítés.</div>
           ) : (
             items.map((n) => (
               <div className={`notif-item${n.personal ? ' personal' : ''}`} key={n.id}>
-                <div className="notif-time">{formatTs(n.ts)}{n.personal ? ' · neked szól' : ''}</div>
+                <div className="notif-time">
+                  {(n.ts || 0) > newSince && <span className="notif-new-dot" aria-label="új" role="img" />}
+                  {formatTs(n.ts)}
+                  {n.personal ? ' · neked szól' : ''}
+                </div>
                 <div className="notif-text">
                   {n.text}
                   {n.href && (
@@ -128,6 +163,7 @@ export default function NotificationsButton() {
               </div>
             ))
           )}
+          </div>
         </div>
       )}
     </div>
