@@ -11,6 +11,7 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
   const [tutorialDone, setTutorialDone] = useState(0);
   const { data: session, status } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
   // Bejelentkezés után ugyanarra az oldalra térjen vissza, ahonnan indult.
   const pathname = usePathname() || '/';
   const loginHref = pathname === '/' || pathname.startsWith('/login') ? '/login' : `/login?callbackUrl=${encodeURIComponent(pathname)}`;
@@ -40,24 +41,10 @@ export default function Nav() {
 
   return (
     <>
-      <nav className="topnav topnav-c">
-        <button
-          className="hamburger-btn"
-          aria-label="Menü megnyitása"
-          onClick={() => setOpen(true)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-        {/* Fejléc: csupa nagybetűs TITKOSÍRÁS, az O helyén gyűrűben a logó, pontosan középen. */}
-        <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
-          <div className="brand brand-mid brand-c" aria-hidden="true">
-            <span className="bm-left">TITK</span>
-            <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
-            <span className="bm-right">S<span>ÍRÁS</span></span>
-          </div>
-        </a>
+      {/* Fejléc: a hamburger menü megszűnt. Balra a profil gomb (adminnak mellette az admin
+          felület gombja), középen a TITKOSÍRÁS felirat a logóval; a jobb oldali üres oszlop
+          ugyanolyan széles, hogy a felirat pontosan középen maradjon. */}
+      <nav className={`topnav topnav-c${isAdmin ? ' topnav-admin' : ''}`}>
         <div className="topnav-account">
           {status !== 'loading' && (
             session?.user ? (
@@ -70,71 +57,21 @@ export default function Nav() {
               </a>
             )
           )}
+          {isAdmin && (
+            <a href="/admin" className="account-badge admin-badge" title="Admin felület" aria-label="Admin felület">
+              <span aria-hidden="true">🛠️</span>
+            </a>
+          )}
         </div>
+        <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
+          <div className="brand brand-mid brand-c" aria-hidden="true">
+            <span className="bm-left">TITK</span>
+            <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
+            <span className="bm-right">S<span>ÍRÁS</span></span>
+          </div>
+        </a>
+        <div className="topnav-spacer" aria-hidden="true" />
       </nav>
-
-      {open && <div className="drawer-overlay" onClick={() => setOpen(false)} />}
-      <div className={`drawer-panel ${open ? 'open' : ''}`}>
-        <div className="drawer-header">
-          <div className="brand">Titkos<span>írás</span></div>
-          <button className="ghost small" onClick={() => setOpen(false)}>✕</button>
-        </div>
-        <div className="drawer-links">
-          <a href="/" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Kezdolap.png" /> Kezdőlap
-          </a>
-          <a href="/archive" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Korabbi_titkosirasok.png" /> Korábbi titkosírások
-          </a>
-          <a href="/kozossegi" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Kozossegi.png" /> Közösségi titkosírások
-          </a>
-          <a href="/submit" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Rejtveny_bekuldese.png" /> Rejtvény beküldése
-          </a>
-          <a href="/help" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Sugo.png" /> Kisokos
-          </a>
-          <a href="/tutorial" onClick={() => setOpen(false)} className="tutorial-link">
-            <Icon src="/icons/Tutorial.png" /> Tutorial{' '}
-            <span className="progress-badge">{tutorialDone}/{TUTORIAL_SECTIONS.length}</span>
-          </a>
-          <a href="/stats" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Statisztikaim.png" /> Statisztikáim
-          </a>
-          <a href="#" onClick={handleAchievementsClick}>
-            <Icon src="/icons/Trofeak.png" /> Trófeák
-          </a>
-          {session?.user?.role === 'admin' && (
-            <a href="/admin" onClick={() => setOpen(false)}>🛠️ Admin</a>
-          )}
-          <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0' }} />
-          <a href="/contact" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Kapcsolat.png" /> Kapcsolat
-          </a>
-          <a href="/privacy" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Adatvedelem.png" /> Adatvédelem
-          </a>
-          <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0' }} />
-          {status !== 'loading' && (
-            session?.user ? (
-              <>
-                <a href="/account" onClick={() => setOpen(false)} title="Profilom" style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>
-                  <Icon src="/icons/Fiok.png" size={16} />
-                  Bejelentkezve: <b style={{ color: 'var(--ink)' }}>{session.user.name || session.user.email}</b>
-                </a>
-                <a href="#" onClick={handleLogout}>
-                  <Icon src="/icons/Kijelentkezes.png" /> Kijelentkezés
-                </a>
-              </>
-            ) : (
-              <a href={loginHref} onClick={() => setOpen(false)}>
-                <Icon src="/icons/Fiok.png" /> Bejelentkezés
-              </a>
-            )
-          )}
-        </div>
-      </div>
     </>
   );
 }

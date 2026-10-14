@@ -6,6 +6,13 @@ import { ACHIEVEMENTS } from '../../lib/achievements';
 import { enumerationFor } from '../../lib/format';
 import { signOut, useSession } from 'next-auth/react';
 
+// Idő mm:ss formában (a statisztikákhoz).
+function formatTimeMs(ms) {
+  if (ms == null) return '–';
+  const total = Math.max(0, Math.floor(ms / 1000));
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
 export default function AccountPage() {
   const { data: session, status } = useSession();
   const [busy, setBusy] = useState(false);
@@ -102,6 +109,14 @@ export default function AccountPage() {
                 <b>{solvedCount(prog)}</b>
                 <span>megoldott</span>
               </div>
+              <div className="stat">
+                <b>{prog.noHintSolves || 0}</b>
+                <span>tipp nélkül</span>
+              </div>
+              <div className="stat">
+                <b>{formatTimeMs(prog.fastestTime)}</b>
+                <span>leggyorsabb idő</span>
+              </div>
               <a
                 href="#"
                 className="stat-link"
@@ -117,9 +132,9 @@ export default function AccountPage() {
               </a>
             </div>
           )}
-          <a href="/stats" style={{ textDecoration: 'none' }}>
-            <button className="ghost" type="button">Részletes statisztikák</button>
-          </a>
+          <button className="ghost" type="button" onClick={() => window.dispatchEvent(new Event('open-achievements'))}>
+            Trófeák megtekintése
+          </button>
         </div>
       </div>
 
