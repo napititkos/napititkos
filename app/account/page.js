@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import PasswordChange from '../../components/PasswordChange';
-import SubmissionFeedback from '../../components/SubmissionFeedback';
 import { loadProgress, solvedCount } from '../../lib/progress';
 import { ACHIEVEMENTS } from '../../lib/achievements';
 import { enumerationFor } from '../../lib/format';
@@ -13,7 +12,14 @@ export default function AccountPage() {
   const [msg, setMsg] = useState(null);
   const [prog, setProg] = useState(null);
   const [mySubmissions, setMySubmissions] = useState(null);
-  const [rejected, setRejected] = useState([]);
+
+  // Saját közösségi titkosírás törlése (visszakérdezéssel); az értékelései és reakciói is törlődnek.
+  async function deleteMySubmission(sub) {
+    if (!confirm(`Biztosan törlöd ezt a titkosírásodat?\n\n„${sub.clue}”\n\nAz értékelései és a reakciói is törlődnek, és nem vonható vissza.`)) return;
+    const res = await fetch(`/api/community/${encodeURIComponent(sub.id)}`, { method: 'DELETE' }).catch(() => null);
+    if (res?.ok) setMySubmissions((prev) => prev.filter((x) => x.id !== sub.id));
+    else alert('Nem sikerült törölni. Próbáld újra később.');
+  }
 
   useEffect(() => {
     setProg(loadProgress());
@@ -23,10 +29,7 @@ export default function AccountPage() {
     if (!session?.user) return;
     fetch('/api/account/my-submissions')
       .then((r) => r.json())
-      .then((d) => {
-        setMySubmissions(d.submissions || []);
-        setRejected(d.rejected || []);
-      })
+      .then((d) => setMySubmissions(d.submissions || []))
       .catch(() => setMySubmissions([]));
   }, [session?.user?.id]);
 
@@ -123,50 +126,43 @@ export default function AccountPage() {
       <h2 style={{ fontFamily: 'var(--font-baloo), "Baloo 2", sans-serif', color: 'var(--accent-text)', fontSize: 21, margin: '6px 0 12px', letterSpacing: '0.015em' }}>Adataim</h2>
       <div className="card">
         <div className="help-block">
-          <h3>Elfogadott beküldéseim {mySubmissions ? `(${mySubmissions.length})` : ''}</h3>
+          <h3>Közösségi titkosírásaim {mySubmissions ? `(${mySubmissions.length})` : ''}</h3>
           {mySubmissions === null && <p style={{ color: 'var(--ink-soft)' }}>Betöltés…</p>}
           {mySubmissions && mySubmissions.length === 0 && (
             <p style={{ color: 'var(--ink-soft)' }}>
-              Még egy beküldésed sem került be a napi titkosírások közé.{' '}
+              Még nem küldtél be titkosírást.{' '}
               <a href="/submit" style={{ color: 'var(--accent-text)' }}>
-                Küldj be egyet!
+                Írj egyet!
               </a>
             </p>
           )}
           {mySubmissions &&
             mySubmissions.map((sub) => (
-              <div className="sub-item" key={sub.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <div className="sub-item my-sub" key={sub.id}>
+                <div className="my-sub-main">
                   <span>
                     {sub.clue} {enumerationFor(sub.answer)}
                   </span>
-                  <span style={{ fontSize: 12.5, color: sub.shownDate ? 'var(--good-text)' : 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
-                    {sub.shownDate ? `✓ ${sub.shownDate}` : 'beütemezve'}
+                  <span className="my-sub-meta">
+                    {sub.avg != null ? `★ ${sub.avg.toLocaleString('hu-HU')} (${sub.ratingCount} értékelés)` : 'Még nincs értékelés'}
+                    {sub.reactionCount > 0 ? ` · ${sub.reactionCount} reakció` : ''}
+                    {sub.promoted ? (sub.shownDate ? ` · napi titkosírás volt: ${sub.shownDate}` : ' · bekerült a napi titkosírások közé') : ''}
                   </span>
                 </div>
-                {sub.feedback && <SubmissionFeedback feedback={sub.feedback} />}
+                <button
+                  type="button"
+                  className="ghost small"
+                  aria-label={`Törlés: ${sub.clue}`}
+                  onClick={() => deleteMySubmission(sub)}
+                >
+                  Törlés
+                </button>
               </div>
             ))}
         </div>
-        {rejected.length > 0 && (
-          <div className="help-block">
-            <h3>Elutasított beküldéseim ({rejected.length})</h3>
-            {rejected.map((r) => (
-              <div className="sub-item" key={r.id}>
-                <div>
-                  {r.clue} {r.answer ? enumerationFor(r.answer) : ''}
-                </div>
-                <SubmissionFeedback
-                  title="Indoklás"
-                  feedback={{ by: r.by, at: r.at, items: {}, text: r.reason }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
         <div className="help-block">
           <h3>Adataim letöltése</h3>
-          <p>A fiókodhoz tartozó összes adatot (fiók, haladás, beküldéseid) egy JSON fájlban letöltheted.</p>
+          <p>A fiókodhoz tartozó összes adatot (fiók, haladás, beküldéseid, értékeléseid, értesítéseid) egy JSON fájlban letöltheted.</p>
           <a href="/api/account/export" style={{ textDecoration: 'none' }}>
             <button className="ghost" type="button">Adataim letöltése</button>
           </a>

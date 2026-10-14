@@ -72,17 +72,32 @@ export default function PrivacyPage() {
           </p>
         </div>
         <div className="help-block">
-          <h3>Fanmade rejtvény beküldése</h3>
+          <h3>Közösségi titkosírások (saját rejtvény beküldése)</h3>
           <p>
-            A rejtvény-beküldés bejelentkezést és megerősített email címet igényel. Beküldéskor
-            a fiókod nevét (vagy email címét, ha nem adtál meg nevet) eltároljuk a beküldött
-            rejtvénnyel együtt, hogy - ha a rejtvényed bekerül a napi titkosírások közé - a
-            neved feltüntethessük mellette.
+            A Közösségi titkosírások oldal és a rejtvény-beküldés bejelentkezést és megerősített
+            e-mail-címet igényel. A beküldött rejtvény (szövege, megfejtése és tippjei) a beküldés
+            után azonnal megjelenik a Közösségi titkosírások között, és minden bejelentkezett
+            felhasználó láthatja és megfejtheti. Mellette a fiókod neve (név nélküli fióknál
+            „Névtelen”) és a beküldés dátuma látszik - az e-mail-címed soha.
           </p>
           <p>
-            A beküldéssel hozzájárulsz ahhoz, hogy az általad beküldött rejtvényt (annak
-            szövegét, megfejtését és tippjeit) szabadon felhasználhassuk - beleértve a napi
-            titkosírások közé való bekerülést, szerkesztését és közzétételét is.
+            A beküldéssel hozzájárulsz ahhoz, hogy a rejtvényedet közzétegyük, és hogy az
+            üzemeltető szerkesztve vagy változatlanul a napi titkosírások közé emelje (ilyenkor a
+            neved is feltüntetjük mellette). A saját beküldött rejtvényeidet bármikor törölheted a
+            rejtvénynél vagy a Profilom oldalon; a szabályokat sértő rejtvényeket az üzemeltető
+            eltávolíthatja.
+          </p>
+          <p>
+            <b>Értékelés és reakció.</b> Aki bejelentkezve megfejt egy közösségi titkosírást, 1-5
+            csillaggal értékelheti, és egy emoji-reakciót adhat rá. Ezeket a fiókodhoz kötve
+            tároljuk (így egy rejtvényt csak egyszer értékelhetsz, és később módosíthatod), de
+            mások - a beküldőt is beleértve - csak az összesített átlagot és a reakciók számát
+            látják, azt nem, hogy ki adta.
+          </p>
+          <p>
+            <b>Személyes értesítések.</b> Ha valaki értékeli a titkosírásodat vagy reagál rá, illetve
+            ha bekerül a napi titkosírások közé, erről a fiókodhoz kötött, csak általad látható
+            értesítést kapsz (az értékelő neve nélkül). Ezeket legfeljebb 180 napig őrizzük.
           </p>
         </div>
         <div className="help-block">
@@ -100,9 +115,11 @@ export default function PrivacyPage() {
             A fiókodat és a hozzá tartozó adatokat bármikor magad is törölheted, illetve
             letöltheted a <a className="mail-link" href="/account">Fiókom és adataim</a> oldalon
             (bejelentkezve). Ha ez nem megoldható, írj nekünk a lenti email címre - a kérésedet
-            belátható időn belül teljesítjük. A törlés a fiókot, a haladást és a ranglista-bejegyzéseket
-            érinti; a már közzétett rejtvényed szövege megmarad, de a nevedet és az email címedet
-            eltávolítjuk mellőle.
+            belátható időn belül teljesítjük. A törlés a fiókot, a haladást, a ranglista-bejegyzéseket,
+            a személyes értesítéseket, a közösségi titkosírásaidat (azok értékeléseivel és
+            reakcióival együtt), valamint a más rejtvényekre adott értékeléseidet és reakcióidat
+            érinti. Ha egy rejtvényed már a napi titkosírások közé került, annak szövege megmarad,
+            de a nevedet és az email címedet eltávolítjuk mellőle.
           </p>
         </div>
         <div className="help-block">
@@ -122,7 +139,9 @@ export default function PrivacyPage() {
             A fiókot és a haladást a fiók törléséig őrizzük. A napi ranglisták legfeljebb 45 napig,
             a napi összesített statisztikák legfeljebb 120 napig maradnak meg - kivéve az egyes
             titkosírások összesített, névtelen megfejtőszámát, amit az archívumhoz tartósan
-            megőrzünk. A kommenteket a fiók vagy a komment törléséig őrizzük. A megerősítő és
+            megőrzünk. A kommenteket a fiók vagy a komment törléséig, a közösségi titkosírásokat és
+            az értékeléseket a fiók vagy a rejtvény törléséig, a személyes értesítéseket legfeljebb
+            180 napig őrizzük. A megerősítő és
             belépő linkek 15 perc, illetve 24 óra után lejárnak. A visszaélések elleni védelemhez
             használt ideiglenes számlálók legfeljebb egy napig tárolódnak.
           </p>

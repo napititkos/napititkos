@@ -5,7 +5,7 @@ import { isAdminRequest } from '../../../lib/adminAuth';
 import { auth } from '../../../auth';
 import { cooldown, isLimited, releaseCooldown, tooMany, waitResponse, waitText } from '../../../lib/rateLimit';
 import { readJson } from '../../../lib/validate';
-import { pushUserNotification } from '../../../lib/userNotifications';
+import { deleteCommunityData } from '../../../lib/community';
 
 // Spam ellen két beküldés között legalább ennyi időnek el kell telnie (felhasználónként).
 const SUBMIT_COOLDOWN_SECONDS = 120;
@@ -85,11 +85,6 @@ export async function POST(req) {
     await releaseCooldown('submit:user', cdId);
     return Response.json({ error: 'busy' }, { status: 503 });
   }
-  // Személyes értesítés a beküldőnek (csak ő látja a csengőben).
-  const shortClue = entry.clue.length > 60 ? `${entry.clue.slice(0, 57)}…` : entry.clue;
-  await pushUserNotification(session.user.email, {
-    text: `Sikeres beküldés! A titkosírásod („${shortClue}”) értékelés alatt van. Ha elfogadjuk, értesítünk, és a Profilom oldalon visszajelzést is olvashatsz hozzá.`,
-  });
   return Response.json({ ok: true });
 }
 
@@ -102,5 +97,6 @@ export async function DELETE(req) {
     await kv.set('submissions:list', list.filter((s) => s.id !== id));
   });
   if (!locked) return Response.json({ error: 'busy' }, { status: 503 });
+  if (id) await deleteCommunityData(id);
   return Response.json({ ok: true });
 }

@@ -86,7 +86,7 @@ export default function SubmitPage() {
           saveProgress(prog);
           if (newly.includes('submitted_puzzle')) extra = ' 🏆 Új eredmény: Beküldő!';
         }
-        setStatus({ ok: true, msg: 'Köszönjük! Megkaptuk a rejtvényedet, hamarosan átnézzük.' + extra });
+        setStatus({ ok: true, msg: 'Köszönjük! A rejtvényed megjelent a Közösségi titkosírások között, ahol mások is megfejthetik és értékelhetik.' + extra });
         setForm({ clue: '', answer: '', fodder: '', indikator: '', definicio: '', alternativ: '' });
         setEnabled({ definicio: false, fodder: false, indikator: false, alternativ: false });
         setWords({ definicio: [], indikator: [], fodder: [] });

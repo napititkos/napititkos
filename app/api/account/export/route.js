@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../../lib/kv';
 import { auth } from '../../../../auth';
 import { isLimited, tooMany } from '../../../../lib/rateLimit';
-import { userNotifications, userRejections } from '../../../../lib/userNotifications';
+import { userNotifications } from '../../../../lib/userNotifications';
+import { communityList, ratingsKey, reactionsKey, EMOJIS } from '../../../../lib/community';
 
 // Adathordozhatóság (GDPR 20. cikk): a fiókhoz tartozó összes adat JSON-ban.
 export async function GET() {
@@ -54,7 +55,7 @@ export async function GET() {
     publishedPuzzles,
     comments,
     notifications: await userNotifications(user.email),
-    rejectedSubmissions: await userRejections(user.email),
+    communityRatings: await myCommunityRatings(user.id),
   };
   return new Response(JSON.stringify(data, null, 2), {
     headers: {
@@ -63,4 +64,20 @@ export async function GET() {
       'Cache-Control': 'no-store',
     },
   });
+}
+
+
+// A felhasználó közösségi értékelései és reakciói (adatexporthoz).
+async function myCommunityRatings(uid) {
+  const list = await communityList();
+  if (!list.length) return [];
+  const p = kv.raw().pipeline();
+  for (const s of list) {
+    p.hget(ratingsKey(s.id), uid);
+    p.hget(reactionsKey(s.id), uid);
+  }
+  const res = await p.exec();
+  return list
+    .map((s, i) => ({ clue: s.clue, stars: res[i * 2]?.[1] ? Number(res[i * 2][1]) : null, reaction: res[i * 2 + 1]?.[1] != null ? EMOJIS[Number(res[i * 2 + 1][1])] : null }))
+    .filter((x) => x.stars || x.reaction);
 }

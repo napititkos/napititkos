@@ -875,6 +875,22 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Megfejtés után: két fél szélességű doboz a korábbi és a közösségi titkosírásokhoz. */}
+      {answered && (
+        <div className="next-links">
+          <a className="card next-link" href="/archive">
+            <Icon src="/icons/Korabbi_titkosirasok.png" size={22} />
+            <b>Korábbi titkosírások</b>
+            <span>Játszd újra a régebbi napok rejtvényeit</span>
+          </a>
+          <a className="card next-link" href="/kozossegi">
+            <Icon src="/icons/Rejtveny_bekuldese.png" size={22} />
+            <b>Közösségi titkosírások</b>
+            <span>Fejtsd meg a játékosok rejtvényeit</span>
+          </a>
+        </div>
+      )}
+
       {showExplain && (
         <div className="modal-overlay" onClick={() => setShowExplain(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>

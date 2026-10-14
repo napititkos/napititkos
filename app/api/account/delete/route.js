@@ -4,6 +4,7 @@ import { kv } from '../../../../lib/kv';
 import { auth } from '../../../../auth';
 import { isLimited, tooMany } from '../../../../lib/rateLimit';
 import { readJson } from '../../../../lib/validate';
+import { deleteCommunityData, ratingsKey, reactionsKey, solvedKey } from '../../../../lib/community';
 
 // Fióktörlés (GDPR 17. cikk): a fiók, a haladás, a kapcsolt szolgáltatói azonosítók, a
 // beküldések és a ranglista-bejegyzések törlése. A beküldött és már közzétett rejtvények
@@ -30,12 +31,27 @@ export async function POST(req) {
   for (const k of emailKeys) if ((await kv.get(k)) === id) ownedEmailKeys.push(k);
   await r.del(`au:user:${id}`, `progress:${id}`, `tutorial:${id}`, `notifications:user:${email}`, `rejections:user:${email}`, ...ownedEmailKeys, ...linked);
 
-  // Függőben lévő beküldések törlése.
+  // Függőben lévő (közösségi) beküldések törlése, a hozzájuk tartozó értékelésekkel együtt.
+  const removedSubIds = [];
+  let allSubIds = [];
   await kv.withLock('submissions', async () => {
     const list = (await kv.get('submissions:list')) || [];
     const kept = list.filter((s) => String(s.submitterEmail || '').toLowerCase() !== email);
+    for (const s of list) if (!kept.includes(s)) removedSubIds.push(s.id);
+    allSubIds = kept.map((s) => s.id);
     if (kept.length !== list.length) await kv.set('submissions:list', kept);
   });
+  for (const sid of removedSubIds) await deleteCommunityData(sid);
+  // A felhasználó saját értékelései, reakciói és megfejtései a többi közösségi rejtvénynél.
+  if (allSubIds.length) {
+    const p = r.pipeline();
+    for (const sid of allSubIds) {
+      p.hdel(ratingsKey(sid), id);
+      p.hdel(reactionsKey(sid), id);
+      p.hdel(solvedKey(sid), id);
+    }
+    await p.exec();
+  }
 
   // Már közzétett rejtvények: a szerzői név és e-mail eltávolítása.
   const ownPuzzleIds = new Set();
