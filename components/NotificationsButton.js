@@ -30,7 +30,16 @@ export default function NotificationsButton() {
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
   const [seenTs, setSeenTs] = useState(0);
+  // A doboz megnyitásakor érvényes "utoljára látott" időpont: az ennél újabb értesítések
+  // mellett piros pont jelzi, hogy újak (ugyanolyan, mint a csengő gombon).
+  const [newSince, setNewSince] = useState(Infinity);
   const wrapRef = useRef(null);
+  const btnRef = useRef(null);
+  // A doboz nyúlványa pontosan a csengő gomb közepére mutat (a gomb tényleges szélessége alapján).
+  const [arrowRight, setArrowRight] = useState(10);
+  useEffect(() => {
+    if (open && btnRef.current) setArrowRight(Math.max(6, Math.round(btnRef.current.offsetWidth / 2 - 11)));
+  }, [open]);
 
   useEffect(() => {
     try {
@@ -56,6 +65,11 @@ export default function NotificationsButton() {
       if (newestPersonal > personalSeen) {
         // Új személyes értesítés: első megjelenéskor nyitva mutatjuk; mellé kattintva bezárul.
         const newest = merged[0]?.ts || 0;
+        let prevSeen = 0;
+        try {
+          prevSeen = Number(localStorage.getItem(SEEN_KEY)) || 0;
+        } catch {}
+        setNewSince(prevSeen);
         setOpen(true);
         setSeenTs(newest);
         try {
@@ -88,6 +102,7 @@ export default function NotificationsButton() {
   function toggle() {
     const next = !open;
     setOpen(next);
+    if (next) setNewSince(seenTs);
     if (next && newest) {
       setSeenTs(newest);
       try {
@@ -99,6 +114,7 @@ export default function NotificationsButton() {
   return (
     <div className="notif-wrap" ref={wrapRef}>
       <button
+        ref={btnRef}
         className={`pill notif-btn${hasNew ? ' has-new' : ''}`}
         style={{ border: 'none', cursor: 'pointer' }}
         onClick={toggle}
@@ -110,12 +126,19 @@ export default function NotificationsButton() {
       </button>
       {open && (
         <div className="notif-pop" role="dialog" aria-label="Értesítések">
+          <span className="notif-arrow" style={{ right: arrowRight }} aria-hidden="true" />
+          {/* A görgetés a belső részen van, hogy a nyúlványt a doboz széle ne vágja le. */}
+          <div className="notif-scroll">
           {items.length === 0 ? (
             <div className="notif-empty">Nincs értesítés.</div>
           ) : (
             items.map((n) => (
               <div className={`notif-item${n.personal ? ' personal' : ''}`} key={n.id}>
-                <div className="notif-time">{formatTs(n.ts)}{n.personal ? ' · neked szól' : ''}</div>
+                <div className="notif-time">
+                  {(n.ts || 0) > newSince && <span className="notif-new-dot" aria-label="új" role="img" />}
+                  {formatTs(n.ts)}
+                  {n.personal ? ' · neked szól' : ''}
+                </div>
                 <div className="notif-text">
                   {n.text}
                   {n.href && (
@@ -128,6 +151,7 @@ export default function NotificationsButton() {
               </div>
             ))
           )}
+          </div>
         </div>
       )}
     </div>

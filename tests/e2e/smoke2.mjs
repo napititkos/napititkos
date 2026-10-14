@@ -752,6 +752,23 @@ check('más nem látja', (j.rejected || []).length === 0);
 r = await fetch(BASE + '/api/account/export', { headers: { cookie: elJar.header() } });
 check('az adatexportban benne van', /A definíció nem egyértelmű/.test(await r.text()));
 
+section('Elfogadott, majd törölt rejtvény: az értesítés is visszavonódik');
+let rvList = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+rvList.push({ id: 'old1', clue: 'Régi kérdés?', answer: 'RÉGI', answerWords: ['RÉGI'], parHints: 2, submittedBy: 'Beküldő Béla', submittedByEmail: 'bekuldo@teszt.hu', scheduledDate: '', hints: { betu: { enabled: true } } });
+await post('/api/admin/puzzles', { puzzles: rvList }, adm);
+const bkNotifKey = 'notifications:user:bekuldo@teszt.hu';
+const bkNotifs = JSON.parse((await redis.get(bkNotifKey)) || '[]');
+bkNotifs.push({ id: 'regi-ertesites', text: 'Elfogadtuk a beküldött titkosírásodat („Régi kérdés?”)! Valaki visszajelzést írt hozzá.', href: '/account', ts: Date.now() - 1000 });
+bkNotifs.push({ id: 'mas-ertesites', text: 'Valami más, maradjon meg.', ts: Date.now() - 2000 });
+await redis.set(bkNotifKey, JSON.stringify(bkNotifs));
+j = await (await fetch(BASE + '/api/notifications/mine', { headers: { cookie: bkJar.header() } })).json();
+check('előtte: mindkét elfogadás-értesítés látszik', j.notifications.filter((n) => /Elfogadtuk/.test(n.text)).length === 2 && !j.notifications.some((n) => 'ref' in n));
+rvList = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles.filter((x) => x.id !== 'fb1' && x.id !== 'old1');
+r = await post('/api/admin/puzzles', { puzzles: rvList }, adm);
+j = await (await fetch(BASE + '/api/notifications/mine', { headers: { cookie: bkJar.header() } })).json();
+check('a rejtvények törlése után az elfogadás-értesítések eltűntek (a régi, hivatkozás nélküli is)', r.status === 200 && !j.notifications.some((n) => /Elfogadtuk/.test(n.text)), JSON.stringify(j.notifications.map((n) => n.text.slice(0, 30))));
+check('a többi értesítés megmaradt', j.notifications.some((n) => n.id === 'mas-ertesites'));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
