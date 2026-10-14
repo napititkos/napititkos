@@ -673,11 +673,9 @@ nav.topnav.topnav-c{
   padding-top: 18px; padding-bottom: 4px;
 }
 .topnav-c .topnav-account{ margin-left: 0; justify-self: start; display: flex; gap: 6px; }
-/* Adminnak két gomb van balra (profil + admin), ezért mindkét oldalsó oszlop szélesebb. */
-nav.topnav.topnav-c.topnav-admin{ --nav-side: 82px; }
+.topnav-right{ justify-self: end; display: flex; }
 .admin-badge{ font-size: 17px; text-decoration: none; }
 .topnav-c .brand-link{ justify-content: center; font-size: min(calc((50vw - 56px) / 3.36), 50px); }
-.topnav-admin .brand-link{ font-size: min(calc((50vw - 100px) / 3.36), 50px); }
 .brand.brand-mid{
   font-size: 1em; line-height: 1; white-space: nowrap; letter-spacing: 0.03em;
   /* minmax(0, 1fr): a két oldalsó oszlop mindig pontosan egyforma széles marad, akkor is, ha a
@@ -754,11 +752,13 @@ button.field-help-btn[aria-expanded="true"]{ background: var(--accent2-text); co
 
 /* Megfejtés utáni két fél szélességű doboz (korábbi és közösségi titkosírások). */
 .next-links{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.next-links > *{ min-width: 0; }
 .next-links .card.next-link{
   margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   text-align: center; text-decoration: none; color: var(--ink); padding: 14px 10px;
 }
-.next-link b{ color: var(--accent-text); font-size: 15px; }
+.next-link b{ color: var(--accent-text); font-size: 15px; overflow-wrap: anywhere; hyphens: auto; }
+@media (max-width: 420px){ .next-link b{ font-size: 14px; } .next-link span{ font-size: 12px; } }
 .next-link span{ font-size: 12.5px; color: var(--ink-soft); }
 
 /* Közösségi titkosírások */
@@ -825,15 +825,18 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 .community-rate .reaction-row{ justify-content: center; }
 
 /* Főoldal: gyors gombok balról (értesítések elöl, trófeák a végén); keskeny kijelzőn tördelődnek. */
-.quick-row{ display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 8px; margin-bottom: 10px; }
+.quick-row{ display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px; }
 .quick-pill{
   border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
   font: inherit; font-size: 13px; font-weight: 700;
 }
 a.quick-pill:hover{ transform: scale(1.03); }
 /* Nyertél doboz: az idő mellett a sorozat. */
-.result-meta{ display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px; color: var(--ink-soft); font-size: 13px; }
-.result-streak{ font-size: 12.5px; }
+/* Az idő és a sorozat két buborékban; a kettő közötti rés pontosan a doboz közepén van. */
+.result-meta{ display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; align-items: center; margin-top: 6px; }
+.result-meta > :first-child{ justify-self: end; }
+.result-meta > :last-child{ justify-self: start; }
+.result-meta .pill{ font-size: 12.5px; white-space: nowrap; }
 @media (max-width: 420px){
   /* Mobilon egy sorba férjen: kisebb térköz, és a szöveges gombok ikon nélkül (az értesítés és a
      trófea gombja ikonos marad). */
