@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 
 const SEEN_KEY = 'titkositas_notifications_seen_v1';
+// A személyes értesítések külön "látott" jelzője: új személyes értesítésnél a doboz magától
+// lenyílik (egyszer), a mindenkinek szóló értesítéseknél csak a pötty jelez, mint eddig.
+const PERSONAL_SEEN_KEY = 'titkositas_personal_notifications_seen_v1';
 
 function formatTs(ts) {
   try {
@@ -42,7 +45,25 @@ export default function NotificationsButton() {
       .then((r) => (r.ok ? r.json() : { notifications: [] }))
       .then((d) => (d.notifications || []).map((n) => ({ ...n, personal: true })))
       .catch(() => []);
-    Promise.all([all, mine]).then(([a, m]) => setItems([...m, ...a].sort((x, y) => (y.ts || 0) - (x.ts || 0)).slice(0, 25)));
+    Promise.all([all, mine]).then(([a, m]) => {
+      const merged = [...m, ...a].sort((x, y) => (y.ts || 0) - (x.ts || 0)).slice(0, 25);
+      setItems(merged);
+      const newestPersonal = m.reduce((mx, n) => Math.max(mx, n.ts || 0), 0);
+      let personalSeen = 0;
+      try {
+        personalSeen = Number(localStorage.getItem(PERSONAL_SEEN_KEY)) || 0;
+      } catch {}
+      if (newestPersonal > personalSeen) {
+        // Új személyes értesítés: első megjelenéskor nyitva mutatjuk; mellé kattintva bezárul.
+        const newest = merged[0]?.ts || 0;
+        setOpen(true);
+        setSeenTs(newest);
+        try {
+          localStorage.setItem(PERSONAL_SEEN_KEY, String(newestPersonal));
+          localStorage.setItem(SEEN_KEY, String(newest));
+        } catch {}
+      }
+    });
   }, []);
 
   useEffect(() => {

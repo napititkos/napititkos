@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { enumerationFor, splitAnswerWords } from '../../lib/format';
 import { HL_TYPES, clueTokens } from '../../lib/clue';
 import SubmissionFeedbackModal from '../../components/SubmissionFeedbackModal';
+import SubmissionRejectModal from '../../components/SubmissionRejectModal';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
   { key: 'indikator', label: 'Mutató' },
   { key: 'fodder', label: 'Készlet' },
-  { key: 'alternativ', label: 'Alternatív tipp' },
+  { key: 'alternativ', label: 'Alternatív rejtvény' },
 ];
 
 function generateId() {
@@ -186,7 +187,8 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(null);
   const [entries, setEntries] = useState([]);
-  const [feedbackFor, setFeedbackFor] = useState(null); // az átemelés előtti visszajelzés-ablak beküldése
+  const [feedbackFor, setFeedbackFor] = useState(null);
+  const [rejectFor, setRejectFor] = useState(null); // az elutasítás (törlés) indoklás-ablakának beküldése // az átemelés előtti visszajelzés-ablak beküldése
   const [submissions, setSubmissions] = useState([]);
   const [users, setUsers] = useState([]);
   const [usersExpanded, setUsersExpanded] = useState(false);
@@ -498,6 +500,23 @@ export default function AdminPage() {
     setSortMode('manual');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return fresh;
+  }
+
+  // Elutasítás (törlés) opcionális indoklással; indoklásnál a beküldő értesítést kap.
+  async function rejectSubmission(s, reason) {
+    const res = await fetch('/api/admin/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: s.id, reason }),
+    }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
+    if (res?.ok) {
+      setSaveStatus(reason ? (data.notified ? 'Elutasítva, az indoklást és az értesítést elküldtük.' : 'Elutasítva, az indoklás elmentve.') : 'A beküldés törölve.');
+      await loadSubmissions();
+    } else {
+      setSaveStatus('Nem sikerült elutasítani a beküldést.');
+    }
+    setRejectFor(null);
   }
 
   // Átemelés visszajelzéssel: a visszajelzés-ablak elküldése után kerül a titkosírás a sor
@@ -955,6 +974,13 @@ export default function AdminPage() {
           Minden nap éjfélkor (magyar idő szerint) egy új, még nem mutatott titkosírás jelenik meg a
           listából. Ha mindegyik sorra került már, a sorozat elölről kezdődik.
         </p>
+        {rejectFor && (
+          <SubmissionRejectModal
+            submission={rejectFor}
+            onCancel={() => setRejectFor(null)}
+            onSubmit={(reason) => rejectSubmission(rejectFor, reason)}
+          />
+        )}
         {feedbackFor && (
           <SubmissionFeedbackModal
             submission={feedbackFor}
@@ -1134,12 +1160,12 @@ export default function AdminPage() {
             {s.hints?.definicio && <div>Definíció: {s.hints.definicio}</div>}
             {s.hints?.indikator && <div>Mutató: {s.hints.indikator}</div>}
             {s.hints?.fodder && <div>Készlet: {s.hints.fodder}</div>}
-            {s.hints?.alternativ && <div>Alternatív: {s.hints.alternativ}</div>}
+            {s.hints?.alternativ && <div>Alternatív rejtvény: {s.hints.alternativ}</div>}
             <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
               <button className="ghost small" onClick={() => setFeedbackFor(s)}>
                 ✏️ Átemelés rejtvénynek
               </button>
-              <button className="ghost small" onClick={() => deleteSubmission(s.id)}>Törlés</button>
+              <button className="ghost small" onClick={() => setRejectFor(s)}>Elutasítás</button>
             </div>
           </div>
         ))}

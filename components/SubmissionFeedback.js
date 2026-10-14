@@ -7,7 +7,7 @@ export const FEEDBACK_LABELS = {
   definicio: 'Definíció',
   indikator: 'Mutató',
   fodder: 'Készlet',
-  alternativ: 'Alternatív tipp',
+  alternativ: 'Alternatív rejtvény',
 };
 
 function formatDate(iso) {
@@ -18,18 +18,21 @@ function formatDate(iso) {
   }
 }
 
-// Az elfogadott beküldéshez kapott visszajelzés a Profilomban (lenyitható).
-export default function SubmissionFeedback({ feedback }) {
+// Az elfogadott beküldéshez kapott visszajelzés (vagy az elutasítás indoklása: feedback.text)
+// a Profilomban, lenyitható formában.
+export default function SubmissionFeedback({ feedback, title = 'Visszajelzés' }) {
   const [open, setOpen] = useState(false);
   const parts = Object.keys(FEEDBACK_LABELS).filter((k) => feedback.items?.[k]);
   return (
     <div className="sub-feedback">
       <button type="button" className="link-btn" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {open ? '▾' : '▸'} Visszajelzés{feedback.by ? ` (${feedback.by})` : ''}
+        {open ? '▾' : '▸'} {title}{feedback.by ? ` (${feedback.by})` : ''}
       </button>
       {open && (
         <div className="sub-feedback-body">
-          {parts.length === 0 ? (
+          {feedback.text ? (
+            <p style={{ whiteSpace: 'pre-wrap' }}>{feedback.text}</p>
+          ) : parts.length === 0 ? (
             <p>Elfogadtuk a rejtvényedet, külön megjegyzés nélkül. Köszönjük!</p>
           ) : (
             parts.map((k) => (

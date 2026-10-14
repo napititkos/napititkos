@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../../lib/kv';
 import { auth } from '../../../../auth';
+import { userRejections } from '../../../../lib/userNotifications';
 
 export async function GET() {
   const session = await auth();
@@ -25,5 +26,7 @@ export async function GET() {
     feedback: p.feedback || null,
   }));
 
-  return Response.json({ submissions: result }, { headers: { 'Cache-Control': 'private, no-store' } });
+  // Az elutasított, de indoklással ellátott beküldések (csak a beküldőnek).
+  const rejected = (await userRejections(session.user.email)).map(({ id, clue, answer, reason, by, at }) => ({ id, clue, answer, reason, by, at }));
+  return Response.json({ submissions: result, rejected }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

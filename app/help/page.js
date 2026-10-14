@@ -23,7 +23,7 @@ export default function HelpPage() {
             Ha elakadsz, tippet kérhetsz. A tippeknek <b>három típusa</b> van: a <b>Definíció</b>,
             a <b>Mutató</b> és a <b>Készlet</b>. Mindegyik a rejtvény egy-egy részét fedi fel, és a
             hozzá tartozó szavak a rejtvényben a tipp színével kiemelve jelennek meg. Ezeken felül
-            minden rejtvénynél kérhetsz betűfelfedést is, egyes rejtvényeknél pedig alternatív tippet.
+            minden rejtvénynél kérhetsz betűfelfedést is, egyes rejtvényeknél pedig alternatív rejtvényt.
             Lássuk sorban, mit jelent a három típus!
           </p>
         </div>
@@ -40,8 +40,8 @@ export default function HelpPage() {
           <p>Az a betűhalmaz vagy szórészlet, amivel a mutató szerinti trükköt el kell végezni - például az anagramma esetén pontosan azok a betűk, amiket át kell rendezni.</p>
         </div>
         <div className="help-block">
-          <h3>Alternatív tipp</h3>
-          <p>Egy plusz, másfajta szemszögből adott segítség, ha az előző tippek után is elakadtál - gyakran egy egyszerűbb, közvetlenebb utalás a válaszra.</p>
+          <h3>Alternatív rejtvény</h3>
+          <p>Egy önmagában is értelmes, másik rejtvény ugyanarra a megoldásra - ha az eredeti nem jön össze, egy másik oldalról is nekifuthatsz.</p>
         </div>
         <div className="help-block">
           <h3>Gyakorlati tanácsok</h3>

@@ -13,6 +13,7 @@ export default function AccountPage() {
   const [msg, setMsg] = useState(null);
   const [prog, setProg] = useState(null);
   const [mySubmissions, setMySubmissions] = useState(null);
+  const [rejected, setRejected] = useState([]);
 
   useEffect(() => {
     setProg(loadProgress());
@@ -22,7 +23,10 @@ export default function AccountPage() {
     if (!session?.user) return;
     fetch('/api/account/my-submissions')
       .then((r) => r.json())
-      .then((d) => setMySubmissions(d.submissions || []))
+      .then((d) => {
+        setMySubmissions(d.submissions || []);
+        setRejected(d.rejected || []);
+      })
       .catch(() => setMySubmissions([]));
   }, [session?.user?.id]);
 
@@ -136,7 +140,7 @@ export default function AccountPage() {
                   <span>
                     {sub.clue} {enumerationFor(sub.answer)}
                   </span>
-                  <span style={{ fontSize: 12.5, color: sub.shownDate ? 'var(--good)' : 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12.5, color: sub.shownDate ? 'var(--good-text)' : 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
                     {sub.shownDate ? `✓ ${sub.shownDate}` : 'beütemezve'}
                   </span>
                 </div>
@@ -144,6 +148,22 @@ export default function AccountPage() {
               </div>
             ))}
         </div>
+        {rejected.length > 0 && (
+          <div className="help-block">
+            <h3>Elutasított beküldéseim ({rejected.length})</h3>
+            {rejected.map((r) => (
+              <div className="sub-item" key={r.id}>
+                <div>
+                  {r.clue} {r.answer ? enumerationFor(r.answer) : ''}
+                </div>
+                <SubmissionFeedback
+                  title="Indoklás"
+                  feedback={{ by: r.by, at: r.at, items: {}, text: r.reason }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
         <div className="help-block">
           <h3>Adataim letöltése</h3>
           <p>A fiókodhoz tartozó összes adatot (fiók, haladás, beküldéseid) egy JSON fájlban letöltheted.</p>
