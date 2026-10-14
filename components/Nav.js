@@ -41,10 +41,9 @@ export default function Nav() {
 
   return (
     <>
-      {/* Fejléc: a hamburger menü megszűnt. Balra a profil gomb (adminnak mellette az admin
-          felület gombja), középen a TITKOSÍRÁS felirat a logóval; a jobb oldali üres oszlop
-          ugyanolyan széles, hogy a felirat pontosan középen maradjon. */}
-      <nav className={`topnav topnav-c${isAdmin ? ' topnav-admin' : ''}`}>
+      {/* Fejléc: a hamburger menü megszűnt. Balra a profil gomb, középen a TITKOSÍRÁS felirat a
+          logóval, jobbra (adminnak) az admin felület gombja. */}
+      <nav className="topnav topnav-c">
         <div className="topnav-account">
           {status !== 'loading' && (
             session?.user ? (
@@ -57,11 +56,6 @@ export default function Nav() {
               </a>
             )
           )}
-          {isAdmin && (
-            <a href="/admin" className="account-badge admin-badge" title="Admin felület" aria-label="Admin felület">
-              <span aria-hidden="true">🛠️</span>
-            </a>
-          )}
         </div>
         <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
           <div className="brand brand-mid brand-c" aria-hidden="true">
@@ -70,7 +64,15 @@ export default function Nav() {
             <span className="bm-right">S<span>ÍRÁS</span></span>
           </div>
         </a>
-        <div className="topnav-spacer" aria-hidden="true" />
+        {/* Jobb oldalon adminnak az admin felület gombja (egyébként üres hely, hogy a felirat
+            pontosan középen maradjon). */}
+        <div className="topnav-right">
+          {isAdmin && (
+            <a href="/admin" className="account-badge admin-badge" title="Admin felület" aria-label="Admin felület">
+              <span aria-hidden="true">🛠️</span>
+            </a>
+          )}
+        </div>
       </nav>
     </>
   );

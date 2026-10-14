@@ -37,16 +37,21 @@ export default function NotificationsButton() {
   const btnRef = useRef(null);
   // A doboz nyúlványa pontosan a csengő gomb közepére mutat (a gomb tényleges szélessége alapján).
   const [arrowRight, setArrowRight] = useState(10);
+  const [popShift, setPopShift] = useState(0);
   const popRef = useRef(null);
   useLayoutEffect(() => {
     if (!open || !btnRef.current || !popRef.current) return;
     // A nyúlvány (24 px széles SVG) közepe a gomb közepére essen; a "right" a doboz belső
     // (keret nélküli) jobb szélétől mérődik, a keret 2 px.
     // (A transzformációtól - a kinyílás animációjától - független méretekből számolva.)
-    // A doboz a gomb bal szélétől nyílik jobbra (a gombsor bal szélén van).
+    // A doboz a gomb bal szélétől nyílik jobbra; ha így kilógna a képernyőről (keskeny
+    // kijelzőn, tördelt gombsornál), annyival balra tolódik, hogy beférjen.
     const popWidth = popRef.current.offsetWidth;
+    const wrapLeft = wrapRef.current ? wrapRef.current.getBoundingClientRect().left : 0;
+    const shift = Math.max(0, Math.round(wrapLeft + popWidth - (window.innerWidth - 8)));
+    setPopShift(Math.min(shift, Math.max(0, Math.round(wrapLeft - 8))));
     const btnCenter = btnRef.current.offsetLeft + btnRef.current.offsetWidth / 2;
-    setArrowRight(Math.round(popWidth - 2 - btnCenter - 12));
+    setArrowRight(Math.round(popWidth - 2 - (btnCenter + Math.min(shift, Math.max(0, Math.round(wrapLeft - 8)))) - 12));
   }, [open]);
 
   useEffect(() => {
@@ -133,7 +138,7 @@ export default function NotificationsButton() {
         <BellIcon size={17} />
       </button>
       {open && (
-        <div className="notif-pop" ref={popRef} role="dialog" aria-label="Értesítések">
+        <div className="notif-pop" ref={popRef} role="dialog" aria-label="Értesítések" style={{ left: -popShift }}>
           {/* Lekerekített nyúlvány: a doboz kerete folytatólagosan fut fel a csúcsba és vissza
               (a kitöltés eltakarja alatta a doboz keretének egyenes szakaszát). */}
           <svg className="notif-arrow" style={{ right: arrowRight }} width="24" height="13" viewBox="0 0 24 13" aria-hidden="true">

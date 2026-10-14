@@ -833,7 +833,7 @@ export default function HomePage() {
         <div className="card result">
           <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
           <div className="result-meta">
-            <span>Idő: {formatTime(elapsed)}</span>
+            <span className="pill"><Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Idő: {formatTime(elapsed)}</span>
             <span className="pill result-streak">
               <Icon src="/icons/Streak.png" size={14} /> {progress.streak} napos sorozat
             </span>
@@ -884,10 +884,6 @@ export default function HomePage() {
             <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
               <Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Következő titkosírás:{' '}
               <b style={{ color: 'var(--accent2-text)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
-              <div style={{ marginTop: 6 }}>
-                Ha tetszett, addig is nézd meg a{' '}
-                <a href="/archive" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>korábbi titkosírásokat</a>!
-              </div>
             </div>
           )}
         </div>
