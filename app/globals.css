@@ -781,13 +781,13 @@ button.community-head:hover:not(:disabled){ transform: none; background: var(--p
 .community-badge{ align-self: flex-start; font-size: 12px; font-weight: 700; color: var(--good-text); background: var(--good-soft); padding: 2px 8px; border-radius: 999px; }
 .community-detail{ padding: 0 18px 18px; border-top: 1px solid var(--line); }
 .stars{ position: relative; display: inline-block; line-height: 1; letter-spacing: 1px; }
-.stars-bg{ color: var(--line); }
+.stars-bg{ color: var(--star-empty); }
 .stars-fg{ position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; color: var(--star); }
 .community-rate, .community-admin{ margin-top: 16px; }
 .community-rate-title{ font-weight: 800; font-size: 14px; margin-bottom: 6px; }
 .star-input{ display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
 button.star-btn{
-  background: none; border: none; padding: 2px 3px; font-size: 26px; line-height: 1; color: var(--line); cursor: pointer;
+  background: none; border: none; padding: 2px 3px; font-size: 26px; line-height: 1; color: var(--star-empty); cursor: pointer;
 }
 button.star-btn.on{ color: var(--star); }
 button.star-btn:disabled{ cursor: default; opacity: 1; }
@@ -803,12 +803,18 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 .community-rate-note{ font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
 .community-rate-note a{ color: var(--accent-text); font-weight: 700; }
 /* Csillagszín: legalább 3:1 kontraszt a kártya hátterén (WCAG nem szöveges elemekre). */
-:root{ --star: #B97A00; }
-@media (prefers-color-scheme: dark){ :root{ --star: #F2C14E; } }
-.stars-bg{ color: var(--line); }
+:root{ --star: #B97A00; --star-empty: #8E83A2; }
+@media (prefers-color-scheme: dark){ :root{ --star: #F2C14E; --star-empty: #857A9C; } }
+.stars-bg{ color: var(--star-empty); }
 
 .community-teaser-count{ font-size: 20px; margin-bottom: 8px; }
 .community-teaser-count b{ font-size: 30px; color: var(--accent-text); }
 .my-sub{ display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .my-sub-main{ display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .my-sub-meta{ font-size: 12.5px; color: var(--ink-soft); }
+
+/* Megfejtés utáni értékelő rész: középre rendezve (csillagok, összesítés, emoji-gombok). */
+.community-rate{ text-align: center; }
+.community-rate .star-input{ justify-content: center; }
+.community-rate .community-rate-sum{ display: block; margin: 4px 0 0; }
+.community-rate .reaction-row{ justify-content: center; }

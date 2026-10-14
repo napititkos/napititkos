@@ -87,7 +87,10 @@ export default function Nav() {
             <Icon src="/icons/Korabbi_titkosirasok.png" /> Korábbi titkosírások
           </a>
           <a href="/kozossegi" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Rejtveny_bekuldese.png" /> Közösségi titkosírások
+            <Icon src="/icons/Kozossegi.png" /> Közösségi titkosírások
+          </a>
+          <a href="/submit" onClick={() => setOpen(false)}>
+            <Icon src="/icons/Rejtveny_bekuldese.png" /> Rejtvény beküldése
           </a>
           <a href="/help" onClick={() => setOpen(false)}>
             <Icon src="/icons/Sugo.png" /> Kisokos
@@ -101,9 +104,6 @@ export default function Nav() {
           </a>
           <a href="#" onClick={handleAchievementsClick}>
             <Icon src="/icons/Trofeak.png" /> Trófeák
-          </a>
-          <a href="/submit" onClick={() => setOpen(false)}>
-            <Icon src="/icons/Rejtveny_bekuldese.png" /> Rejtvény beküldése
           </a>
           {session?.user?.role === 'admin' && (
             <a href="/admin" onClick={() => setOpen(false)}>🛠️ Admin</a>
