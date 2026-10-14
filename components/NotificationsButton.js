@@ -43,9 +43,10 @@ export default function NotificationsButton() {
     // A nyúlvány (24 px széles SVG) közepe a gomb közepére essen; a "right" a doboz belső
     // (keret nélküli) jobb szélétől mérődik, a keret 2 px.
     // (A transzformációtól - a kinyílás animációjától - független méretekből számolva.)
-    const wrapWidth = wrapRef.current ? wrapRef.current.clientWidth : 0;
+    // A doboz a gomb bal szélétől nyílik jobbra (a gombsor bal szélén van).
+    const popWidth = popRef.current.offsetWidth;
     const btnCenter = btnRef.current.offsetLeft + btnRef.current.offsetWidth / 2;
-    setArrowRight(Math.round(wrapWidth - 2 - btnCenter - 12));
+    setArrowRight(Math.round(popWidth - 2 - btnCenter - 12));
   }, [open]);
 
   useEffect(() => {

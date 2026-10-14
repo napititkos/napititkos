@@ -107,6 +107,8 @@ export default function HomePage() {
   const [showIntro, setShowIntro] = useState(false);
   const [showHintModal, setShowHintModal] = useState(false);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+  // A megszerzett trófeák száma (csak a ma is létező trófeák számítanak).
+  const trophyCount = unlockedAchievements.filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length;
   const [countdown, setCountdown] = useState('');
   const timerRef = useRef(null);
   const finishedRef = useRef(false);
@@ -654,16 +656,27 @@ export default function HomePage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
-        <span className="pill"><Icon src="/icons/Streak.png" size={15} /> {progress.streak} napos sorozat</span>
-        <button
-          className="pill"
-          style={{ border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-          onClick={() => window.dispatchEvent(new Event('open-leaderboard'))}
-        >
-          <Icon src="/icons/Ranglista.png" size={16} /> Ranglista
-        </button>
+      {/* Gyors gombok balról: Értesítések, Ranglista, Kisokos, Tutorial, Trófeák (csak ikon és x/y). */}
+      <div className="quick-row">
         <NotificationsButton />
+        <button className="pill quick-pill" type="button" onClick={() => window.dispatchEvent(new Event('open-leaderboard'))}>
+          <Icon src="/icons/Ranglista.png" size={16} className="quick-ico" /> Ranglista
+        </button>
+        <a className="pill quick-pill" href="/help">
+          <Icon src="/icons/Sugo.png" size={15} className="quick-ico" /> Kisokos
+        </a>
+        <a className="pill quick-pill" href="/tutorial">
+          <Icon src="/icons/Tutorial.png" size={15} className="quick-ico" /> Tutorial
+        </a>
+        <button
+          className="pill quick-pill"
+          type="button"
+          aria-label={`Trófeák: ${trophyCount} / ${ACHIEVEMENTS.length} megszerezve`}
+          title="Trófeák"
+          onClick={() => window.dispatchEvent(new Event('open-achievements'))}
+        >
+          <Icon src="/icons/Trofeak.png" size={16} /> {trophyCount}/{ACHIEVEMENTS.length}
+        </button>
       </div>
 
       <div className="card">
@@ -819,7 +832,12 @@ export default function HomePage() {
       {answered && (
         <div className="card result">
           <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
-          <div style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Idő: {formatTime(elapsed)}</div>
+          <div className="result-meta">
+            <span>Idő: {formatTime(elapsed)}</span>
+            <span className="pill result-streak">
+              <Icon src="/icons/Streak.png" size={14} /> {progress.streak} napos sorozat
+            </span>
+          </div>
           <div className="result-actions">
             <div className="result-action">
               <button className="primary round-btn" onClick={share} aria-label="Eredmény másolása">
@@ -875,8 +893,8 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Megfejtés után: két fél szélességű doboz a korábbi és a közösségi titkosírásokhoz. */}
-      {answered && (
+      {/* Két fél szélességű doboz a korábbi és a közösségi titkosírásokhoz (megfejtés előtt is). */}
+      {(
         <div className="next-links">
           <a className="card next-link" href="/archive">
             <Icon src="/icons/Korabbi_titkosirasok.png" size={22} />

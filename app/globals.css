@@ -468,7 +468,7 @@ button[aria-disabled="true"]:hover{ transform: none; }
    jobb felső sarka kis sugarú, hogy a gomb alatt (a jobb szélhez közel) ülő nyúlvány íve ne
    fusson bele a lekerekítésbe. */
 .notif-arrow{ position: absolute; top: -13px; display: block; overflow: visible; }
-.notif-pop{ border-top-right-radius: 5px; }
+.notif-pop{ left: 0; right: auto; border-top-left-radius: 5px; transform-origin: 20px -12px; }
 .notif-arrow-fill{ fill: var(--card); }
 .notif-arrow-line{ fill: none; stroke: var(--accent2); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 button.notif-btn[aria-expanded="true"]{
@@ -668,11 +668,16 @@ button.play-btn[aria-disabled="true"]:active{ transform: scale(0.93); filter: br
    közepén (a felirat két része tőle balra és jobbra, háromoszlopos rácsban). A gombok a két
    szélen, a felirathoz függőlegesen középre igazítva. */
 nav.topnav.topnav-c{
-  display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 8px;
+  --nav-side: 38px;
+  display: grid; grid-template-columns: var(--nav-side) 1fr var(--nav-side); align-items: center; gap: 8px;
   padding-top: 18px; padding-bottom: 4px;
 }
-.topnav-c .topnav-account{ margin-left: 0; justify-self: end; }
+.topnav-c .topnav-account{ margin-left: 0; justify-self: start; display: flex; gap: 6px; }
+/* Adminnak két gomb van balra (profil + admin), ezért mindkét oldalsó oszlop szélesebb. */
+nav.topnav.topnav-c.topnav-admin{ --nav-side: 82px; }
+.admin-badge{ font-size: 17px; text-decoration: none; }
 .topnav-c .brand-link{ justify-content: center; font-size: min(calc((50vw - 56px) / 3.36), 50px); }
+.topnav-admin .brand-link{ font-size: min(calc((50vw - 100px) / 3.36), 50px); }
 .brand.brand-mid{
   font-size: 1em; line-height: 1; white-space: nowrap; letter-spacing: 0.03em;
   /* minmax(0, 1fr): a két oldalsó oszlop mindig pontosan egyforma széles marad, akkor is, ha a
@@ -818,3 +823,21 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 .community-rate .star-input{ justify-content: center; }
 .community-rate .community-rate-sum{ display: block; margin: 4px 0 0; }
 .community-rate .reaction-row{ justify-content: center; }
+
+/* Főoldal: gyors gombok balról (értesítések elöl, trófeák a végén); keskeny kijelzőn tördelődnek. */
+.quick-row{ display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 8px; margin-bottom: 10px; }
+.quick-pill{
+  border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  font: inherit; font-size: 13px; font-weight: 700;
+}
+a.quick-pill:hover{ transform: scale(1.03); }
+/* Nyertél doboz: az idő mellett a sorozat. */
+.result-meta{ display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px; color: var(--ink-soft); font-size: 13px; }
+.result-streak{ font-size: 12.5px; }
+@media (max-width: 420px){
+  /* Mobilon egy sorba férjen: kisebb térköz, és a szöveges gombok ikon nélkül (az értesítés és a
+     trófea gombja ikonos marad). */
+  .quick-row{ gap: 6px; }
+  .quick-pill{ padding: 6px 9px; font-size: 12.5px; gap: 5px; }
+  .quick-pill .quick-ico{ display: none !important; }
+}
