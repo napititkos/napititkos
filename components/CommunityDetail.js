@@ -88,56 +88,47 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
     <div className="community-detail">
       <PuzzlePlayer puzzle={puzzle} initiallySolved={mine.solved} onSolved={handleSolved} />
 
-      <div className="community-rate">
-        <div className="community-rate-title">Értékelés</div>
-        <div className="star-input" role="group" aria-label="Értékelés csillagokkal">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              className={`star-btn${(mine.stars || 0) >= n ? ' on' : ''}`}
-              aria-label={`${n} csillag`}
-              aria-pressed={mine.stars === n}
-              disabled={!canRate}
-              onClick={() => rate({ stars: n })}
-            >
-              ★
-            </button>
-          ))}
-          <span className="community-rate-sum">
-            {data.avg != null ? `${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés` : 'Még nincs értékelés'}
-          </span>
+      {/* Értékelés és reakciók csak a megfejtés után jelennek meg (előtte csak a fenti átlag látszik). */}
+      {mine.solved && (
+        <div className="community-rate">
+          <div className="community-rate-title">Értékeld a titkosírást!</div>
+          <div className="star-input" role="group" aria-label="Értékelés csillagokkal">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`star-btn${(mine.stars || 0) >= n ? ' on' : ''}`}
+                aria-label={`${n} csillag`}
+                aria-pressed={mine.stars === n}
+                disabled={!canRate}
+                onClick={() => rate({ stars: n })}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <div className="community-rate-sum">
+            {data.avg != null ? `${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés` : 'Még nincs értékelés - legyél te az első!'}
+          </div>
+          <div className="reaction-row" role="group" aria-label="Reakciók">
+            {emojis.map((e, k) => (
+              <button
+                key={k}
+                type="button"
+                className={`reaction-btn${mine.reaction === k ? ' on' : ''}`}
+                aria-label={`${e} reakció, ${reactions[k]} darab`}
+                aria-pressed={mine.reaction === k}
+                disabled={!canRate}
+                onClick={() => rate({ reaction: mine.reaction === k ? null : k })}
+              >
+                <span aria-hidden="true">{e}</span>
+                {reactions[k] > 0 && <span className="reaction-count">{reactions[k]}</span>}
+              </button>
+            ))}
+          </div>
+          {!data.canRate && <p className="community-rate-note">Az értékeléshez erősítsd meg az e-mail-címedet.</p>}
         </div>
-        <div className="reaction-row" role="group" aria-label="Reakciók">
-          {emojis.map((e, k) => (
-            <button
-              key={k}
-              type="button"
-              className={`reaction-btn${mine.reaction === k ? ' on' : ''}`}
-              aria-label={`${e} reakció, ${reactions[k]} darab`}
-              aria-pressed={mine.reaction === k}
-              disabled={!canRate}
-              onClick={() => rate({ reaction: mine.reaction === k ? null : k })}
-            >
-              <span aria-hidden="true">{e}</span>
-              {reactions[k] > 0 && <span className="reaction-count">{reactions[k]}</span>}
-            </button>
-          ))}
-        </div>
-        {!canRate && (
-          <p className="community-rate-note">
-            {!session?.user ? (
-              <>
-                Az értékeléshez és a reakcióhoz <a href="/login?callbackUrl=/kozossegi">jelentkezz be</a>, és fejtsd meg a rejtvényt.
-              </>
-            ) : !data.canRate ? (
-              'Az értékeléshez erősítsd meg az e-mail-címedet.'
-            ) : (
-              'Megfejtés után értékelheted, és reakciót is adhatsz.'
-            )}
-          </p>
-        )}
-      </div>
+      )}
 
       {(isAdmin || data.isOwner) && (
         <div className="community-admin">

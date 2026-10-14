@@ -760,6 +760,12 @@ check('az adatkezelési tájékoztató leírja a közösségi titkosírásokat �
 r = await post('/api/admin/feedback', { puzzleId: 'x' }, adm); check('a régi visszajelzés-végpont megszűnt: 404', r.status === 404, `(${r.status})`);
 r = await post('/api/admin/reject', { id: 'x' }, adm); check('a régi elutasítás-végpont megszűnt: 404', r.status === 404, `(${r.status})`);
 
+section('Menü: Közösségi titkosírások ikon és sorrend');
+r = await fetch(BASE + '/'); const navHtml = await r.text();
+const iK = navHtml.indexOf('Korábbi titkosírások'), iC = navHtml.indexOf('Közösségi titkosírások'), iS = navHtml.indexOf('Rejtvény beküldése');
+check('a menüben: Korábbi -> Közösségi -> Rejtvény beküldése', iK > 0 && iK < iC && iC < iS, `${iK} ${iC} ${iS}`);
+check('a Közösségi titkosírások saját (közösség) ikont kapott', /icons\/Kozossegi\.png/.test(navHtml) && (await fetch(BASE + '/icons/Kozossegi.png')).status === 200);
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import CommunityDetail from './CommunityDetail';
+import Icon from './Icon';
 import { enumerationFor } from '../lib/format';
 
 const SORTS = [
@@ -104,7 +105,7 @@ export default function CommunityPage() {
     <div className="wrap">
       <h1 className="page-title">Közösségi titkosírások</h1>
       <a className="community-cta" href="/submit">
-        <span aria-hidden="true">✍️</span> Írj te is titkosírást!
+        <Icon src="/icons/Rejtveny_bekuldese.png" size={22} className="icon-on-accent" /> Írj te is titkosírást!
       </a>
       <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '4px 2px 14px' }}>
         A játékosok által beküldött rejtvények. Nyomj rá egyre a megfejtéshez - ha megfejtetted,

@@ -884,7 +884,7 @@ export default function HomePage() {
             <span>Játszd újra a régebbi napok rejtvényeit</span>
           </a>
           <a className="card next-link" href="/kozossegi">
-            <Icon src="/icons/Rejtveny_bekuldese.png" size={22} />
+            <Icon src="/icons/Kozossegi.png" size={22} />
             <b>Közösségi titkosírások</b>
             <span>Fejtsd meg a játékosok rejtvényeit</span>
           </a>
