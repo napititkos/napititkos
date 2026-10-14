@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../../lib/kv';
 import { isAdminRequest } from '../../../../lib/adminAuth';
 import { readJson, sanitizePuzzleList } from '../../../../lib/validate';
+import { removeUserNotifications, shortClue } from '../../../../lib/userNotifications';
 
 const BACKUP_TTL_SECONDS = 60 * 60 * 24 * 60; // 60 nap
 const BACKUP_COUNT = 10;
@@ -37,8 +38,13 @@ export async function POST(req) {
   }
 
   // Mentés a felülírás előtt: hiba vagy elrontott szerkesztés esetén visszaállítható.
+  let removedPuzzles = [];
   const locked = await kv.withLock('puzzles-save', async () => {
     const previous = await kv.get('puzzles:list');
+    if (Array.isArray(previous)) {
+      const keep = new Set(result.puzzles.map((p) => p.id));
+      removedPuzzles = previous.filter((p) => p && !keep.has(p.id));
+    }
     if (Array.isArray(previous) && previous.length) {
       const ts = String(Date.now());
       await kv.set(`puzzles:backup:${ts}`, previous, BACKUP_TTL_SECONDS);
@@ -50,5 +56,15 @@ export async function POST(req) {
     await kv.set('puzzles:list', result.puzzles);
   });
   if (!locked) return Response.json({ error: 'busy' }, { status: 503 });
+  // Ha egy elfogadott (beküldött) rejtvényt törölnek, a beküldőnek szóló "Elfogadtuk..."
+  // értesítést is visszavonjuk - különben olyan rejtvényről szólna, ami már nincs meg.
+  for (const p of removedPuzzles) {
+    if (!p.submittedByEmail) continue;
+    const short = shortClue(p.clue);
+    await removeUserNotifications(
+      p.submittedByEmail,
+      (n) => (n.ref?.type === 'accepted' && n.ref.puzzleId === p.id) || (!n.ref && n.text?.startsWith('Elfogadtuk') && n.text.includes(`(„${short}”)`))
+    );
+  }
   return Response.json({ ok: true });
 }

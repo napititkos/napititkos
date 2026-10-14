@@ -452,7 +452,7 @@ button[aria-disabled="true"]:hover{ transform: none; }
 .notif-wrap{ position: relative; display: inline-flex; }
 .notif-pop{
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
-  width: min(320px, calc(100vw - 28px)); max-height: 60vh; overflow-y: auto;
+  width: min(320px, calc(100vw - 28px));
   /* Erősebb keret és mélyebb árnyék, hogy a doboz elváljon a mögötte lévő fehér kártyától. */
   background: var(--card); border: 2px solid var(--accent2); border-radius: 14px;
   box-shadow: 0 12px 32px rgba(31, 26, 43, 0.28), 0 2px 6px rgba(31, 26, 43, 0.12); padding: 8px;
@@ -460,11 +460,21 @@ button[aria-disabled="true"]:hover{ transform: none; }
 @media (prefers-color-scheme: dark){
   .notif-pop{ box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04); }
 }
-.notif-pop::before{
-  content:''; position:absolute; top:-8px; right: 14px; width: 12px; height: 12px;
+/* A doboz "kinő" a csengő gombból: nagyobb nyúlvány pontosan a gomb közepére mutat (a
+   helyét a komponens méri), a nyitott gomb ugyanazt a lila keretet kapja, mint a doboz, és a
+   doboz a gomb felől nyílik ki. */
+.notif-pop{ top: calc(100% + 12px); transform-origin: calc(100% - 20px) -12px; animation: notif-pop-in 0.16s ease-out; }
+.notif-arrow{
+  position: absolute; top: -10px; width: 18px; height: 18px;
   background: var(--card); border-left: 2px solid var(--accent2); border-top: 2px solid var(--accent2);
-  transform: rotate(45deg);
+  border-top-left-radius: 4px; transform: rotate(45deg);
 }
+button.notif-btn[aria-expanded="true"]{
+  background: var(--card); box-shadow: 0 0 0 2px var(--accent2); color: var(--accent2-text);
+}
+@keyframes notif-pop-in{ from{ opacity: 0; transform: scale(0.92) translateY(-6px); } to{ opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce){ .notif-pop{ animation: none; } }
+.notif-scroll{ position: relative; max-height: 60vh; overflow-y: auto; }
 .notif-item{ padding: 8px 10px; border-radius: 10px; }
 .notif-item + .notif-item{ border-top: 1px solid var(--line); border-radius: 0; }
 .notif-time{ font-size: 11.5px; color: var(--ink-soft); }
@@ -696,8 +706,11 @@ nav.topnav.topnav-c{
 .lookup-hint a{ color: var(--accent-text); font-weight: 700; word-break: break-word; }
 
 /* Személyes értesítés és a beküldés visszajelzése. */
-.notif-item.personal{ background: var(--accent-soft); border-left: 3px solid var(--accent); padding-left: 9px; border-radius: 10px; }
-.notif-item.personal + .notif-item{ border-top: none; }
+/* Az új értesítések mellett ugyanolyan pont, mint a csengő gombon (külön keret helyett). */
+.notif-new-dot{
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;
+  background: var(--accent-strong); vertical-align: 1px;
+}
 .notif-link{ color: var(--accent-text); font-weight: 700; white-space: nowrap; }
 .sub-feedback{ margin-top: 6px; }
 .sub-feedback-body{ margin-top: 6px; padding: 10px 12px; border-radius: 12px; background: var(--accent2-soft); font-size: 14px; }
@@ -726,3 +739,8 @@ button.field-help-btn[aria-expanded="true"]{ background: var(--accent2-text); co
   box-shadow: 0 10px 26px rgba(31, 26, 43, 0.22); font-size: 13.5px; font-weight: 400; line-height: 1.45;
 }
 .field-help-pop a{ color: var(--accent-text); font-weight: 700; }
+
+/* Beküldés: tipp-pipák (mint az admin felületen). */
+.hint-check-row input[type=checkbox]{ width: 18px; height: 18px; margin: 0; accent-color: var(--btn-primary); flex: none; }
+.hint-check-row .hint-check-label{ cursor: pointer; }
+.hint-check-row + textarea{ margin-top: 6px; }
