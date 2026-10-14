@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../../lib/kv';
 import { auth } from '../../../../auth';
 import { isLimited, tooMany } from '../../../../lib/rateLimit';
-import { userNotifications } from '../../../../lib/userNotifications';
+import { userNotifications, userRejections } from '../../../../lib/userNotifications';
 
 // Adathordozhatóság (GDPR 20. cikk): a fiókhoz tartozó összes adat JSON-ban.
 export async function GET() {
@@ -54,6 +54,7 @@ export async function GET() {
     publishedPuzzles,
     comments,
     notifications: await userNotifications(user.email),
+    rejectedSubmissions: await userRejections(user.email),
   };
   return new Response(JSON.stringify(data, null, 2), {
     headers: {

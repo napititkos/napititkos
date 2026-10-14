@@ -24,10 +24,10 @@ const HINT_LABELS = {
   fodder: 'Készlet',
   indikator: 'Mutató',
   definicio: 'Definíció',
-  alternativ: 'Alternatív tipp',
+  alternativ: 'Alternatív rejtvény',
   betu: 'Helyes betű',
 };
-const HINT_ORDER = ['definicio', 'indikator', 'fodder', 'alternativ', 'betu'];
+const HINT_ORDER = ['definicio', 'fodder', 'indikator', 'alternativ', 'betu'];
 
 const norm = (s) => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
 

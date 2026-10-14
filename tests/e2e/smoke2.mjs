@@ -722,6 +722,36 @@ const subId = JSON.parse(await redis.get('submissions:list')).find((x) => x.clue
 r = await fetch(BASE + `/api/submissions?id=${subId}`, { method: 'DELETE', headers: adm });
 check('átemelés után a beküldés törölhető a listából (adminként)', r.status === 200 && !JSON.parse(await redis.get('submissions:list')).some((x) => x.id === subId));
 
+// ---------------------------------------------------------------- BEKÜLDÉS ELUTASÍTÁSA
+section('Beküldés elutasítása (opcionális indoklással)');
+await seedUser('elutasitott@teszt.hu', 'Elutasitott-1', { name: 'Elutasított Elek' });
+const elJar = (await credLogin('elutasitott@teszt.hu', 'Elutasitott-1')).jar;
+const elId = JSON.parse(await redis.get('au:userByEmail:elutasitott@teszt.hu'));
+const subOf = async (clue) => JSON.parse((await redis.get('submissions:list')) || '[]').find((x) => x.clue === clue)?.id;
+r = await post('/api/submissions', { clue: 'Első próbálkozás?', answer: 'EGY' }, { cookie: elJar.header() });
+const sid1 = await subOf('Első próbálkozás?');
+r = await post('/api/admin/reject', { id: sid1, reason: 'x' }, { cookie: elJar.header() }); check('elutasítás nem adminként: 401', r.status === 401, `(${r.status})`);
+r = await post('/api/admin/reject', { id: 'nincs-ilyen', reason: '' }, adm); check('nem létező beküldés: 404', r.status === 404, `(${r.status})`);
+r = await post('/api/admin/reject', { id: sid1, reason: '   ' }, adm); j = await r.json();
+check('indoklás nélküli elutasítás: törlődik, nincs értesítés', r.status === 200 && j.notified === false && !(await subOf('Első próbálkozás?')));
+j = await (await fetch(BASE + '/api/account/my-submissions', { headers: { cookie: elJar.header() } })).json();
+check('indoklás nélkül a Profilomban sem jelenik meg semmi', (j.rejected || []).length === 0);
+j = await (await fetch(BASE + '/api/notifications/mine', { headers: { cookie: elJar.header() } })).json();
+check('csak a "sikeres beküldés" értesítés van, elutasítási nincs', j.notifications.length === 1 && /Sikeres beküldés/.test(j.notifications[0].text));
+await redis.del(`rl:cd:submit:user:${elId}`);
+r = await post('/api/submissions', { clue: 'Második próbálkozás?', answer: 'KETTŐ' }, { cookie: elJar.header() });
+const sid2 = await subOf('Második próbálkozás?');
+r = await post('/api/admin/reject', { id: sid2, reason: 'A definíció nem egyértelmű, és a mutató hiányzik.' }, adm); j = await r.json();
+check('indoklással elutasítva: értesítés ment', r.status === 200 && j.notified === true && !(await subOf('Második próbálkozás?')));
+j = await (await fetch(BASE + '/api/account/my-submissions', { headers: { cookie: elJar.header() } })).json();
+check('a Profilomban látszik az indoklás az admin nevével', j.rejected?.[0]?.reason === 'A definíció nem egyértelmű, és a mutató hiányzik.' && j.rejected[0].by === admName && j.rejected[0].clue === 'Második próbálkozás?');
+j = await (await fetch(BASE + '/api/notifications/mine', { headers: { cookie: elJar.header() } })).json();
+check('személyes értesítés a Profilomra mutató linkkel', /nem tudtuk elfogadni/.test(j.notifications[0].text) && j.notifications[0].href === '/account');
+j = await (await fetch(BASE + '/api/account/my-submissions', { headers: { cookie: moJar.header() } })).json();
+check('más nem látja', (j.rejected || []).length === 0);
+r = await fetch(BASE + '/api/account/export', { headers: { cookie: elJar.header() } });
+check('az adatexportban benne van', /A definíció nem egyértelmű/.test(await r.text()));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

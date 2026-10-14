@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import { computeNewAchievements } from '../../lib/achievements';
+import FieldHelp from '../../components/FieldHelp';
 import HintWordPicker from '../../components/HintWordPicker';
 import { clueTokens } from '../../lib/clue';
 
@@ -169,50 +170,85 @@ export default function SubmitPage() {
           rejtvények közé! Beküldőként ez fog megjelenni: <b>{session.user.name || session.user.email}</b>
         </p>
         <form onSubmit={submit}>
-          <label className="field-label">A rejtvény szövege *</label>
+          <div className="field-label-row">
+            <label className="field-label" htmlFor="sub-clue">A rejtvény szövege *</label>
+            <FieldHelp label="Rejtvény">
+              Ide írd be magát a rejtvényt! Ha inspirálódnál, nézd meg a{' '}
+              <a href="/archive">korábbi titkosírásokat</a>!
+            </FieldHelp>
+          </div>
           <textarea
+            id="sub-clue"
             value={form.clue}
             onChange={(e) => update('clue', e.target.value)}
             placeholder="Írd ide a teljes rejtvényt…"
           />
 
-          <label className="field-label">A helyes válasz *</label>
+          <div className="field-label-row">
+            <label className="field-label" htmlFor="sub-answer">A helyes válasz *</label>
+            <FieldHelp label="Helyes válasz">
+              A rejtvény megfejtése. Ha több szóból áll, szóközzel válaszd el a szavakat.
+            </FieldHelp>
+          </div>
           <input
+            id="sub-answer"
             type="text"
             value={form.answer}
             onChange={(e) => update('answer', e.target.value)}
             placeholder="VÁLASZ"
           />
 
-          <label className="field-label hl-type-definicio">
-            <span className="hl-dot" />
-            Definíció (opcionális tipp)
-          </label>
-          <textarea aria-label="Definíció (opcionális tipp)" value={form.definicio} onChange={(e) => update('definicio', e.target.value)} />
+          {/* A tippek sorrendje ugyanaz, mint a játékban: Definíció, Készlet, Mutató. */}
+          <div className="field-label-row">
+            <label className="field-label hl-type-definicio" htmlFor="sub-definicio">
+              <span className="hl-dot" />
+              Definíció (opcionális tipp)
+            </label>
+            <FieldHelp label="Definíció">
+              A rejtvény azon része, ami a megoldásra utal, mint egy keresztrejtvénynél! Be tudod jelölni a rejtvényben a szavakat, amik ebbe a kategóriába tartoznak.
+            </FieldHelp>
+          </div>
+          <textarea id="sub-definicio" value={form.definicio} onChange={(e) => update('definicio', e.target.value)} />
           {form.definicio.trim() && (
             <HintWordPicker clue={form.clue} type="definicio" words={words.definicio} onChange={(v) => setWords((w) => ({ ...w, definicio: v }))} />
           )}
 
-          <label className="field-label hl-type-indikator">
-            <span className="hl-dot" />
-            Mutató (opcionális tipp)
-          </label>
-          <textarea aria-label="Mutató (opcionális tipp)" value={form.indikator} onChange={(e) => update('indikator', e.target.value)} />
-          {form.indikator.trim() && (
-            <HintWordPicker clue={form.clue} type="indikator" words={words.indikator} onChange={(v) => setWords((w) => ({ ...w, indikator: v }))} />
-          )}
-
-          <label className="field-label hl-type-fodder">
-            <span className="hl-dot" />
-            Készlet (opcionális tipp)
-          </label>
-          <textarea aria-label="Készlet (opcionális tipp)" value={form.fodder} onChange={(e) => update('fodder', e.target.value)} />
+          <div className="field-label-row">
+            <label className="field-label hl-type-fodder" htmlFor="sub-fodder">
+              <span className="hl-dot" />
+              Készlet (opcionális tipp)
+            </label>
+            <FieldHelp label="Készlet">
+              A rejtvény azon szavai, amiket a mutatók segítségével átformálunk a megoldássá. Be tudod jelölni a rejtvényben a szavakat, amik ebbe a kategóriába tartoznak.
+            </FieldHelp>
+          </div>
+          <textarea id="sub-fodder" value={form.fodder} onChange={(e) => update('fodder', e.target.value)} />
           {form.fodder.trim() && (
             <HintWordPicker clue={form.clue} type="fodder" words={words.fodder} onChange={(v) => setWords((w) => ({ ...w, fodder: v }))} />
           )}
 
-          <label className="field-label">Alternatív tipp (opcionális)</label>
-          <textarea aria-label="Alternatív tipp (opcionális)" value={form.alternativ} onChange={(e) => update('alternativ', e.target.value)} />
+          <div className="field-label-row">
+            <label className="field-label hl-type-indikator" htmlFor="sub-indikator">
+              <span className="hl-dot" />
+              Mutató (opcionális tipp)
+            </label>
+            <FieldHelp label="Mutató">
+              A rejtvény azon szavai, amik a készlet szavait a megoldássá formálják. Be tudod jelölni a rejtvényben a szavakat, amik ebbe a kategóriába tartoznak.
+            </FieldHelp>
+          </div>
+          <textarea id="sub-indikator" value={form.indikator} onChange={(e) => update('indikator', e.target.value)} />
+          {form.indikator.trim() && (
+            <HintWordPicker clue={form.clue} type="indikator" words={words.indikator} onChange={(v) => setWords((w) => ({ ...w, indikator: v }))} />
+          )}
+
+          <div className="field-label-row">
+            <label className="field-label" htmlFor="sub-alternativ">Alternatív rejtvény (opcionális)</label>
+            <FieldHelp label="Alternatív rejtvény">
+              Egy önmagában is értelmes rejtvény: ha esetleg két változatod lenne belőle, itt tudod
+              megadni a másikat.
+            </FieldHelp>
+          </div>
+          <textarea id="sub-alternativ" value={form.alternativ} onChange={(e) => update('alternativ', e.target.value)} />
 
           <div className="checkbox-row" style={{ marginTop: 16, alignItems: 'flex-start' }}>
             <input

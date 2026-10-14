@@ -453,12 +453,16 @@ button[aria-disabled="true"]:hover{ transform: none; }
 .notif-pop{
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
   width: min(320px, calc(100vw - 28px)); max-height: 60vh; overflow-y: auto;
-  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-  box-shadow: var(--shadow); padding: 8px;
+  /* Erősebb keret és mélyebb árnyék, hogy a doboz elváljon a mögötte lévő fehér kártyától. */
+  background: var(--card); border: 2px solid var(--accent2); border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(31, 26, 43, 0.28), 0 2px 6px rgba(31, 26, 43, 0.12); padding: 8px;
+}
+@media (prefers-color-scheme: dark){
+  .notif-pop{ box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04); }
 }
 .notif-pop::before{
-  content:''; position:absolute; top:-7px; right: 14px; width: 12px; height: 12px;
-  background: var(--card); border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+  content:''; position:absolute; top:-8px; right: 14px; width: 12px; height: 12px;
+  background: var(--card); border-left: 2px solid var(--accent2); border-top: 2px solid var(--accent2);
   transform: rotate(45deg);
 }
 .notif-item{ padding: 8px 10px; border-radius: 10px; }
@@ -692,7 +696,8 @@ nav.topnav.topnav-c{
 .lookup-hint a{ color: var(--accent-text); font-weight: 700; word-break: break-word; }
 
 /* Személyes értesítés és a beküldés visszajelzése. */
-.notif-item.personal{ border-left: 3px solid var(--accent); padding-left: 8px; }
+.notif-item.personal{ background: var(--accent-soft); border-left: 3px solid var(--accent); padding-left: 9px; border-radius: 10px; }
+.notif-item.personal + .notif-item{ border-top: none; }
 .notif-link{ color: var(--accent-text); font-weight: 700; white-space: nowrap; }
 .sub-feedback{ margin-top: 6px; }
 .sub-feedback-body{ margin-top: 6px; padding: 10px 12px; border-radius: 12px; background: var(--accent2-soft); font-size: 14px; }
@@ -701,3 +706,23 @@ nav.topnav.topnav-c{
 .sub-feedback-meta{ font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
 .feedback-part{ margin-top: 12px; }
 .feedback-original{ font-size: 13.5px; color: var(--ink-soft); background: var(--paper); border-radius: 10px; padding: 6px 10px; margin: 4px 0 6px; }
+
+/* Beviteli mezők melletti kis kérdőjel és a lenyíló magyarázat. */
+.field-label-row{ display: flex; align-items: center; gap: 6px; margin-top: 14px; position: relative; }
+.field-label-row .field-label{ margin-top: 0; margin-bottom: 0; }
+.field-label-row + textarea, .field-label-row + input{ margin-top: 6px; }
+.field-help{ display: inline-flex; } /* a doboz a sorhoz igazodik, így mobilon sem lóg ki */
+button.field-help-btn{
+  width: 20px; height: 20px; min-width: 20px; padding: 0; border-radius: 50%;
+  border: 1.5px solid var(--accent2-text); background: var(--card); color: var(--accent2-text);
+  font-size: 12px; font-weight: 800; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+button.field-help-btn[aria-expanded="true"]{ background: var(--accent2-text); color: var(--card); }
+.field-help-pop{
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+  width: min(320px, 100%); padding: 10px 12px; border-radius: 12px;
+  background: var(--card); color: var(--ink); border: 2px solid var(--accent2);
+  box-shadow: 0 10px 26px rgba(31, 26, 43, 0.22); font-size: 13.5px; font-weight: 400; line-height: 1.45;
+}
+.field-help-pop a{ color: var(--accent-text); font-weight: 700; }
