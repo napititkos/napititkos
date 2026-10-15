@@ -130,7 +130,10 @@ export default function ArchivePage() {
 
   return (
     <div className="wrap">
-      <h1 className="page-title">Korábbi titkosírások</h1>
+      <div className="page-title-row">
+        <h1 className="page-title">Korábbi titkosírások</h1>
+        <a href="/" className="back-home-btn">← Főoldal</a>
+      </div>
       <div className="card archive-card">
         {error && <p style={{ color: 'var(--bad)' }}>{error}</p>}
         {unverified && (
@@ -256,9 +259,6 @@ export default function ArchivePage() {
             </div>
           );
         })}
-      </div>
-      <div className="back-home-row">
-        <a href="/" className="back-home-btn">← Vissza a főoldalra</a>
       </div>
     </div>
   );

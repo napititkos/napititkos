@@ -41,7 +41,15 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="hu" className={`${fredoka.variable} ${baloo.variable} ${nunito.variable}`}>
+    <html lang="hu" suppressHydrationWarning className={`${fredoka.variable} ${baloo.variable} ${nunito.variable}`}>
+      <head>
+        {/* Az admin gomb az első megjelenéstől a helyén legyen (ne villanjon fel oldalváltáskor). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{if(localStorage.getItem('nav-admin')==='1')document.documentElement.classList.add('nav-admin')}catch(e){}",
+          }}
+        />
+      </head>
       <body>
         <AuthProvider>
           <ProgressSync />

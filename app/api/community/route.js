@@ -1,15 +1,12 @@
 export const dynamic = 'force-dynamic';
 
-import { auth } from '../../../auth';
 import { communityList, migrateLegacyOnce, summaries } from '../../../lib/community';
 
 // A Közösségi titkosírások listája: csak a lista-nézethez szükséges adatok (rejtvény, beküldő,
 // dátum, értékelés). A megoldás és a tippek csak a rejtvény megnyitásakor töltődnek le.
 export async function GET() {
-  // A közösségi titkosírások csak bejelentkezve érhetők el (vendégeknek a /api/community/count
-  // ad darabszám-előzetest).
-  const session = await auth();
-  if (!session?.user) return Response.json({ error: 'unauthenticated' }, { status: 401, headers: { 'Cache-Control': 'private, no-store' } });
+  // A lista vendégeknek is látható (megfejteni, értékelni csak bejelentkezve lehet); a lista
+  // a megoldást és a tippeket nem tartalmazza.
   await migrateLegacyOnce();
   const list = await communityList();
   const sums = await summaries(list.map((s) => s.id));

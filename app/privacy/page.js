@@ -74,11 +74,11 @@ export default function PrivacyPage() {
         <div className="help-block">
           <h3>Közösségi titkosírások (saját rejtvény beküldése)</h3>
           <p>
-            A Közösségi titkosírások oldal és a rejtvény-beküldés bejelentkezést és megerősített
-            e-mail-címet igényel. A beküldött rejtvény (szövege, megfejtése és tippjei) a beküldés
-            után azonnal megjelenik a Közösségi titkosírások között, és minden bejelentkezett
-            felhasználó láthatja és megfejtheti. Mellette a fiókod neve (név nélküli fióknál
-            „Névtelen”) és a beküldés dátuma látszik - az e-mail-címed soha.
+            A rejtvény-beküldés bejelentkezést és megerősített e-mail-címet igényel. A beküldött
+            rejtvény a beküldés után azonnal megjelenik a Közösségi titkosírások között: a szövegét,
+            az értékelését, a beküldés dátumát és a fiókod nevét (név nélküli fióknál „Névtelen”)
+            bárki láthatja, a megfejtését és a tippjeit pedig a bejelentkezett felhasználók, akik
+            megfejthetik. Az e-mail-címed soha nem jelenik meg.
           </p>
           <p>
             A beküldéssel hozzájárulsz ahhoz, hogy a rejtvényedet közzétegyük, és hogy az
