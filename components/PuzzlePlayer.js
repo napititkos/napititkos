@@ -64,7 +64,9 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
     const nextLocked = [...lockedLetters];
     const candidates = [];
     answerChars.forEach((ch, pos) => {
-      if (ch !== ' ' && norm(nextGuess[pos]) !== norm(ch)) candidates.push(pos);
+      // Bármelyik még nem rögzített hely sorra kerülhet, akkor is, ha ott már jó (vagy rossz)
+      // betű áll: a véletlenül választott hely a helyes betűvel rögzül.
+      if (ch !== ' ' && !nextLocked[pos]) candidates.push(pos);
     });
     if (candidates.length === 0) return;
     const idx = candidates[Math.floor(Math.random() * candidates.length)];
@@ -76,9 +78,10 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
     if (!revealed.includes('betu')) setRevealed((prev) => [...prev, 'betu']);
   }
 
+  // Akkor nincs több kérhető betű, ha már minden hely rögzítve van (a beírt betűktől függetlenül).
   function noMoreLettersToReveal() {
     const answerChars = Array.from(puzzle.answer);
-    return !answerChars.some((ch, pos) => ch !== ' ' && norm(guess[pos]) !== norm(ch));
+    return !answerChars.some((ch, pos) => ch !== ' ' && !lockedLetters[pos]);
   }
 
   function isRowFull() {

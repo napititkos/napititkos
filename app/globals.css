@@ -323,11 +323,31 @@ button:disabled{ opacity:0.4; cursor:default; }
    távolságra van egymástól: a rejtvény kártya 18 px-es alsó margójával összevonódva a -4 px
    felső margó 14 px-et ad. A Nyertél kártya halványabb (a háttérhez közelebbi), hogy a két
    interaktív kártya kerüljön előtérbe. */
-.card.result{
-  padding: 16px; margin-top: -4px; margin-bottom: 14px;
-  background: color-mix(in srgb, var(--card) 55%, var(--paper));
-  box-shadow: none;
+.card.result{ padding: 16px; margin-top: -4px; margin-bottom: 14px; }
+
+/* A két interaktív kártya (rejtvény, további titkosírások) kiemelése a Nyertél kártyához képest:
+   három kipróbálható változat (?kartya=1, 2 vagy 3; az eszköz megjegyzi, alapból 1). A döntés után
+   a többi törölhető. */
+/* 1. Mélység: a rejtvény és a linkdobozok "lebegnek", a Nyertél kártya lapos (árnyék nélkül). */
+html[data-kartya="1"] .card.puzzle-card,
+html[data-kartya="1"] .next-links .card.next-link{
+  box-shadow: 0 10px 26px rgba(31, 26, 43, 0.16), 0 2px 6px rgba(31, 26, 43, 0.08);
 }
+html[data-kartya="1"] .card.result{ box-shadow: none; }
+@media (prefers-color-scheme: dark){
+  html[data-kartya="1"] .card.puzzle-card,
+  html[data-kartya="1"] .next-links .card.next-link{ box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35); }
+}
+.next-links .card.next-link{ transition: transform 0.15s ease, box-shadow 0.15s ease; }
+html[data-kartya="1"] .next-links .card.next-link:hover{ transform: translateY(-2px); }
+html[data-kartya="1"] .next-links .card.next-link:active{ transform: scale(0.98); }
+/* 2. Szín: a rejtvény és a linkdobozok 2 px-es lila keretet kapnak, a linkdobozok halvány levendula hátteret. */
+html[data-kartya="2"] .card.puzzle-card{ border: 2px solid var(--accent2); }
+html[data-kartya="2"] .next-links .card.next-link{ border: 2px solid var(--accent2); background: var(--accent2-soft); }
+html[data-kartya="2"] .next-links .card.next-link:active{ transform: scale(0.98); }
+/* 3. Nyitott tartalom: a Nyertél rész nem kártya, közvetlenül a háttéren áll. */
+html[data-kartya="3"] .card.result{ background: transparent; border-color: transparent; box-shadow: none; }
+html[data-kartya="3"] .next-links .card.next-link:active{ transform: scale(0.98); }
 .result h2{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 21px; margin: 0 0 4px; color: var(--accent-text); letter-spacing: 0.015em; }
 .squares{ font-size: 26px; letter-spacing: 4px; margin: 14px 0; }
 .stats{ display:flex; justify-content:center; gap: 22px; margin: 16px 0 20px; flex-wrap:wrap; }
