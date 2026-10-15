@@ -606,23 +606,8 @@ export default function AdminPage() {
                     </i>
                   </p>
 
-                  <label className="field-label">
-                    Nehézség (azt jelöli, hány tippre van szüksége egy átlagos játékosnak a megoldáshoz)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    style={{ width: 90, textTransform: 'none' }}
-                    value={e.parHints === '' || e.parHints == null ? '' : e.parHints}
-                    onChange={(ev) => {
-                      const raw = ev.target.value;
-                      updateEntry(ei, (en) => ({
-                        ...en,
-                        parHints: raw === '' ? '' : Number(raw),
-                      }));
-                    }}
-                  />
+                  {/* A nehézség (parHints) mezője egyelőre kikerült: sehol nem jelenik meg a játékban.
+                      A meglévő érték megmarad, és mentéskor változatlanul tárolódik. */}
 
                   <label className="field-label">Beküldő neve (opcionális - megjelenik a játékosoknak)</label>
                   <input
