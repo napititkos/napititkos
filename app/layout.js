@@ -10,7 +10,6 @@ import { Analytics } from '@vercel/analytics/next';
 // Valós felhasználói sebességmérés (Core Web Vitals) oldalanként; csak a Vercelen élesben gyűjt.
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import ViewportVars from '../components/ViewportVars';
-import CardVariant from '../components/CardVariant';
 import localFont from 'next/font/local';
 
 // A betűtípus-fájlok a repóban vannak (app/fonts, SIL Open Font License), így a build
@@ -42,7 +41,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="hu" data-kartya="1" className={`${fredoka.variable} ${baloo.variable} ${nunito.variable}`}>
+    <html lang="hu" className={`${fredoka.variable} ${baloo.variable} ${nunito.variable}`}>
       <body>
         <AuthProvider>
           <ProgressSync />
@@ -53,7 +52,6 @@ export default function RootLayout({ children }) {
           <LeaderboardModal />
           <TutorialModal />
         </AuthProvider>
-        <CardVariant />
         <ViewportVars />
         <Analytics />
         <SpeedInsights />
