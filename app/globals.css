@@ -828,8 +828,8 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 .community-rate-note{ font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
 .community-rate-note a{ color: var(--accent-text); font-weight: 700; }
 /* Csillagszín: legalább 3:1 kontraszt a kártya hátterén (WCAG nem szöveges elemekre). */
-:root{ --star: #B97A00; --star-empty: #8E83A2; }
-@media (prefers-color-scheme: dark){ :root{ --star: #F2C14E; --star-empty: #857A9C; } }
+:root{ --star: #B04F93; --star-empty: #8E83A2; }
+@media (prefers-color-scheme: dark){ :root{ --star: #E7A9D6; --star-empty: #857A9C; } }
 .stars-bg{ color: var(--star-empty); }
 
 .community-teaser-count{ font-size: 20px; margin-bottom: 8px; }
@@ -930,17 +930,20 @@ h1.page-title{
 .result h2{ line-height: 1.15; margin: 2px 0 6px; }
 .result .result-meta{ margin-top: 0; }
 .result .result-actions{ margin-top: 8px; }
-.result .stats{ margin: 8px 0 0; }
+.result .stats{ margin: 8px auto 0; } /* középen marad (a rács max. 380 px széles) */
 /* A hosszú cím ("Közösségi titkosírások") és a Főoldal gomb mobilon is elférjen egymás mellett. */
 .page-title-row h1.page-title{ min-width: 0; }
 
 /* Lenyitott közösségi rejtvény: keskeny bezáró sáv a fejléc helyén. */
 button.community-close{
-  display: block; width: 100%; text-align: right; padding: 8px 18px; background: none; border: none;
-  color: var(--ink-soft); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 0;
+  /* Vékony, színes sáv: jelzi, hogy a sor kattintható (visszacsukja a rejtvényt). */
+  display: block; width: 100%; text-align: right; padding: 3px 16px; margin: 0;
+  background: var(--accent2-soft); border: none; color: var(--accent2-text);
+  font: inherit; font-size: 12.5px; font-weight: 700; line-height: 1.5; cursor: pointer; border-radius: 0;
 }
-button.community-close:hover:not(:disabled){ transform: none; color: var(--accent-text); }
-.community-item.open .community-detail{ border-top: none; padding-top: 12px; }
+button.community-close:hover:not(:disabled){ transform: none; filter: brightness(0.97); }
+.community-item.open .community-detail{ border-top: none; padding-top: 10px; }
+.community-detail .puzzle-player{ margin-top: 0 !important; padding-top: 0 !important; border-top: none !important; }
 .player-sub{ margin: 0 0 10px; }
 .community-rate-summary .community-rating{ justify-content: center; }
 
@@ -951,3 +954,5 @@ button.community-close:hover:not(:disabled){ transform: none; color: var(--accen
 /* Admin gomb: csak adminnak látszik (html.nav-admin osztály). */
 .topnav-right .admin-badge{ display: none; }
 html.nav-admin .topnav-right .admin-badge{ display: flex; }
+
+a.back-home-btn .back-arrow{ flex: none; display: block; }
