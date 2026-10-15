@@ -4,7 +4,8 @@ import { signIn } from 'next-auth/react';
 
 // Jelszó módosítása a Profilom oldalon. Jelszó nélküli (Google / belépő link) fióknál a
 // jelszót e-mailben küldött linkkel lehet beállítani.
-export default function PasswordChange({ email }) {
+// embedded: egy másik dobozba ágyazva (a Profilom fiókadatai alatt), saját doboz nélkül.
+export default function PasswordChange({ email, embedded = false }) {
   const [hasPassword, setHasPassword] = useState(null);
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
@@ -67,7 +68,7 @@ export default function PasswordChange({ email }) {
   if (hasPassword === null) return null;
 
   return (
-    <div className="card">
+    <div className={embedded ? 'password-embedded' : 'card'}>
       <div className="help-block" style={{ marginBottom: 0 }}>
         <h3>Jelszó</h3>
         {!hasPassword ? (

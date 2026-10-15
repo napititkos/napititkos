@@ -83,14 +83,45 @@ export default function AccountPage() {
   return (
     <div className="wrap">
       <h1 className="page-title">Profilom</h1>
+      {/* Sorrend: közösségi titkosírásaim, statisztikáim, fiókadatok (név, e-mail, jelszó),
+          adataim (letöltés, törlés) - mind külön dobozban. */}
       <div className="card">
         <div className="help-block" style={{ marginBottom: 0 }}>
-          <h3>{session.user.name || 'Névtelen'}</h3>
-          <p style={{ margin: 0 }}>{session.user.email}</p>
+          <h3>Közösségi titkosírásaim {mySubmissions ? `(${mySubmissions.length})` : ''}</h3>
+          {mySubmissions === null && <p style={{ color: 'var(--ink-soft)' }}>Betöltés…</p>}
+          {mySubmissions && mySubmissions.length === 0 && (
+            <p style={{ color: 'var(--ink-soft)' }}>
+              Még nem küldtél be titkosírást.{' '}
+              <a href="/submit" style={{ color: 'var(--accent-text)' }}>
+                Írj egyet!
+              </a>
+            </p>
+          )}
+          {mySubmissions &&
+            mySubmissions.map((sub) => (
+              <div className="sub-item my-sub" key={sub.id}>
+                <div className="my-sub-main">
+                  <span>
+                    {sub.clue} {enumerationFor(sub.answer)}
+                  </span>
+                  <span className="my-sub-meta">
+                    {sub.avg != null ? `★ ${sub.avg.toLocaleString('hu-HU')} (${sub.ratingCount} értékelés)` : 'Még nincs értékelés'}
+                    {sub.reactionCount > 0 ? ` · ${sub.reactionCount} reakció` : ''}
+                    {sub.promoted ? (sub.shownDate ? ` · napi titkosírás volt: ${sub.shownDate}` : ' · bekerült a napi titkosírások közé') : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="ghost small"
+                  aria-label={`Törlés: ${sub.clue}`}
+                  onClick={() => deleteMySubmission(sub)}
+                >
+                  Törlés
+                </button>
+              </div>
+            ))}
         </div>
       </div>
-
-      <PasswordChange email={session.user.email} />
 
       <div className="card">
         <div className="help-block" style={{ marginBottom: 0 }}>
@@ -138,43 +169,19 @@ export default function AccountPage() {
         </div>
       </div>
 
-      <h2 style={{ fontFamily: 'var(--font-baloo), "Baloo 2", sans-serif', color: 'var(--accent-text)', fontSize: 21, margin: '6px 0 12px', letterSpacing: '0.015em' }}>Adataim</h2>
       <div className="card">
         <div className="help-block">
-          <h3>Közösségi titkosírásaim {mySubmissions ? `(${mySubmissions.length})` : ''}</h3>
-          {mySubmissions === null && <p style={{ color: 'var(--ink-soft)' }}>Betöltés…</p>}
-          {mySubmissions && mySubmissions.length === 0 && (
-            <p style={{ color: 'var(--ink-soft)' }}>
-              Még nem küldtél be titkosírást.{' '}
-              <a href="/submit" style={{ color: 'var(--accent-text)' }}>
-                Írj egyet!
-              </a>
-            </p>
-          )}
-          {mySubmissions &&
-            mySubmissions.map((sub) => (
-              <div className="sub-item my-sub" key={sub.id}>
-                <div className="my-sub-main">
-                  <span>
-                    {sub.clue} {enumerationFor(sub.answer)}
-                  </span>
-                  <span className="my-sub-meta">
-                    {sub.avg != null ? `★ ${sub.avg.toLocaleString('hu-HU')} (${sub.ratingCount} értékelés)` : 'Még nincs értékelés'}
-                    {sub.reactionCount > 0 ? ` · ${sub.reactionCount} reakció` : ''}
-                    {sub.promoted ? (sub.shownDate ? ` · napi titkosírás volt: ${sub.shownDate}` : ' · bekerült a napi titkosírások közé') : ''}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="ghost small"
-                  aria-label={`Törlés: ${sub.clue}`}
-                  onClick={() => deleteMySubmission(sub)}
-                >
-                  Törlés
-                </button>
-              </div>
-            ))}
+          <h3>Fiókom</h3>
+          <p style={{ margin: 0 }}>
+            <b>{session.user.name || 'Névtelen'}</b>
+            <br />
+            {session.user.email}
+          </p>
         </div>
+        <PasswordChange email={session.user.email} embedded />
+      </div>
+
+      <div className="card">
         <div className="help-block">
           <h3>Adataim letöltése</h3>
           <p>A fiókodhoz tartozó összes adatot (fiók, haladás, beküldéseid, értékeléseid, értesítéseid) egy JSON fájlban letöltheted.</p>
