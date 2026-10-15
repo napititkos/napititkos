@@ -131,7 +131,7 @@ export default function ArchivePage() {
   return (
     <div className="wrap">
       <h1 className="page-title">Korábbi titkosírások</h1>
-      <div className="card">
+      <div className="card archive-card">
         {error && <p style={{ color: 'var(--bad)' }}>{error}</p>}
         {unverified && (
           <ResendVerification text="A korábbi titkosírások megerősített e-mail-címmel érhetők el. Nézd meg a postaládádat, vagy kérj új visszaigazoló levelet:" />
@@ -146,12 +146,13 @@ export default function ArchivePage() {
         {years.map((year) => {
           const months = grouped[year];
           const yearItems = allYearItems(months);
-          const yearOpen = !!openYears[year];
+          // Az évek alapból le vannak nyitva (a felhasználó becsukhatja őket).
+          const yearOpen = openYears[year] ?? true;
           return (
             <div className="puzzle-editor" key={year}>
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                onClick={() => setOpenYears((prev) => ({ ...prev, [year]: !prev[year] }))}
+                onClick={() => setOpenYears((prev) => ({ ...prev, [year]: !(prev[year] ?? true) }))}
               >
                 <b>{yearOpen ? '▾' : '▸'} {year}</b>
                 <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
@@ -255,6 +256,9 @@ export default function ArchivePage() {
             </div>
           );
         })}
+      </div>
+      <div className="back-home-row">
+        <a href="/" className="back-home-btn">← Vissza a főoldalra</a>
       </div>
     </div>
   );

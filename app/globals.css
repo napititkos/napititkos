@@ -877,3 +877,23 @@ html{ scrollbar-gutter: stable; } /* a megjelenő görgetősáv ne tolja odébb 
 
 /* A betűcsempék fölött a sima egérmutató marad (nem a szövegbeviteli "I" alakú kurzor). */
 input.letter-box{ cursor: default; }
+
+/* Vissza a főoldalra gombok (Profilom fejlécében jobbra; a listák alján középen). */
+.page-title-row{ display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.page-title-row .page-title{ margin-bottom: 18px; }
+a.back-home-btn{
+  display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap;
+  font-size: 13.5px; font-weight: 700; color: var(--accent-text); background: var(--card);
+  border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; margin-bottom: 14px;
+}
+a.back-home-btn:active{ transform: scale(0.97); }
+.back-home-row{ display: flex; justify-content: center; margin-top: 4px; }
+/* Korábbi titkosírások: a doboz fölött és alatt ugyanakkora a hely. */
+.archive-card .puzzle-editor{ margin-bottom: 0; }
+.archive-card .puzzle-editor + .puzzle-editor{ margin-top: 16px; }
+/* Közösségi rejtvény megosztása */
+.community-share{ display: flex; justify-content: center; margin-top: 14px; }
+.community-share button{ display: inline-flex; align-items: center; gap: 6px; }
+/* A linkdobozok feliratai semmilyen betűméret-beállításnál ne lógjanak ki. */
+.next-link > *{ max-width: 100%; min-width: 0; }
+.next-link b{ font-size: clamp(13px, 3.9vw, 15px); word-break: break-word; }
