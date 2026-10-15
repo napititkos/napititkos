@@ -6,7 +6,10 @@ export default function HelpPage() {
   return (
     <div className="wrap">
       <TrackHelpVisit />
-      <h1 className="page-title">Kisokos</h1>
+      <div className="page-title-row">
+        <h1 className="page-title">Kisokos</h1>
+        <a href="/" className="back-home-btn">← Főoldal</a>
+      </div>
       <div className="card">
         <div className="help-block">
           <h3>Mi az a kriptikus (cryptic) rejtvény?</h3>

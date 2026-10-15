@@ -76,7 +76,10 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
   // így semmi nem tárolódik hozzá, és megnyitva az oldal ezt a rejtvényt nyitja le.
   async function share() {
     const url = `${window.location.origin}/kozossegi?r=${encodeURIComponent(id)}`;
-    const text = `Fejtsd meg ezt a közösségi titkosírást: „${data?.puzzle?.clue || ''}” ${url}`;
+    // Három sor: a felhívás a rejtvénnyel, az átlagértékelés csillagokkal, majd a link.
+    const avg = data?.avg;
+    const stars = avg != null ? `${'★'.repeat(Math.round(avg))}${'☆'.repeat(5 - Math.round(avg))} (${avg.toLocaleString('hu-HU')})` : 'Még nincs értékelése - legyél az első!';
+    const text = `Fejtsd meg ezt a közösségi titkosírást: „${data?.puzzle?.clue || ''}”\n${stars}\n${url}`;
     try {
       await navigator.clipboard.writeText(text);
       setMsg('Kimásoltuk a linket, beillesztheted bárhová.');

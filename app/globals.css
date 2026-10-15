@@ -897,3 +897,21 @@ a.back-home-btn:active{ transform: scale(0.97); }
 /* A linkdobozok feliratai semmilyen betűméret-beállításnál ne lógjanak ki. */
 .next-link > *{ max-width: 100%; min-width: 0; }
 .next-link b{ font-size: clamp(13px, 3.9vw, 15px); word-break: break-word; }
+
+/* Közösségi lista: a rejtvény egy sorban, szóhatáron "…"-tal levágva, a doboz szélétől távolabb. */
+.clue-line{ display: block; width: 100%; max-width: 100%; padding-right: 12px; box-sizing: border-box; white-space: nowrap; overflow: hidden; }
+/* Vendégnek: a megosztott rejtvény előnézete (megfejteni csak bejelentkezve lehet). */
+.community-preview{ background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
+.community-preview-clue{ font-size: 16px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; overflow-wrap: anywhere; }
+.community-preview-note{ font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
+
+/* Oldalcímek a "Főoldal" gombhoz hasonló, lekerekített keretben (minden oldalon egységesen). */
+h1.page-title{
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+  background: var(--card); border: 2px solid var(--line); border-radius: 999px;
+  padding: 4px 18px; font-size: 24px; line-height: 1.25; overflow-wrap: anywhere;
+}
+.page-title-row{ align-items: center; margin: 4px 0 18px; }
+.page-title-row h1.page-title{ margin: 0; }
+.page-title-row a.back-home-btn{ margin: 0; flex-shrink: 0; }
+@media (max-width: 420px){ h1.page-title{ font-size: 21px; padding: 4px 14px; } }

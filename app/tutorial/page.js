@@ -9,9 +9,12 @@ export const metadata = {
 export default function TutorialPage() {
   return (
     <div className="wrap">
-      <h1 className="page-title">
-        <Icon src="/icons/Tutorial.png" size={26} /> Tutorial
-      </h1>
+      <div className="page-title-row">
+        <h1 className="page-title">
+          <Icon src="/icons/Tutorial.png" size={22} /> Tutorial
+        </h1>
+        <a href="/" className="back-home-btn">← Főoldal</a>
+      </div>
       <TutorialContent />
     </div>
   );

@@ -702,7 +702,8 @@ check('bejelentkezve: azonnal megjelenik, a beküldő nevével', !!kItem && kIte
 const legacyItem = j.items.find((x) => x.clue === 'Régi rendszerű beküldés?');
 check('a régi rendszerben beküldött rejtvény átkerült a közösségibe (beemeltként, a beküldő nevével)', !!legacyItem && legacyItem.promoted === true && legacyItem.name === 'Régi Rita');
 check('a lista nem adja ki a megoldást, a tippeket és az e-mail-címet', !JSON.stringify(j).includes('KOS JUH') && !JSON.stringify(j).includes('állatok') && !JSON.stringify(j).includes('@teszt.hu'));
-r = await fetch(BASE + `/api/community/${kItem.id}`); check('vendégként a rejtvény nem nyitható meg: 401', r.status === 401);
+r = await fetch(BASE + `/api/community/${kItem.id}`); j = await r.json();
+check('vendégként (megosztott linkről) csak előnézet: szöveg, betűszám, beküldő, értékelés - megoldás és tippek nélkül', r.status === 200 && j.preview === true && j.puzzle.clue === 'Közösségi próba kérdés?' && j.puzzle.enumeration === '(3,3)' && j.puzzle.submittedBy === 'Közösségi Kata' && !JSON.stringify(j).includes('KOS JUH') && !JSON.stringify(j).includes('állatok') && !('hints' in j.puzzle) && !('answer' in j.puzzle), JSON.stringify(j).slice(0, 200));
 j = await (await fetch(BASE + `/api/community/${legacyItem.id}`, { headers: { cookie: erJar.header() } })).json();
 check('az átemelt régi rejtvény tippjei is megvannak', j.puzzle.hints.definicio.text === 'Régi tipp' && j.puzzle.hints.definicio.words[0] === 0);
 r = await fetch(BASE + `/api/community/${kItem.id}`, { headers: { cookie: erJar.header() } }); j = await r.json();

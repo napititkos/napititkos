@@ -4,15 +4,35 @@ import { kv } from '../../../../lib/kv';
 import { auth } from '../../../../auth';
 import { EMOJIS, communityList, deleteCommunityData, deleteCommunityNotifications, ratingsKey, reactionsKey, solvedKey, summaries, toPlayable } from '../../../../lib/community';
 import { isAdminRequest } from '../../../../lib/adminAuth';
+import { enumerationFor } from '../../../../lib/format';
 
 // Egy közösségi titkosírás lejátszáshoz (a megoldással együtt, ahogy a napi rejtvénynél is),
 // az értékelés és a reakciók összesítésével, és a bejelentkezett felhasználó saját állapotával.
 export async function GET(req, { params }) {
   const { id } = await params;
   const session = await auth();
-  if (!session?.user) return Response.json({ error: 'unauthenticated' }, { status: 401 });
   const s = (await communityList()).find((x) => x.id === id);
   if (!s) return Response.json({ error: 'not-found' }, { status: 404 });
+  // Vendégnek (megosztott linkről) csak egy előnézet jár: a rejtvény szövege, a betűszám, a
+  // beküldő és az értékelés - a megoldás és a tippek nem, megfejteni csak bejelentkezve lehet.
+  if (!session?.user) {
+    const sum = (await summaries([id]))[id];
+    return Response.json(
+      {
+        preview: true,
+        puzzle: {
+          id: s.id,
+          clue: s.clue,
+          enumeration: enumerationFor(String(s.answer || '').toUpperCase()),
+          submittedBy: s.name && s.name !== 'Névtelen' ? s.name : '',
+          createdAt: s.createdAt,
+        },
+        avg: sum.avg,
+        ratingCount: sum.ratingCount,
+      },
+      { headers: { 'Cache-Control': 'private, no-store' } }
+    );
+  }
   const uid = session.user.id;
   let mine = { solved: false, stars: null, reaction: null };
   if (uid) {

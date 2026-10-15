@@ -110,6 +110,7 @@ export default function HomePage() {
   // A megszerzett trófeák száma (csak a ma is létező trófeák számítanak).
   const trophyCount = unlockedAchievements.filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length;
   const [countdown, setCountdown] = useState('');
+  const [hoursLeft, setHoursLeft] = useState('');
   const timerRef = useRef(null);
   const finishedRef = useRef(false);
   const [showComments, setShowComments] = useState(false);
@@ -265,12 +266,16 @@ export default function HomePage() {
       const diff = new Date(puzzleMeta.nextRotationAt).getTime() - Date.now();
       if (diff <= 0) {
         setCountdown('Bármely pillanatban…');
+        setHoursLeft('hamarosan');
         return;
       }
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
       setCountdown(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+      // A Nyertél dobozban csak órára kerekítve jelenik meg (nem másodpercre pontos visszaszámlálás).
+      const hours = Math.round(diff / 3600000);
+      setHoursLeft(hours < 1 ? '< 1 óra' : `${hours} óra`);
     }
     tick();
     const id = setInterval(tick, 1000);
@@ -839,7 +844,7 @@ export default function HomePage() {
             <span className="pill result-streak">
               <Icon src="/icons/Streak.png" size={14} /> {progress.streak} napos sorozat
             </span>
-            <span className="pill"><Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Idő: {formatTime(elapsed)}</span>
+            <span className="pill"><Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Kövi titkosírásig: {hoursLeft || '…'}</span>
           </div>
           <div className="result-actions">
             <div className="result-action">
@@ -883,12 +888,6 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          {countdown && (
-            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-              <Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Következő titkosírás:{' '}
-              <b style={{ color: 'var(--accent2-text)', fontVariantNumeric: 'tabular-nums' }}>{countdown}</b>
-            </div>
-          )}
         </div>
       )}
 
