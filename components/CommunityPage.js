@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import CommunityDetail from './CommunityDetail';
 import Icon from './Icon';
+import ClueLine from './ClueLine';
 import { enumerationFor } from '../lib/format';
 
 const SORTS = [
@@ -36,6 +37,7 @@ function formatDate(iso) {
 export default function CommunityPage() {
   const { status } = useSession();
   const [teaser, setTeaser] = useState(null);
+  const [preview, setPreview] = useState(null); // vendégnek a megosztott rejtvény előnézete
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [sort, setSort] = useState('new');
@@ -67,6 +69,15 @@ export default function CommunityPage() {
   useEffect(() => {
     if (status === 'authenticated') load();
     if (status === 'unauthenticated') {
+      try {
+        const r = new URLSearchParams(window.location.search).get('r');
+        if (r && /^[A-Za-z0-9_-]{1,80}$/.test(r)) {
+          fetch(`/api/community/${encodeURIComponent(r)}`)
+            .then((x) => (x.ok ? x.json() : null))
+            .then((d) => d?.preview && setPreview(d))
+            .catch(() => {});
+        }
+      } catch {}
       fetch('/api/community/count')
         .then((r) => r.json())
         .then((d) => setTeaser(d.display || '0'))
@@ -99,6 +110,29 @@ export default function CommunityPage() {
             <>
               {sharedId && (
                 <p style={{ marginTop: 0, fontWeight: 700 }}>Valaki megosztott veled egy közösségi titkosírást!</p>
+              )}
+              {preview && (
+                <div className="community-preview">
+                  <div className="community-preview-clue">
+                    {preview.puzzle.clue} <b>{preview.puzzle.enumeration}</b>
+                  </div>
+                  <div className="community-meta">
+                    {preview.avg != null ? (
+                      <span className="community-rating">
+                        <Stars value={preview.avg} />
+                        <span>
+                          {preview.avg.toLocaleString('hu-HU')} ({preview.ratingCount} értékelés)
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="community-rating muted">Még nincs értékelés</span>
+                    )}
+                    <span>
+                      Beküldte: <b>{preview.puzzle.submittedBy || 'Névtelen'}</b>
+                    </span>
+                  </div>
+                  <p className="community-preview-note">A megfejtéshez jelentkezz be, vagy regisztrálj - ingyenes.</p>
+                </div>
               )}
               {teaser && teaser !== '0' && (
                 <div className="community-teaser-count">
@@ -156,7 +190,7 @@ export default function CommunityPage() {
               aria-expanded={open}
               onClick={() => setOpenId(open ? null : it.id)}
             >
-              <span className="community-clue">{it.clue}</span>
+              <ClueLine text={it.clue} className="community-clue" />
               <span className="community-meta">
                 {it.avg != null ? (
                   <span className="community-rating">
