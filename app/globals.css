@@ -319,7 +319,15 @@ button:disabled{ opacity:0.4; cursor:default; }
 @media (prefers-color-scheme: dark){ :root{ --warn-text: var(--warn); } }
 .locked-note{ font-size: 13.5px; color: var(--ink-soft); font-style: italic; }
 .result{ text-align:center; }
-.card.result{ padding: 16px; margin-bottom: 14px; }
+/* A főoldal három szintje (rejtvény, Nyertél, további titkosírások) egyforma, 14 px-es
+   távolságra van egymástól: a rejtvény kártya 18 px-es alsó margójával összevonódva a -4 px
+   felső margó 14 px-et ad. A Nyertél kártya halványabb (a háttérhez közelebbi), hogy a két
+   interaktív kártya kerüljön előtérbe. */
+.card.result{
+  padding: 16px; margin-top: -4px; margin-bottom: 14px;
+  background: color-mix(in srgb, var(--card) 55%, var(--paper));
+  box-shadow: none;
+}
 .result h2{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 21px; margin: 0 0 4px; color: var(--accent-text); letter-spacing: 0.015em; }
 .squares{ font-size: 26px; letter-spacing: 4px; margin: 14px 0; }
 .stats{ display:flex; justify-content:center; gap: 22px; margin: 16px 0 20px; flex-wrap:wrap; }
@@ -330,8 +338,8 @@ button:disabled{ opacity:0.4; cursor:default; }
 .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px; margin-top: 20px; }
 .site-footer{
-  text-align: center; padding: 24px 14px 30px; color: var(--ink-soft); font-size: 13px;
-  margin-top: auto; /* a body flex oszlopában a maradék helyet a lábléc fölé teszi */
+  /* Közvetlenül a tartalom után, kis térközzel (nem tolódik a képernyő aljára). */
+  text-align: center; padding: 6px 14px 22px; color: var(--ink-soft); font-size: 13px;
 }
 .site-footer-links{ display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
 .site-footer-links a{ color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid transparent; }
@@ -844,3 +852,13 @@ a.quick-pill:hover{ transform: scale(1.03); }
   .quick-pill{ padding: 6px 9px; font-size: 12.5px; gap: 5px; }
   .quick-pill .quick-ico{ display: none !important; }
 }
+
+/* Görgetősávok a weboldal arculatához igazítva (minden görgethető elemen): vékony, lekerekített,
+   lila csúszka átlátszó sínen. */
+html{ scrollbar-gutter: stable; } /* a megjelenő görgetősáv ne tolja odébb a tartalmat */
+*{ scrollbar-width: thin; scrollbar-color: var(--accent2) transparent; }
+*::-webkit-scrollbar{ width: 10px; height: 10px; }
+*::-webkit-scrollbar-track{ background: transparent; }
+*::-webkit-scrollbar-thumb{ background: var(--accent2); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover{ background-color: var(--accent2-text); }
+*::-webkit-scrollbar-corner{ background: transparent; }

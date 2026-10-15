@@ -833,10 +833,10 @@ export default function HomePage() {
         <div className="card result">
           <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
           <div className="result-meta">
-            <span className="pill"><Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Idő: {formatTime(elapsed)}</span>
             <span className="pill result-streak">
               <Icon src="/icons/Streak.png" size={14} /> {progress.streak} napos sorozat
             </span>
+            <span className="pill"><Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Idő: {formatTime(elapsed)}</span>
           </div>
           <div className="result-actions">
             <div className="result-action">
@@ -956,13 +956,6 @@ export default function HomePage() {
         </div>
       )}
 
-      <footer className="page-footer">
-        Új titkosírás minden nap éjfélkor (magyar idő szerint). Elakadtál? Nézd meg a{' '}
-        <a href="/help" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>
-          Kisokost
-        </a>
-        .
-      </footer>
 
       <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>
     </div>
