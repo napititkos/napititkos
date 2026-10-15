@@ -767,6 +767,14 @@ r = await fetch(BASE + '/stats', { redirect: 'manual' });
 check('a /stats oldal a Profilomra irányít át', [307, 308].includes(r.status) && /\/account$/.test(r.headers.get('location') || ''), `(${r.status} ${r.headers.get('location')})`);
 check('a közösség ikon elérhető', (await fetch(BASE + '/icons/Kozossegi.png')).status === 200);
 
+section('Favicon (keresők és régebbi böngészők számára is)');
+r = await fetch(BASE + '/favicon.ico'); const icoBuf = Buffer.from(await r.arrayBuffer());
+check('a /favicon.ico elérhető, valódi ICO fájl (16, 32, 48 px)', r.status === 200 && icoBuf.readUInt16LE(2) === 1 && icoBuf.readUInt16LE(4) >= 3, `(${r.status})`);
+r = await fetch(BASE + '/'); const icoHtml = await r.text();
+check('a főoldal hirdeti a faviconokat (ico és 192 px-es png)', /rel="icon" href="\/favicon\.ico/.test(icoHtml) && /rel="icon" href="\/icon\.png[^"]*" sizes="192x192"/.test(icoHtml));
+r = await fetch(BASE + '/robots.txt'); const rob = await r.text();
+check('a robots.txt nem tiltja a faviconokat', !/Disallow: \/(icon|favicon)/.test(rob));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
