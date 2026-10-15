@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import PuzzlePlayer from './PuzzlePlayer';
+import Icon from './Icon';
 
 // Egy közösségi titkosírás megnyitva: megoldó felület (tippekkel), értékelés, reakciók, és
 // adminnak a beemelés / törlés.
@@ -70,6 +71,20 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
     }
   }
 
+  // Megosztás vágólapra másolással (mint a főoldalon az eredményé): egy rövid szöveg és a link.
+  // A link nem külön oldal: a közösségi oldal címe a rejtvény meglévő azonosítójával (?r=),
+  // így semmi nem tárolódik hozzá, és megnyitva az oldal ezt a rejtvényt nyitja le.
+  async function share() {
+    const url = `${window.location.origin}/kozossegi?r=${encodeURIComponent(id)}`;
+    const text = `Fejtsd meg ezt a közösségi titkosírást: „${data?.puzzle?.clue || ''}” ${url}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setMsg('Kimásoltuk a linket, beillesztheted bárhová.');
+    } catch {
+      setMsg(`Másold ki a linket: ${url}`);
+    }
+  }
+
   // Törlés (az admin bármelyiket, a beküldő a sajátját), mindig visszakérdezéssel.
   async function remove() {
     const who = data?.isOwner ? 'a titkosírásodat' : 'ezt a közösségi titkosírást';
@@ -129,6 +144,12 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
           {!data.canRate && <p className="community-rate-note">Az értékeléshez erősítsd meg az e-mail-címedet.</p>}
         </div>
       )}
+
+      <div className="community-share">
+        <button className="ghost small" type="button" onClick={share}>
+          <Icon src="/icons/Megosztas.png" size={14} /> Link másolása
+        </button>
+      </div>
 
       {(isAdmin || data.isOwner) && (
         <div className="community-admin">

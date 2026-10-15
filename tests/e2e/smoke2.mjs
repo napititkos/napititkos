@@ -775,6 +775,10 @@ check('a főoldal hirdeti a faviconokat (ico és 192 px-es png)', /rel="icon" hr
 r = await fetch(BASE + '/robots.txt'); const rob = await r.text();
 check('a robots.txt nem tiltja a faviconokat', !/Disallow: \/(icon|favicon)/.test(rob));
 
+section('Közösségi titkosírás megosztott linkje');
+r = await fetch(BASE + '/kozossegi?r=valami_azonosito-1'); check('a megosztott link oldala betölt (200)', r.status === 200);
+r = await fetch(BASE + '/kozossegi?r=%3Cscript%3E'); check('hibás azonosítóval is biztonságosan betölt', r.status === 200 && !(await r.text()).includes('<script>alert'));
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

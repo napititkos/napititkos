@@ -82,7 +82,10 @@ export default function AccountPage() {
 
   return (
     <div className="wrap">
-      <h1 className="page-title">Profilom</h1>
+      <div className="page-title-row">
+        <h1 className="page-title">Profilom</h1>
+        <a href="/" className="back-home-btn">← Főoldal</a>
+      </div>
       {/* Sorrend: közösségi titkosírásaim, statisztikáim, fiókadatok (név, e-mail, jelszó),
           adataim (letöltés, törlés) - mind külön dobozban. */}
       <div className="card">

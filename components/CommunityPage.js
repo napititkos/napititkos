@@ -47,6 +47,23 @@ export default function CommunityPage() {
       .then((d) => setItems(d.items || []))
       .catch(() => setError('Nem sikerült betölteni a közösségi titkosírásokat.'));
   }
+  // Megosztott link (/kozossegi?r=<azonosító>): betöltés után az a rejtvény nyílik meg.
+  const [sharedId, setSharedId] = useState(null);
+  useEffect(() => {
+    try {
+      const r = new URLSearchParams(window.location.search).get('r');
+      if (r && /^[A-Za-z0-9_-]{1,80}$/.test(r)) setSharedId(r);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!sharedId || !items) return;
+    if (items.some((x) => x.id === sharedId)) {
+      setOpenId(sharedId);
+      setTimeout(() => document.getElementById(`k-${sharedId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+    setSharedId(null);
+  }, [sharedId, items]);
+
   useEffect(() => {
     if (status === 'authenticated') load();
     if (status === 'unauthenticated') {
@@ -80,6 +97,9 @@ export default function CommunityPage() {
             <p style={{ margin: 0 }}>Betöltés…</p>
           ) : (
             <>
+              {sharedId && (
+                <p style={{ marginTop: 0, fontWeight: 700 }}>Valaki megosztott veled egy közösségi titkosírást!</p>
+              )}
               {teaser && teaser !== '0' && (
                 <div className="community-teaser-count">
                   <b>{teaser}</b> közösségi titkosírás vár rád
@@ -90,7 +110,7 @@ export default function CommunityPage() {
                 beküldéséhez jelentkezz be, vagy regisztrálj - ingyenes.
               </p>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <a href="/login?callbackUrl=/kozossegi" style={{ textDecoration: 'none' }}>
+                <a href={`/login?callbackUrl=${encodeURIComponent('/kozossegi' + (sharedId ? `?r=${sharedId}` : ''))}`} style={{ textDecoration: 'none' }}>
                   <button className="primary" type="button">Bejelentkezés / regisztráció</button>
                 </a>
               </div>
@@ -129,7 +149,7 @@ export default function CommunityPage() {
       {sorted.map((it) => {
         const open = openId === it.id;
         return (
-          <div className={`card community-item${open ? ' open' : ''}`} key={it.id}>
+          <div className={`card community-item${open ? ' open' : ''}`} key={it.id} id={`k-${it.id}`}>
             <button
               type="button"
               className="community-head"
@@ -167,6 +187,11 @@ export default function CommunityPage() {
           </div>
         );
       })}
+      {items && (
+        <div className="back-home-row">
+          <a href="/" className="back-home-btn">← Vissza a főoldalra</a>
+        </div>
+      )}
     </div>
   );
 }
