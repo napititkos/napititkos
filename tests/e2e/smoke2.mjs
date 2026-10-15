@@ -692,7 +692,8 @@ r = await post('/api/submissions', { clue: 'Közösségi próba kérdés?', answ
 check('beküldés: 200', r.status === 200, `(${r.status})`);
 check('a beküldésről már nem megy személyes értesítés (a régi rendszer része volt)', (await myNotifs(kkJar)).length === 0);
 r = await fetch(BASE + '/kozossegi'); check('a /kozossegi oldal elérhető', r.status === 200 && /Közösségi titkosírások/.test(await r.text()));
-r = await fetch(BASE + '/api/community'); check('vendégként a lista nem érhető el: 401', r.status === 401);
+r = await fetch(BASE + '/api/community'); j = await r.json();
+check('vendégként is látható a lista (megoldás és tippek nélkül)', r.status === 200 && Array.isArray(j.items) && !JSON.stringify(j).includes('KOS JUH') && !JSON.stringify(j).includes('állatok') && !JSON.stringify(j).includes('@teszt.hu'));
 j = await (await fetch(BASE + '/api/community/count')).json();
 const nAll = JSON.parse(await redis.get('submissions:list')).length;
 check('vendégeknek tízesre kerekített darabszám (pl. 30+)', j.display === (nAll < 10 ? String(nAll) : `${Math.floor(nAll / 10) * 10}+`), `${j.display} / ${nAll}`);

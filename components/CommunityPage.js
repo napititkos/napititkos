@@ -13,16 +13,8 @@ const SORTS = [
   { key: 'worst', label: 'Leggyengébbre értékelt elöl' },
 ];
 
-// Csillagok kijelzése (csak megjelenítés): pl. 4,3 -> 4 teli csillag és egy részben teli.
-export function Stars({ value, size = 16 }) {
-  const pct = Math.max(0, Math.min(5, value || 0)) * 20;
-  return (
-    <span className="stars" style={{ fontSize: size }} aria-hidden="true">
-      <span className="stars-bg">★★★★★</span>
-      <span className="stars-fg" style={{ width: `${pct}%` }}>★★★★★</span>
-    </span>
-  );
-}
+export { Stars } from './Stars';
+import { Stars } from './Stars';
 
 function formatDate(iso) {
   try {
@@ -36,8 +28,6 @@ function formatDate(iso) {
 // rejtvény szövegét, az értékelést és a beküldőt mutatja; rányomva nyílik meg a megoldó felület.
 export default function CommunityPage() {
   const { status } = useSession();
-  const [teaser, setTeaser] = useState(null);
-  const [preview, setPreview] = useState(null); // vendégnek a megosztott rejtvény előnézete
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [sort, setSort] = useState('new');
@@ -51,10 +41,14 @@ export default function CommunityPage() {
   }
   // Megosztott link (/kozossegi?r=<azonosító>): betöltés után az a rejtvény nyílik meg.
   const [sharedId, setSharedId] = useState(null);
+  const [sharedLink, setSharedLink] = useState(null); // megmarad a bejelentkezés linkjéhez
   useEffect(() => {
     try {
       const r = new URLSearchParams(window.location.search).get('r');
-      if (r && /^[A-Za-z0-9_-]{1,80}$/.test(r)) setSharedId(r);
+      if (r && /^[A-Za-z0-9_-]{1,80}$/.test(r)) {
+        setSharedId(r);
+        setSharedLink(r);
+      }
     } catch {}
   }, []);
   useEffect(() => {
@@ -67,22 +61,8 @@ export default function CommunityPage() {
   }, [sharedId, items]);
 
   useEffect(() => {
-    if (status === 'authenticated') load();
-    if (status === 'unauthenticated') {
-      try {
-        const r = new URLSearchParams(window.location.search).get('r');
-        if (r && /^[A-Za-z0-9_-]{1,80}$/.test(r)) {
-          fetch(`/api/community/${encodeURIComponent(r)}`)
-            .then((x) => (x.ok ? x.json() : null))
-            .then((d) => d?.preview && setPreview(d))
-            .catch(() => {});
-        }
-      } catch {}
-      fetch('/api/community/count')
-        .then((r) => r.json())
-        .then((d) => setTeaser(d.display || '0'))
-        .catch(() => setTeaser(''));
-    }
+    // A lista vendégeknek is betöltődik (megfejteni csak bejelentkezve lehet).
+    if (status !== 'loading') load();
   }, [status]);
 
   const sorted = useMemo(() => {
@@ -98,69 +78,25 @@ export default function CommunityPage() {
     return by;
   }, [items, sort]);
 
-  // Vendégeknek csak egy előzetes: hány közösségi titkosírás várja őket regisztráció után.
-  if (status !== 'authenticated') {
-    return (
-      <div className="wrap">
-        <h1 className="page-title">Közösségi titkosírások</h1>
-        <div className="card community-teaser">
-          {status === 'loading' || teaser === null ? (
-            <p style={{ margin: 0 }}>Betöltés…</p>
-          ) : (
-            <>
-              {sharedId && (
-                <p style={{ marginTop: 0, fontWeight: 700 }}>Valaki megosztott veled egy közösségi titkosírást!</p>
-              )}
-              {preview && (
-                <div className="community-preview">
-                  <div className="community-preview-clue">
-                    {preview.puzzle.clue} <b>{preview.puzzle.enumeration}</b>
-                  </div>
-                  <div className="community-meta">
-                    {preview.avg != null ? (
-                      <span className="community-rating">
-                        <Stars value={preview.avg} />
-                        <span>
-                          {preview.avg.toLocaleString('hu-HU')} ({preview.ratingCount} értékelés)
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="community-rating muted">Még nincs értékelés</span>
-                    )}
-                    <span>
-                      Beküldte: <b>{preview.puzzle.submittedBy || 'Névtelen'}</b>
-                    </span>
-                  </div>
-                  <p className="community-preview-note">A megfejtéshez jelentkezz be, vagy regisztrálj - ingyenes.</p>
-                </div>
-              )}
-              {teaser && teaser !== '0' && (
-                <div className="community-teaser-count">
-                  <b>{teaser}</b> közösségi titkosírás vár rád
-                </div>
-              )}
-              <p>
-                A játékosok által írt rejtvények megfejtéséhez, értékeléséhez és saját titkosírásod
-                beküldéséhez jelentkezz be, vagy regisztrálj - ingyenes.
-              </p>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <a href={`/login?callbackUrl=${encodeURIComponent('/kozossegi' + (sharedId ? `?r=${sharedId}` : ''))}`} style={{ textDecoration: 'none' }}>
-                  <button className="primary" type="button">Bejelentkezés / regisztráció</button>
-                </a>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="wrap">
-      <h1 className="page-title">Közösségi titkosírások</h1>
+      <div className="page-title-row">
+        <h1 className="page-title">Közösségi titkosírások</h1>
+        <a href="/" className="back-home-btn">← Főoldal</a>
+      </div>
       <a className="community-cta" href="/submit">
         <Icon src="/icons/Rejtveny_bekuldese.png" size={22} className="icon-on-accent" /> Írj te is titkosírást!
       </a>
+      {status === 'unauthenticated' && (
+        <div className="community-guest-note">
+          {sharedLink && <b>Valaki megosztott veled egy közösségi titkosírást! </b>}
+          A rejtvényeket bárki megnézheti; megfejteni, értékelni és saját titkosírást beküldeni
+          bejelentkezve tudsz.{' '}
+          <a href={`/login?callbackUrl=${encodeURIComponent('/kozossegi' + (sharedLink ? `?r=${sharedLink}` : ''))}`}>
+            Bejelentkezés / regisztráció
+          </a>
+        </div>
+      )}
       <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '4px 2px 14px' }}>
         A játékosok által beküldött rejtvények. Nyomj rá egyre a megfejtéshez - ha megfejtetted,
         értékelheted, és reakciót is adhatsz rá.
@@ -184,30 +120,33 @@ export default function CommunityPage() {
         const open = openId === it.id;
         return (
           <div className={`card community-item${open ? ' open' : ''}`} key={it.id} id={`k-${it.id}`}>
-            <button
-              type="button"
-              className="community-head"
-              aria-expanded={open}
-              onClick={() => setOpenId(open ? null : it.id)}
-            >
-              <ClueLine text={it.clue} className="community-clue" />
-              <span className="community-meta">
-                {it.avg != null ? (
-                  <span className="community-rating">
-                    <Stars value={it.avg} />
-                    <span>
-                      {it.avg.toLocaleString('hu-HU')} ({it.ratingCount} értékelés)
+            {/* Lenyitva a fejléc helyén csak egy keskeny bezáró sáv marad: a rejtvény szövege,
+                dátuma, beküldője és értékelése ilyenkor a megoldó felületen jelenik meg. */}
+            {open ? (
+              <button type="button" className="community-close" aria-expanded={true} onClick={() => setOpenId(null)}>
+                ▴ Bezárás
+              </button>
+            ) : (
+              <button type="button" className="community-head" aria-expanded={false} onClick={() => setOpenId(it.id)}>
+                <ClueLine text={it.clue} className="community-clue" />
+                <span className="community-meta">
+                  {it.avg != null ? (
+                    <span className="community-rating">
+                      <Stars value={it.avg} />
+                      <span>
+                        {it.avg.toLocaleString('hu-HU')} ({it.ratingCount} értékelés)
+                      </span>
                     </span>
+                  ) : (
+                    <span className="community-rating muted">Még nincs értékelés</span>
+                  )}
+                  <span>
+                    Beküldte: <b>{it.name || 'Névtelen'}</b> · {formatDate(it.createdAt)}
                   </span>
-                ) : (
-                  <span className="community-rating muted">Még nincs értékelés</span>
-                )}
-                <span>
-                  Beküldte: <b>{it.name || 'Névtelen'}</b> · {formatDate(it.createdAt)}
+                  {it.promoted && <span className="community-badge">Bekerült a napi titkosírások közé</span>}
                 </span>
-                {it.promoted && <span className="community-badge">Bekerült a napi titkosírások közé</span>}
-              </span>
-            </button>
+              </button>
+            )}
             {open && (
               <CommunityDetail
                 id={it.id}
@@ -221,11 +160,6 @@ export default function CommunityPage() {
           </div>
         );
       })}
-      {items && (
-        <div className="back-home-row">
-          <a href="/" className="back-home-btn">← Vissza a főoldalra</a>
-        </div>
-      )}
     </div>
   );
 }
