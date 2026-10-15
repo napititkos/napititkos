@@ -13,16 +13,8 @@ const SORTS = [
   { key: 'worst', label: 'Leggyengébbre értékelt elöl' },
 ];
 
-// Csillagok kijelzése (csak megjelenítés): pl. 4,3 -> 4 teli csillag és egy részben teli.
-export function Stars({ value, size = 16 }) {
-  const pct = Math.max(0, Math.min(5, value || 0)) * 20;
-  return (
-    <span className="stars" style={{ fontSize: size }} aria-hidden="true">
-      <span className="stars-bg">★★★★★</span>
-      <span className="stars-fg" style={{ width: `${pct}%` }}>★★★★★</span>
-    </span>
-  );
-}
+export { Stars } from './Stars';
+import { Stars } from './Stars';
 
 function formatDate(iso) {
   try {
@@ -157,7 +149,10 @@ export default function CommunityPage() {
 
   return (
     <div className="wrap">
-      <h1 className="page-title">Közösségi titkosírások</h1>
+      <div className="page-title-row">
+        <h1 className="page-title">Közösségi titkosírások</h1>
+        <a href="/" className="back-home-btn">← Főoldal</a>
+      </div>
       <a className="community-cta" href="/submit">
         <Icon src="/icons/Rejtveny_bekuldese.png" size={22} className="icon-on-accent" /> Írj te is titkosírást!
       </a>
@@ -184,30 +179,33 @@ export default function CommunityPage() {
         const open = openId === it.id;
         return (
           <div className={`card community-item${open ? ' open' : ''}`} key={it.id} id={`k-${it.id}`}>
-            <button
-              type="button"
-              className="community-head"
-              aria-expanded={open}
-              onClick={() => setOpenId(open ? null : it.id)}
-            >
-              <ClueLine text={it.clue} className="community-clue" />
-              <span className="community-meta">
-                {it.avg != null ? (
-                  <span className="community-rating">
-                    <Stars value={it.avg} />
-                    <span>
-                      {it.avg.toLocaleString('hu-HU')} ({it.ratingCount} értékelés)
+            {/* Lenyitva a fejléc helyén csak egy keskeny bezáró sáv marad: a rejtvény szövege,
+                dátuma, beküldője és értékelése ilyenkor a megoldó felületen jelenik meg. */}
+            {open ? (
+              <button type="button" className="community-close" aria-expanded={true} onClick={() => setOpenId(null)}>
+                ▴ Bezárás
+              </button>
+            ) : (
+              <button type="button" className="community-head" aria-expanded={false} onClick={() => setOpenId(it.id)}>
+                <ClueLine text={it.clue} className="community-clue" />
+                <span className="community-meta">
+                  {it.avg != null ? (
+                    <span className="community-rating">
+                      <Stars value={it.avg} />
+                      <span>
+                        {it.avg.toLocaleString('hu-HU')} ({it.ratingCount} értékelés)
+                      </span>
                     </span>
+                  ) : (
+                    <span className="community-rating muted">Még nincs értékelés</span>
+                  )}
+                  <span>
+                    Beküldte: <b>{it.name || 'Névtelen'}</b> · {formatDate(it.createdAt)}
                   </span>
-                ) : (
-                  <span className="community-rating muted">Még nincs értékelés</span>
-                )}
-                <span>
-                  Beküldte: <b>{it.name || 'Névtelen'}</b> · {formatDate(it.createdAt)}
+                  {it.promoted && <span className="community-badge">Bekerült a napi titkosírások közé</span>}
                 </span>
-                {it.promoted && <span className="community-badge">Bekerült a napi titkosírások közé</span>}
-              </span>
-            </button>
+              </button>
+            )}
             {open && (
               <CommunityDetail
                 id={it.id}
@@ -221,11 +219,6 @@ export default function CommunityPage() {
           </div>
         );
       })}
-      {items && (
-        <div className="back-home-row">
-          <a href="/" className="back-home-btn">← Vissza a főoldalra</a>
-        </div>
-      )}
     </div>
   );
 }

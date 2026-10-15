@@ -10,7 +10,7 @@ import { fireConfetti } from './Confetti';
 import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked } from '../lib/puzzleLogic';
 import { enumerationFor } from '../lib/format';
 
-export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolved = false }) {
+export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolved = false, dateLabel = '' }) {
   const [guess, setGuess] = useState(() =>
     initiallySolved
       ? Array.from(puzzle.answer).map((ch) => (ch === ' ' ? ' ' : ch.toUpperCase()))
@@ -121,7 +121,15 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
 
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
-      {puzzle.submittedBy && <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>}
+      {/* dateLabel (opcionális): mint a főoldalon, balra a dátum, jobbra a beküldő. */}
+      {dateLabel ? (
+        <div className="topbar-sub player-sub">
+          <span>{dateLabel}</span>
+          {puzzle.submittedBy && <span className="submitted-by">Beküldte: {puzzle.submittedBy}</span>}
+        </div>
+      ) : (
+        puzzle.submittedBy && <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>
+      )}
       <div className="clue-box" style={{ marginBottom: 10 }}>
         <div className="clue-text">
           <ClueText clue={puzzle.clue} marks={highlightMap(puzzle.hints, answered ? HL_TYPES : revealed)} />{' '}
