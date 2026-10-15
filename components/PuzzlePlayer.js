@@ -120,7 +120,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
     (availableHints.includes('betu') ? Array.from(puzzle.answer).filter((c) => c !== ' ').length : 0);
 
   return (
-    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
+    <div className="puzzle-player" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
       {/* dateLabel (opcionális): mint a főoldalon, balra a dátum, jobbra a beküldő. */}
       {dateLabel ? (
         <div className="topbar-sub player-sub">
