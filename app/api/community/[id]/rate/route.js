@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../../../lib/kv';
 import { auth } from '../../../../../auth';
-import { EMOJIS, communityList, ratingsKey, reactionsKey, solvedKey, summaries } from '../../../../../lib/community';
+import { EMOJIS, communityList, notifiedKey, ratingsKey, reactionsKey, solvedKey, summaries } from '../../../../../lib/community';
 import { isLimited, tooMany } from '../../../../../lib/rateLimit';
 import { readJson } from '../../../../../lib/validate';
 import { pushUserNotification, shortClue } from '../../../../../lib/userNotifications';
@@ -40,14 +40,17 @@ export async function POST(req, { params }) {
   const isOwner = ownerEmail.toLowerCase() === String(session.user.email || '').toLowerCase();
   if (ownerEmail && !isOwner) {
     const clue = shortClue(sub.clue);
-    if (hasStars && prevStars == null) {
+    // Fiókonként és rejtvényenként csak egyszer értesítünk az értékelésről és egyszer a
+    // reakcióról: a reakció ide-oda kapcsolgatásával így nem lehet "elárasztani" a beküldőt.
+    const notifyOnce = async (kind) => (await r.hsetnx(notifiedKey(id), `${uid}:${kind}`, '1')) === 1;
+    if (hasStars && prevStars == null && (await notifyOnce('s'))) {
       await pushUserNotification(ownerEmail, {
         text: `Valaki ${body.stars} csillagra értékelte a titkosírásodat („${clue}”).`,
         href: '/kozossegi',
         ref: { type: 'community', id },
       });
     }
-    if (hasReaction && body.reaction !== null && String(body.reaction) !== prevReaction) {
+    if (hasReaction && body.reaction !== null && String(body.reaction) !== prevReaction && (await notifyOnce('r'))) {
       await pushUserNotification(ownerEmail, {
         text: `Valaki reagált a titkosírásodra („${clue}”): ${EMOJIS[body.reaction]}`,
         href: '/kozossegi',

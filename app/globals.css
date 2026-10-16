@@ -956,3 +956,41 @@ button.community-close:hover:not(:disabled){ transform: none; filter: brightness
 html.nav-admin .topnav-right .admin-badge{ display: flex; }
 
 a.back-home-btn .back-arrow{ flex: none; display: block; }
+
+/* Betűcsempék: ne jelenjen meg mobilon a kijelölés / másolás / fordítás menü, és ne villogjon kurzor. */
+input.letter-box{ -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; caret-color: transparent; }
+
+/* Nyertél cím: "Nyertél! - 3 tipp felhasználva"; keskeny kártyán rövidebben ("3 tippel"). */
+.card.result{ container-type: inline-size; }
+.result-title .result-title-short{ display: none; }
+@container (max-width: 380px){
+  .result-title .result-title-long{ display: none; }
+  .result-title .result-title-short{ display: inline; }
+}
+.result-title{ white-space: nowrap; }
+
+/* Kommentek gomb: pötty, ha van még meg nem nézett komment (mint a csengőn). */
+.round-btn{ position: relative; }
+button.round-btn.has-new-dot::after{
+  content: ''; position: absolute; top: 1px; right: 1px; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--bad); border: 2px solid var(--card);
+}
+
+/* Közösségi lista: pipa a megfejtett rejtvényeknél; ha nem fér el a szöveg, csak a pipa. */
+.community-head{ container-type: inline-size; }
+.community-rating-row{ display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.community-solved{ flex: none; font-size: 12.5px; font-weight: 800; color: var(--good-text); white-space: nowrap; }
+@container (max-width: 300px){ .community-solved-text{ display: none; } }
+
+/* A logó fölötti és alatti távolság egyforma (a fejléc teteje = a logó és az első tartalom közti
+   hely); asztalin a logó nagyobb, kitölti a különbséget. */
+.wrap{ padding-top: 14px; }
+.wrap > :first-child{ margin-top: 0; }
+@media (min-width: 640px){
+  .topnav-c .brand-link{ font-size: 65px; }
+  .wrap{ padding-top: 20px; }
+}
+.wrap > .quick-row:first-child, .wrap > .modal-overlay:first-child + .quick-row{ margin-top: 4px; }
+@media (min-width: 640px){
+  .wrap > .quick-row:first-child, .wrap > .modal-overlay:first-child + .quick-row{ margin-top: 10px; }
+}
