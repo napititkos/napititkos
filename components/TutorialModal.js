@@ -53,8 +53,7 @@ export function TutorialContent() {
         saveProgress(mainProgress);
         if (newly.includes('tutorial_done')) {
           const title = ACHIEVEMENTS.find((a) => a.id === 'tutorial_done')?.title;
-          setNewAchievementToast(`🏆 Új trófea: ${title}`);
-          setTimeout(() => setNewAchievementToast(''), 3000);
+          window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: ['tutorial_done'] }));
         }
       }
     }

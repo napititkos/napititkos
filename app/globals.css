@@ -350,8 +350,10 @@ button:disabled{ opacity:0.4; cursor:default; }
 .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px; margin-top: 20px; }
 .site-footer{
-  /* Közvetlenül a tartalom után, kis térközzel (nem tolódik a képernyő aljára). */
+  /* Rövid oldalon a képernyő aljára kerül (nem lóg középen, és nem kell görgetni), hosszú
+     oldalon közvetlenül a tartalom után jön, kis térközzel. */
   text-align: center; padding: 6px 14px 22px; color: var(--ink-soft); font-size: 13px;
+  margin-top: auto;
 }
 .site-footer-links{ display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
 .site-footer-links a{ color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid transparent; }
@@ -956,3 +958,60 @@ button.community-close:hover:not(:disabled){ transform: none; filter: brightness
 html.nav-admin .topnav-right .admin-badge{ display: flex; }
 
 a.back-home-btn .back-arrow{ flex: none; display: block; }
+
+/* Betűcsempék: ne jelenjen meg mobilon a kijelölés / másolás / fordítás menü, és ne villogjon kurzor. */
+input.letter-box{ -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; caret-color: transparent; }
+
+/* Nyertél cím: "Nyertél! - 3 tipp felhasználva"; keskeny kártyán rövidebben ("3 tippel"). */
+.card.result{ container-type: inline-size; }
+.result-title .result-title-short{ display: none; }
+@container (max-width: 380px){
+  .result-title .result-title-long{ display: none; }
+  .result-title .result-title-short{ display: inline; }
+}
+.result-title{ white-space: nowrap; }
+
+/* Kommentek gomb: pötty, ha van még meg nem nézett komment (mint a csengőn). */
+.round-btn{ position: relative; }
+button.round-btn.has-new-dot::after{
+  content: ''; position: absolute; top: 1px; right: 1px; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--bad); border: 2px solid var(--card);
+}
+
+/* Közösségi lista: pipa a megfejtett rejtvényeknél; ha nem fér el a szöveg, csak a pipa. */
+.community-head{ container-type: inline-size; }
+.community-rating-row{ display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.community-solved{ flex: none; font-size: 12.5px; font-weight: 800; color: var(--good-text); white-space: nowrap; }
+@container (max-width: 300px){ .community-solved-text{ display: none; } }
+
+/* A logó fölötti és alatti távolság egyforma (a fejléc teteje = a logó és az első tartalom közti
+   hely); asztalin a logó nagyobb, kitölti a különbséget. */
+.wrap{ padding-top: 14px; }
+.wrap > :first-child{ margin-top: 0; }
+/* Asztalin a logó nagyobb, a fölötte és alatta lévő távolság pedig a korábbi (a gombsorig és az
+   első tartalomig ugyanannyi, mint a nagyobb logó előtt). Mobilon a logó fölött és alatt egyforma. */
+@media (min-width: 640px){
+  .topnav-c .brand-link{ font-size: 65px; }
+  .wrap{ padding-top: 28px; }
+}
+.wrap > .quick-row:first-child, .wrap > .modal-overlay:first-child + .quick-row{ margin-top: 4px; }
+
+/* Új trófea: jobbra lent beúszó, egyforma szélességű kártyák, a legfrissebb alul. */
+.ach-toasts{
+  position: fixed; right: 14px; bottom: calc(16px + var(--kb-offset, 0px) + env(safe-area-inset-bottom, 0px));
+  z-index: 210; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none;
+}
+.ach-toast{
+  width: min(270px, calc(100vw - 28px)); display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 14px; background: var(--card); color: var(--ink);
+  border: 2px solid var(--accent2); box-shadow: 0 10px 26px rgba(31, 26, 43, 0.22);
+  animation: ach-in 0.35s cubic-bezier(.2,.9,.3,1.2) both, ach-out 0.4s ease 9.6s forwards;
+}
+.ach-toast-icon{ font-size: 26px; line-height: 1; flex: none; }
+.ach-toast-text{ display: flex; flex-direction: column; min-width: 0; }
+.ach-toast-label{ font-size: 11.5px; font-weight: 700; color: var(--accent2-text); text-transform: uppercase; letter-spacing: 0.04em; }
+.ach-toast-text b{ font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes ach-in{ from{ opacity: 0; transform: translateX(110%); } to{ opacity: 1; transform: none; } }
+@keyframes ach-out{ to{ opacity: 0; transform: translateX(30%); } }
+@media (prefers-reduced-motion: reduce){ .ach-toast{ animation: none; } }
+@media (prefers-color-scheme: dark){ .ach-toast{ box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55); } }

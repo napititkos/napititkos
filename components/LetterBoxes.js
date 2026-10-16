@@ -162,7 +162,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
       let n = idx + 1;
       while (n < cs.length && (cs[n] === ' ' || lk[n])) n++;
       if (n < cs.length && refs.current[n]) refs.current[n].focus();
-      else el.select();
+      else caretToEnd(el);
     };
     root.addEventListener('input', onNativeInput);
     return () => root.removeEventListener('input', onNativeInput);
@@ -185,8 +185,11 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
       className={`letter-box${locked[idx] ? ' locked' : ''}`}
       disabled={disabled || locked[idx]}
       value={value[idx] || ''}
-      onFocus={(e) => e.target.select()}
-      onClick={(e) => e.target.select()}
+      // Kijelölés helyett a kurzor a betű mögé kerül: így mobilon nem jelenik meg a
+      // kivágás / másolás / fordítás menü (a felülírást az onChange kezeli).
+      onFocus={(e) => caretToEnd(e.target)}
+      onClick={(e) => caretToEnd(e.target)}
+      onContextMenu={(e) => e.preventDefault()}
       onChange={(e) => {
         // Nincs maxLength: ha a kijelölés elveszett, és a kurzor a meglévő betű elé vagy mögé
         // került, a mezőbe két betű kerül - ilyenkor a régi betűt elhagyva az újat vesszük
@@ -206,7 +209,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
           const n = nextEditable(idx + 1);
           if (n < chars.length) focusIndex(n);
           // Az utolsó mezőben maradva a betű kijelölve marad, így rögtön átírható.
-          else requestAnimationFrame(() => e.target.select());
+          else requestAnimationFrame(() => caretToEnd(e.target));
         }
       }}
       onKeyDown={(e) => {
@@ -221,7 +224,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
           e.preventDefault();
           const n = nextEditable(idx + 1);
           if (n < chars.length) focusIndex(n);
-          else el.select();
+          else caretToEnd(el);
         } else if (e.key === 'Backspace' && !value[idx]) {
           const p = prevEditable(idx - 1);
           if (p >= 0) focusIndex(p);
@@ -268,4 +271,12 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
       </div>
     </div>
   );
+}
+
+// A kurzor a mező végére (kijelölés nélkül).
+function caretToEnd(el) {
+  try {
+    const n = el.value.length;
+    el.setSelectionRange(n, n);
+  } catch {}
 }

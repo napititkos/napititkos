@@ -84,7 +84,7 @@ export default function SubmitPage() {
           );
           prog.unlocked = unlocked;
           saveProgress(prog);
-          if (newly.includes('submitted_puzzle')) extra = ' 🏆 Új eredmény: Beküldő!';
+          if (newly.length) window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: newly }));
         }
         setStatus({ ok: true, msg: 'Köszönjük! A rejtvényed megjelent a Közösségi titkosírások között, ahol mások is megfejthetik és értékelhetik.' + extra });
         setForm({ clue: '', answer: '', fodder: '', indikator: '', definicio: '', alternativ: '' });

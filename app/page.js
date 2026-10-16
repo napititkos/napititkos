@@ -362,8 +362,8 @@ export default function HomePage() {
 
   function announceAchievements(ids) {
     if (!ids.length) return;
-    const titles = ids.map((id) => ACHIEVEMENTS.find((a) => a.id === id)?.title).filter(Boolean);
-    if (titles.length) showToast(`🏆 Új trófea: ${titles.join(', ')}`);
+    // Jobbra lent beúszó trófea-kártyák (components/AchievementToasts.js).
+    window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: ids }));
   }
 
   function giveUp() {
@@ -828,18 +828,23 @@ export default function HomePage() {
             </div>
           )}
 
-          {answered && (
-            <div className={`feedback ${correct ? 'good' : 'hint'}`}>
-              {correct ? `✓ ${feedbackText(true, hintsUsed())}` : feedbackText(false, 0, puzzle.answer)}
-            </div>
-          )}
+          {/* Helyes megfejtésnél a zöld buborék helyett a Nyertél kártya címe mondja el, hány tippel. */}
+          {answered && !correct && <div className="feedback hint">{feedbackText(false, 0, puzzle.answer)}</div>}
 
         </div>
       </div>
 
       {answered && (
         <div className="card result">
-          <h2>{correct ? 'Nyertél!' : 'Ennyi mára'}</h2>
+          {correct ? (
+            <h2 className="result-title">
+              Nyertél!{' '}
+              <span className="result-title-long">- {hintsUsed() === 0 ? 'tipp nélkül' : `${hintsUsed()} tipp felhasználva`}</span>
+              <span className="result-title-short">- {hintsUsed() === 0 ? 'tipp nélkül' : `${hintsUsed()} tippel`}</span>
+            </h2>
+          ) : (
+            <h2>Ennyi mára</h2>
+          )}
           <div className="result-meta">
             <span className="pill result-streak">
               <Icon src="/icons/Streak.png" size={14} /> {progress.streak} napos sorozat
@@ -860,7 +865,11 @@ export default function HomePage() {
               <span>Magyarázat</span>
             </div>
             <div className="result-action">
-              <button className="primary round-btn" onClick={openComments} aria-label="Kommentek">
+              <button
+                className={`primary round-btn${!commentsSeen && commentCount > 0 ? ' has-new-dot' : ''}`}
+                onClick={openComments}
+                aria-label={commentCount > 0 && !commentsSeen ? `Kommentek (${commentCount}, új)` : 'Kommentek'}
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.8A8 8 0 1 1 21 12z" />
                 </svg>

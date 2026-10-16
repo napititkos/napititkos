@@ -52,6 +52,14 @@ export default function NotificationsButton() {
     setPopShift(Math.min(shift, Math.max(0, Math.round(wrapLeft - 8))));
     const btnCenter = btnRef.current.offsetLeft + btnRef.current.offsetWidth / 2;
     setArrowRight(Math.round(popWidth - 2 - (btnCenter + Math.min(shift, Math.max(0, Math.round(wrapLeft - 8)))) - 12));
+    // Legfeljebb 10 értesítés látszik egyszerre, a többihez görgetni kell.
+    const sc = popRef.current.querySelector('.notif-scroll');
+    const items = sc ? [...sc.querySelectorAll('.notif-item')] : [];
+    if (sc && items.length > 10) {
+      sc.style.maxHeight = `${Math.round(items[10].offsetTop - items[0].offsetTop)}px`;
+    } else if (sc) {
+      sc.style.maxHeight = '';
+    }
   }, [open]);
 
   useEffect(() => {

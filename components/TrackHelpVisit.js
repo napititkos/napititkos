@@ -8,7 +8,7 @@ export default function TrackHelpVisit() {
     const prog = loadProgress();
     if (prog.readHelp) return;
     prog.readHelp = true;
-    const { unlocked } = computeNewAchievements(
+    const { unlocked, newly } = computeNewAchievements(
       {
         totalSolved: prog.totalSolved || 0,
         streak: prog.streak || 0,
@@ -20,6 +20,7 @@ export default function TrackHelpVisit() {
     );
     prog.unlocked = unlocked;
     saveProgress(prog);
+    if (newly?.length) window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: newly }));
   }, []);
 
   return null;

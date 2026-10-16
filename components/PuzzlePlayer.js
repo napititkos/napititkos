@@ -174,9 +174,8 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
           <div className="answer-row">
             <LetterBoxes answer={puzzle.answer} value={guess} locked={lockedLetters} onChange={() => {}} disabled={true} />
           </div>
-          <div className={`feedback ${correct ? 'good' : 'hint'}`}>
-            {correct ? '✓ Helyes válasz!' : `A válasz: ${puzzle.answer}`}
-          </div>
+          {/* Helyes megfejtésnél nincs külön zöld buborék (a listában jelöljük, hogy megfejtetted). */}
+          {!correct && <div className="feedback hint">{`A válasz: ${puzzle.answer}`}</div>}
         </>
       )}
 
