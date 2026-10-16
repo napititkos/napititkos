@@ -97,10 +97,6 @@ export default function CommunityPage() {
           </a>
         </div>
       )}
-      <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '4px 2px 14px' }}>
-        A játékosok által beküldött rejtvények. Nyomj rá egyre a megfejtéshez - ha megfejtetted,
-        értékelheted, és reakciót is adhatsz rá.
-      </p>
       <div className="community-sort">
         <label htmlFor="community-sort">Rendezés:</label>
         <select id="community-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -130,16 +126,23 @@ export default function CommunityPage() {
               <button type="button" className="community-head" aria-expanded={false} onClick={() => setOpenId(it.id)}>
                 <ClueLine text={it.clue} className="community-clue" />
                 <span className="community-meta">
-                  {it.avg != null ? (
-                    <span className="community-rating">
-                      <Stars value={it.avg} />
-                      <span>
-                        {it.avg.toLocaleString('hu-HU')} ({it.ratingCount} értékelés)
+                  <span className="community-rating-row">
+                    {it.avg != null ? (
+                      <span className="community-rating">
+                        <Stars value={it.avg} />
+                        <span>
+                          {it.avg.toLocaleString('hu-HU')} ({it.ratingCount} értékelés)
+                        </span>
                       </span>
-                    </span>
-                  ) : (
-                    <span className="community-rating muted">Még nincs értékelés</span>
-                  )}
+                    ) : (
+                      <span className="community-rating muted">Még nincs értékelés</span>
+                    )}
+                    {it.solved && (
+                      <span className="community-solved" title="Megfejtetted">
+                        ✓<span className="community-solved-text"> Megfejtetted</span>
+                      </span>
+                    )}
+                  </span>
                   <span>
                     Beküldte: <b>{it.name || 'Névtelen'}</b> · {formatDate(it.createdAt)}
                   </span>

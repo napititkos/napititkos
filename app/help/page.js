@@ -44,7 +44,11 @@ export default function HelpPage() {
         </div>
         <div className="help-block">
           <h3>Alternatív rejtvény</h3>
-          <p>Egy önmagában is értelmes, másik rejtvény ugyanarra a megoldásra - ha az eredeti nem jön össze, egy másik oldalról is nekifuthatsz.</p>
+          <p>
+            Ritkán elérhető segítség: csak akkor van, ha a rejtvény írójának két változata is van a
+            rejtvényből. Ilyenkor megtekintheted a másikat is - egy önmagában is értelmes, másik
+            rejtvényt ugyanarra a megoldásra, így egy másik oldalról is nekifuthatsz.
+          </p>
         </div>
         <div className="help-block">
           <h3>Gyakorlati tanácsok</h3>
