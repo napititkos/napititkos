@@ -30,7 +30,10 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ answer: data.puzzle.answer }),
     }).catch(() => null);
-    if (res?.ok) setData((d) => ({ ...d, mine: { ...d.mine, solved: true } }));
+    if (res?.ok) {
+      setData((d) => ({ ...d, mine: { ...d.mine, solved: true } }));
+      onChanged && onChanged({ solved: true });
+    }
   }
 
   async function rate(patch) {
