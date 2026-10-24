@@ -708,7 +708,7 @@ check('vendégként (megosztott linkről) csak előnézet: szöveg, betűszám, 
 j = await (await fetch(BASE + `/api/community/${legacyItem.id}`, { headers: { cookie: erJar.header() } })).json();
 check('az átemelt régi rejtvény tippjei is megvannak', j.puzzle.hints.definicio.text === 'Régi tipp' && j.puzzle.hints.definicio.words[0] === 0);
 r = await fetch(BASE + `/api/community/${kItem.id}`, { headers: { cookie: erJar.header() } }); j = await r.json();
-check('megnyitva: rejtvény, megoldás, tippek, reakciók', r.status === 200 && j.puzzle.answer === 'KOS JUH' && j.puzzle.hints.definicio.words[0] === 0 && j.puzzle.hints.alternativ.text === 'Másik?' && j.emojis.length === 10 && j.isOwner === false && !JSON.stringify(j).includes('@teszt.hu'));
+check('megnyitva: rejtvény, megoldás, tippek, reakciók', r.status === 200 && j.puzzle.answer === 'KOS JUH' && j.puzzle.hints.definicio.words[0] === 0 && j.puzzle.hints.alternativ.text === 'Másik?' && j.emojis.length === 11 && j.isOwner === false && !JSON.stringify(j).includes('@teszt.hu'));
 j = await (await fetch(BASE + `/api/community/${kItem.id}`, { headers: { cookie: kkJar.header() } })).json();
 check('a beküldő a sajátjánál tulajdonosként jelenik meg', j.isOwner === true);
 const cPost = (path, b, jar) => post(path, b, jar ? { cookie: jar.header() } : {});
@@ -834,6 +834,24 @@ if (otherSub) {
 j = await (await fetch(BASE + '/api/achievements/facts')).json();
 check('vendégnek üres válasz', Object.keys(j).length === 0);
 r = await fetch(BASE + '/submit'); check('a beküldés oldal címe: Közösségi rejtvény beküldése', /Közösségi rejtvény beküldése/.test(await r.text()));
+
+section('Közösségi "Új!" jelzés bejelentkezve a szerveren, RIP reakció');
+await seedUser('uj-jelzes@teszt.hu', 'Uj-Jelzes-1', { name: 'Új Jelző' });
+const ujJar = (await credLogin('uj-jelzes@teszt.hu', 'Uj-Jelzes-1')).jar;
+j = await (await fetch(BASE + '/api/community/seen', { headers: { cookie: ujJar.header() } })).json();
+check('még nem látta: van újdonság', j.latestAt > 0 && j.seenAt === 0 && j.latestAt > j.seenAt, JSON.stringify(j));
+r = await post('/api/community/seen', {}, { cookie: ujJar.header() });
+j = await (await fetch(BASE + '/api/community/seen', { headers: { cookie: ujJar.header() } })).json();
+check('megnézés után nincs újdonság (a szerveren tárolva, újbóli bejelentkezés után is)', j.seenAt === j.latestAt);
+const ujJar2 = (await credLogin('uj-jelzes@teszt.hu', 'Uj-Jelzes-1')).jar;
+j = await (await fetch(BASE + '/api/community/seen', { headers: { cookie: ujJar2.header() } })).json();
+check('kijelentkezés és újbóli belépés után sincs újra "Új!"', j.seenAt === j.latestAt);
+r = await fetch(BASE + '/api/community/seen'); check('vendégnek: 401 (ő az eszközén tárolja)', r.status === 401);
+const ripSub = JSON.parse(await redis.get('submissions:list'))[0];
+await post(`/api/community/${ripSub.id}/solve`, { answer: ripSub.answer }, { cookie: ujJar.header() });
+r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 10 }, { cookie: ujJar.header() }); j = await r.json();
+check('a 11. reakció (🪦) is megadható', r.status === 200 && j.reactions.length === 11 && j.reactions[10] >= 1);
+r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 11 }, { cookie: ujJar.header() }); check('a 12. már érvénytelen: 400', r.status === 400);
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

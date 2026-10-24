@@ -29,7 +29,7 @@ export async function POST(req) {
   const emailKeys = [...new Set([user?.email, email].filter(Boolean).map((e) => `au:userByEmail:${e}`))];
   const ownedEmailKeys = [];
   for (const k of emailKeys) if ((await kv.get(k)) === id) ownedEmailKeys.push(k);
-  await r.del(`au:user:${id}`, `progress:${id}`, `tutorial:${id}`, `notifications:user:${email}`, `rejections:user:${email}`, ...ownedEmailKeys, ...linked);
+  await r.del(`au:user:${id}`, `progress:${id}`, `tutorial:${id}`, `notifications:user:${email}`, `rejections:user:${email}`, `community:seen:${id}`, ...ownedEmailKeys, ...linked);
 
   // Függőben lévő (közösségi) beküldések törlése, a hozzájuk tartozó értékelésekkel együtt.
   const removedSubIds = [];
