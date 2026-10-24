@@ -117,6 +117,15 @@ export default function HomePage() {
   const [archiveCount, setArchiveCount] = useState(null);
   const [communityNew, setCommunityNew] = useState(false);
   useEffect(() => {
+    if (sessionStatus === 'loading') return;
+    // Bejelentkezve a szerver tudja, meddig láttad már a közösségi listát; vendégként ez az eszköz.
+    if (sessionStatus === 'authenticated') {
+      fetch('/api/community/seen', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setCommunityNew(!!d && d.latestAt > d.seenAt))
+        .catch(() => {});
+      return;
+    }
     fetch('/api/community/count')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -128,7 +137,7 @@ export default function HomePage() {
         setCommunityNew(d.latestAt > seen);
       })
       .catch(() => {});
-  }, []);
+  }, [sessionStatus]);
   useEffect(() => {
     if (!session?.user) return;
     fetch('/api/archive', { cache: 'no-store' })

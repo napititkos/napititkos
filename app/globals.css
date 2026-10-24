@@ -1031,3 +1031,19 @@ button.round-btn.has-new-dot::after{
 .rate-line .community-rate-title{ margin: 0; }
 .rate-line .star-input{ margin: 0; }
 .community-rate .rate-line .community-rate-sum{ display: inline; margin: 0; }
+
+/* Tipp-ablak: kérdőjel a tipp neve mellett (ugyanúgy működik, mint a beküldésnél). A magyarázat
+   a tipp neve alatt nyílik, a tipp dobozához igazítva. */
+b.hint-name{ position: relative; display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+b.hint-name .hl-dot{ flex: none; margin-right: 0; }
+b.hint-name .field-help{ margin-left: 2px; }
+b.hint-name .field-help-pop{ left: 0; top: calc(100% + 6px); width: min(260px, 64vw); font-weight: 400; white-space: normal; }
+
+/* Asztalon az értékelés sora három oszlop: a csillagok pontosan középen (a középső csillag az
+   oldal közepén), balra a cím, jobbra az összesítés. Mobilon tördelődő sor marad. */
+@media (min-width: 600px){
+  .rate-line{ display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 10px; }
+  .rate-line > :first-child{ justify-self: end; }
+  .rate-line > :nth-child(2){ justify-self: center; }
+  .rate-line > :nth-child(3){ justify-self: start; text-align: left; }
+}

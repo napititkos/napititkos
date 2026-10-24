@@ -38,7 +38,9 @@ export default function CommunityPage() {
       .then((r) => r.json())
       .then((d) => {
         setItems(d.items || []);
-        // A főoldali "Új!" jelzéshez: eddig a legutóbbi beküldésig láttuk a közösségi listát.
+        // A főoldali "Új!" jelzéshez: eddig a legutóbbi beküldésig láttuk a közösségi listát
+        // (bejelentkezve a szerveren, vendégként ezen az eszközön tároljuk).
+        if (status === 'authenticated') fetch('/api/community/seen', { method: 'POST' }).catch(() => {});
         try {
           const latest = (d.items || []).reduce((mx, x) => Math.max(mx, Date.parse(x.createdAt) || 0), 0);
           localStorage.setItem('community-seen-at', String(Math.max(latest, Number(localStorage.getItem('community-seen-at')) || 0)));

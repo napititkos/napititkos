@@ -141,14 +141,10 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
           {/* Egy sorban (mobilon tördelődhet): "Értékelés: ★★★★½ (4,5 átlag, 2 értékelés)" */}
           <div className="rate-line">
             <span className="community-rate-title">Értékelés:</span>
-            {data.avg != null ? (
-              <>
-                <Stars value={data.avg} size={20} />
-                <span className="community-rate-sum">({data.avg.toLocaleString('hu-HU')} átlag, {data.ratingCount} értékelés)</span>
-              </>
-            ) : (
-              <span className="community-rate-sum">még nincs értékelése</span>
-            )}
+            <Stars value={data.avg || 0} size={20} />
+            <span className="community-rate-sum">
+              {data.avg != null ? `(${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés)` : '(még nincs értékelése)'}
+            </span>
           </div>
           <p className="community-rate-note">
             A megfejtéshez és az értékeléshez{' '}
@@ -183,14 +179,10 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
           {/* Egy sorban (mobilon tördelődhet): "Értékelés: ★★★★½ (4,5 átlag, 2 értékelés)" */}
           <div className="rate-line">
             <span className="community-rate-title">Értékelés:</span>
-            {data.avg != null ? (
-              <>
-                <Stars value={data.avg} size={20} />
-                <span className="community-rate-sum">({data.avg.toLocaleString('hu-HU')} átlag, {data.ratingCount} értékelés)</span>
-              </>
-            ) : (
-              <span className="community-rate-sum">még nincs értékelése</span>
-            )}
+            <Stars value={data.avg || 0} size={20} />
+            <span className="community-rate-sum">
+              {data.avg != null ? `(${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés)` : '(még nincs értékelése)'}
+            </span>
           </div>
           <p className="community-rate-note">Megoldás után értékelheted, és reakciót is adhatsz rá.</p>
         </div>
