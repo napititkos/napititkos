@@ -701,7 +701,7 @@ j = await (await fetch(BASE + '/api/community', { headers: { cookie: erJar.heade
 const kItem = j.items.find((x) => x.clue === 'Közösségi próba kérdés?');
 check('bejelentkezve: azonnal megjelenik, a beküldő nevével', !!kItem && kItem.name === 'Közösségi Kata' && kItem.avg === null);
 const legacyItem = j.items.find((x) => x.clue === 'Régi rendszerű beküldés?');
-check('a régi rendszerben beküldött rejtvény átkerült a közösségibe (beemeltként, a beküldő nevével)', !!legacyItem && legacyItem.promoted === true && legacyItem.name === 'Régi Rita');
+check('a régi rendszerben beküldött rejtvény átkerült a közösségibe (a beküldő nevével; "bekerült" jelzés még nincs, mert napi rejtvényként még nem jelent meg)', !!legacyItem && legacyItem.promoted === false && legacyItem.name === 'Régi Rita');
 check('a lista nem adja ki a megoldást, a tippeket és az e-mail-címet', !JSON.stringify(j).includes('KOS JUH') && !JSON.stringify(j).includes('állatok') && !JSON.stringify(j).includes('@teszt.hu'));
 r = await fetch(BASE + `/api/community/${kItem.id}`); j = await r.json();
 check('vendégként (megosztott linkről) csak előnézet: szöveg, betűszám, beküldő, értékelés - megoldás és tippek nélkül', r.status === 200 && j.preview === true && j.puzzle.clue === 'Közösségi próba kérdés?' && j.puzzle.enumeration === '(3,3)' && j.puzzle.submittedBy === 'Közösségi Kata' && !JSON.stringify(j).includes('KOS JUH') && !JSON.stringify(j).includes('állatok') && !('hints' in j.puzzle) && !('answer' in j.puzzle), JSON.stringify(j).slice(0, 200));
@@ -805,6 +805,35 @@ r = await fetch(BASE + `/api/community/${spId}`, { method: 'DELETE', headers: { 
 check('törléskor az értesítési jelzők is törlődnek', r.status === 200 && !(await redis.get(`community:notified:${spId}`)) && (await redis.keys(`community:*:${spId}`)).length === 0);
 r = await fetch(BASE + '/help'); const helpH = await r.text();
 check('a Kisokos szerint az alternatív rejtvény ritka, csak ha két változat van', /Ritkán elérhető segítség/.test(helpH) && /két változata/.test(helpH));
+
+section('Új trófeák szerveroldali tényei, "bekerült" jelzés, Új! jelzés adatai');
+await seedUser('liga@teszt.hu', 'Liga-Jelszo-1', { name: 'Liga Lili' });
+const ligaJar = (await credLogin('liga@teszt.hu', 'Liga-Jelszo-1')).jar;
+j = await (await fetch(BASE + '/api/achievements/facts', { headers: { cookie: ligaJar.header() } })).json();
+check('kezdetben se közösségi megfejtés, se napi titkosírásba került rejtvény', j.communitySolved === false && j.bigLeagues === false, JSON.stringify(j));
+r = await post('/api/submissions', { clue: 'Liga próba?', answer: 'LIGA' }, { cookie: ligaJar.header() });
+const ligaId = JSON.parse(await redis.get('submissions:list')).find((x) => x.clue === 'Liga próba?')?.id;
+j = await (await fetch(BASE + '/api/community/count')).json();
+check('a darabszám-végpont a legutóbbi beküldés idejét is adja (az Új! jelzéshez)', typeof j.latestAt === 'number' && j.latestAt > Date.now() - 60000);
+r = await post('/api/admin/community', { id: ligaId }, adm); j = await r.json(); const ligaPz = j.puzzleId;
+j = await (await fetch(BASE + '/api/community', { headers: { cookie: ligaJar.header() } })).json();
+check('beemelés után, megjelenés előtt még nincs "bekerült" jelzés', j.items.find((x) => x.id === ligaId)?.promoted === false);
+const hist2 = JSON.parse((await redis.get('rotation:history')) || '[]');
+hist2.push({ id: ligaPz, clue: 'Liga próba?', answer: 'LIGA', shownDate: '2020-01-01', hints: {} });
+await redis.set('rotation:history', JSON.stringify(hist2));
+j = await (await fetch(BASE + '/api/community', { headers: { cookie: ligaJar.header() } })).json();
+check('napi rejtvényként megjelenés után (archívumban): "bekerült" jelzés', j.items.find((x) => x.id === ligaId)?.promoted === true);
+j = await (await fetch(BASE + '/api/achievements/facts', { headers: { cookie: ligaJar.header() } })).json();
+check('"A nagy ligák": a szerver szerint bekerült a rejtvénye', j.bigLeagues === true);
+const otherSub = JSON.parse(await redis.get('submissions:list')).find((x) => x.id !== ligaId);
+if (otherSub) {
+  await post(`/api/community/${otherSub.id}/solve`, { answer: otherSub.answer }, { cookie: ligaJar.header() });
+  j = await (await fetch(BASE + '/api/achievements/facts', { headers: { cookie: ligaJar.header() } })).json();
+  check('"Közösségi": a szerver szerint megfejtett egy közösségi rejtvényt', j.communitySolved === true);
+}
+j = await (await fetch(BASE + '/api/achievements/facts')).json();
+check('vendégnek üres válasz', Object.keys(j).length === 0);
+r = await fetch(BASE + '/submit'); check('a beküldés oldal címe: Közösségi rejtvény beküldése', /Közösségi rejtvény beküldése/.test(await r.text()));
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

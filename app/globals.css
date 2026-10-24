@@ -1015,3 +1015,19 @@ button.round-btn.has-new-dot::after{
 @keyframes ach-out{ to{ opacity: 0; transform: translateX(30%); } }
 @media (prefers-reduced-motion: reduce){ .ach-toast{ animation: none; } }
 @media (prefers-color-scheme: dark){ .ach-toast{ box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55); } }
+
+/* Főoldali linkdobozok jelzései jobbra fent: megfejtett korábbiak (x/y), új közösségiek (Új!). */
+.next-links .card.next-link{ position: relative; }
+.next-link-badge{
+  position: absolute; top: 8px; right: 8px; font-size: 11.5px; font-weight: 800; line-height: 1;
+  padding: 4px 7px; border-radius: 999px; background: var(--accent2-soft); color: var(--accent2-text);
+}
+.next-link-badge.new{ background: var(--btn-primary); color: #fff; }
+/* Főoldal: a logó és a gombsor közti távolság = a gombsor és a rejtvény kártya közti távolság. */
+.wrap > .quick-row:first-child, .wrap > .modal-overlay:first-child + .quick-row{ margin-top: -4px; }
+
+/* Értékelés egy sorban: cím, csillagok, (átlag, darab); keskeny kijelzőn tördelődik. */
+.rate-line{ display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 8px; }
+.rate-line .community-rate-title{ margin: 0; }
+.rate-line .star-input{ margin: 0; }
+.community-rate .rate-line .community-rate-sum{ display: inline; margin: 0; }

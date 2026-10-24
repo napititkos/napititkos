@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { auth } from '../../../auth';
 import { kv } from '../../../lib/kv';
+import { todayStr } from '../../../lib/date';
 import { communityList, migrateLegacyOnce, solvedKey, summaries } from '../../../lib/community';
 
 // A Közösségi titkosírások listája: csak a lista-nézethez szükséges adatok (rejtvény, beküldő,
@@ -12,6 +13,8 @@ export async function GET() {
   await migrateLegacyOnce();
   const list = await communityList();
   const sums = await summaries(list.map((s) => s.id));
+  const today = todayStr();
+  const shownBefore = new Set(((await kv.get('rotation:history')) || []).filter((h) => h?.shownDate && h.shownDate < today).map((h) => h.id));
   // Bejelentkezve: melyiket fejtette már meg (a listában pipa jelzi).
   const session = await auth();
   let solvedIds = new Set();
@@ -30,7 +33,9 @@ export async function GET() {
         createdAt: s.createdAt,
         avg: sums[s.id]?.avg ?? null,
         ratingCount: sums[s.id]?.ratingCount || 0,
-        promoted: !!s.promotedAt,
+        // "Bekerült a napi titkosírások közé" csak akkor, ha a napi rejtvényként már meg is
+        // jelent (az archívumban van), nem már a beemeléskor.
+        promoted: !!(s.promotedPuzzleId && shownBefore.has(s.promotedPuzzleId)),
         solved: solvedIds.has(s.id),
       })),
     },
