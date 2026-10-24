@@ -11,6 +11,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import ViewportVars from '../components/ViewportVars';
 import AchievementToasts from '../components/AchievementToasts';
+import AchievementCheck from '../components/AchievementCheck';
 import localFont from 'next/font/local';
 
 // A betűtípus-fájlok a repóban vannak (app/fonts, SIL Open Font License), így a build
@@ -60,6 +61,7 @@ export default function RootLayout({ children }) {
           <AchievementsModal />
           <LeaderboardModal />
           <TutorialModal />
+          <AchievementCheck />
         </AuthProvider>
         <AchievementToasts />
         <ViewportVars />

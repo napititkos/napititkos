@@ -19,6 +19,8 @@ import { HL_TYPES, highlightMap } from '../lib/clue';
 import { enumerationFor } from '../lib/format';
 import Comments from '../components/Comments';
 import NotificationsButton from '../components/NotificationsButton';
+import { HINT_HELP } from '../lib/puzzleLogic';
+import FieldHelp from '../components/FieldHelp';
 
 const HINT_LABELS = {
   fodder: 'Készlet',
@@ -111,6 +113,37 @@ export default function HomePage() {
   const trophyCount = unlockedAchievements.filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length;
   const [countdown, setCountdown] = useState('');
   const [hoursLeft, setHoursLeft] = useState('');
+  // A főoldali linkdobozok jelzései: megfejtett korábbi titkosírások (x/y) és új közösségiek.
+  const [archiveCount, setArchiveCount] = useState(null);
+  const [communityNew, setCommunityNew] = useState(false);
+  useEffect(() => {
+    fetch('/api/community/count')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.latestAt) return;
+        let seen = 0;
+        try {
+          seen = Number(localStorage.getItem('community-seen-at')) || 0;
+        } catch {}
+        setCommunityNew(d.latestAt > seen);
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/archive', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const list = d?.archive || [];
+        if (!list.length) return;
+        const prog = loadProgress();
+        const hist = prog.history || {};
+        const arch = prog.archiveSolved || [];
+        const solved = list.filter((it) => !!hist[it.shownDate]?.correct || arch.includes(it.id)).length;
+        setArchiveCount({ solved, total: list.length });
+      })
+      .catch(() => {});
+  }, [session?.user]);
   const timerRef = useRef(null);
   const finishedRef = useRef(false);
   const [showComments, setShowComments] = useState(false);
@@ -769,9 +802,10 @@ export default function HomePage() {
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                          <b>
+                          <b className="hint-name">
                             {hl && <span className="hl-dot" />}
                             {HINT_LABELS[t]}
+                            <FieldHelp label={HINT_LABELS[t]}>{HINT_HELP[t]}</FieldHelp>
                           </b>
                           <button
                             className={used ? 'ghost small' : `primary small${hl ? ' hl-btn' : ''}`}
@@ -904,11 +938,17 @@ export default function HomePage() {
       {(
         <div className="next-links">
           <a className="card next-link" href="/archive">
+            {archiveCount && (
+              <span className="next-link-badge" aria-label={`${archiveCount.solved} / ${archiveCount.total} korábbi titkosírást fejtettél meg`}>
+                {archiveCount.solved}/{archiveCount.total}
+              </span>
+            )}
             <Icon src="/icons/Korabbi_titkosirasok.png" size={22} />
             <b>Korábbi titkosírások</b>
             <span>Játszd újra a régebbi napok rejtvényeit</span>
           </a>
           <a className="card next-link" href="/kozossegi">
+            {communityNew && <span className="next-link-badge new">Új!</span>}
             <Icon src="/icons/Kozossegi.png" size={22} />
             <b>Közösségi titkosírások</b>
             <span>Fejtsd meg a játékosok rejtvényeit</span>

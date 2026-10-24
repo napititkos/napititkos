@@ -7,8 +7,9 @@ import ClueText from './ClueText';
 import { HL_TYPES, highlightMap } from '../lib/clue';
 import Icon from './Icon';
 import { fireConfetti } from './Confetti';
-import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked } from '../lib/puzzleLogic';
+import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked, HINT_HELP } from '../lib/puzzleLogic';
 import { enumerationFor } from '../lib/format';
+import FieldHelp from './FieldHelp';
 
 export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolved = false, dateLabel = '' }) {
   const [guess, setGuess] = useState(() =>
@@ -210,9 +211,10 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
                     style={{ border: `2px solid ${HL_TYPES.includes(t) ? 'var(--hl-ink)' : 'var(--line)'}`, borderRadius: 12, padding: '10px 12px' }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                      <b>
+                      <b className="hint-name">
                         {HL_TYPES.includes(t) && <span className="hl-dot" />}
                         {HINT_LABELS[t]}
+                        <FieldHelp label={HINT_LABELS[t]}>{HINT_HELP[t]}</FieldHelp>
                       </b>
                       <button
                         className={used ? 'ghost small' : `primary small${HL_TYPES.includes(t) ? ' hl-btn' : ''}`}

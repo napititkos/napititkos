@@ -104,7 +104,7 @@ export default function SubmitPage() {
   if (authStatus === 'loading') {
     return (
       <div className="wrap">
-        <h1 className="page-title">Fanmade rejtvény beküldése</h1>
+        <h1 className="page-title">Közösségi rejtvény beküldése</h1>
         <div className="card">Betöltés…</div>
       </div>
     );
@@ -113,7 +113,7 @@ export default function SubmitPage() {
   if (!session?.user) {
     return (
       <div className="wrap">
-        <h1 className="page-title">Fanmade rejtvény beküldése</h1>
+        <h1 className="page-title">Közösségi rejtvény beküldése</h1>
         <div className="card">
           <p style={{ fontSize: 14.5 }}>
             A rejtvények beküldéséhez be kell jelentkezned - így tudjuk feltüntetni a nevedet a
@@ -130,7 +130,7 @@ export default function SubmitPage() {
   if (!session.user.verified) {
     return (
       <div className="wrap">
-        <h1 className="page-title">Fanmade rejtvény beküldése</h1>
+        <h1 className="page-title">Közösségi rejtvény beküldése</h1>
         <div className="card">
           <p style={{ fontSize: 14.5 }}>
             Már bejelentkeztél, de az email címed még nincs megerősítve. Nézd meg a postaládádat -
@@ -166,7 +166,7 @@ export default function SubmitPage() {
 
   return (
     <div className="wrap">
-      <h1 className="page-title">Fanmade rejtvény beküldése</h1>
+      <h1 className="page-title">Közösségi rejtvény beküldése</h1>
       <div className="card">
         <p style={{ fontSize: 14.5, color: 'var(--ink-soft)', marginTop: 0 }}>
           Van egy jó ötleted egy kriptikus rejtvényhez? Küldd be, és ha beválik, bekerülhet a napi

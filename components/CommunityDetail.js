@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import PuzzlePlayer from './PuzzlePlayer';
 import Icon from './Icon';
+import { loadProgress, saveProgress } from '../lib/progress';
+import { computeNewAchievements } from '../lib/achievements';
 import { Stars } from './Stars';
 import { enumerationFor } from '../lib/format';
 
@@ -33,6 +35,14 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
     if (res?.ok) {
       setData((d) => ({ ...d, mine: { ...d.mine, solved: true } }));
       onChanged && onChanged({ solved: true });
+      // "Közösségi" trófea az első közösségi megfejtésért.
+      const prog = loadProgress();
+      const { unlocked, newly } = computeNewAchievements({ communitySolved: true }, prog.unlocked);
+      if (newly.length) {
+        prog.unlocked = unlocked;
+        saveProgress(prog);
+        window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: newly }));
+      }
     }
   }
 
@@ -128,17 +138,18 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
           </div>
         </div>
         <div className="community-rate community-rate-summary">
-          <div className="community-rate-title">Értékelés</div>
-          {data.avg != null ? (
-            <div className="community-rating">
-              <Stars value={data.avg} size={20} />
-              <span>
-                {data.avg.toLocaleString('hu-HU')} ({data.ratingCount} értékelés)
-              </span>
-            </div>
-          ) : (
-            <div className="community-rate-sum">Még nincs értékelése.</div>
-          )}
+          {/* Egy sorban (mobilon tördelődhet): "Értékelés: ★★★★½ (4,5 átlag, 2 értékelés)" */}
+          <div className="rate-line">
+            <span className="community-rate-title">Értékelés:</span>
+            {data.avg != null ? (
+              <>
+                <Stars value={data.avg} size={20} />
+                <span className="community-rate-sum">({data.avg.toLocaleString('hu-HU')} átlag, {data.ratingCount} értékelés)</span>
+              </>
+            ) : (
+              <span className="community-rate-sum">még nincs értékelése</span>
+            )}
+          </div>
           <p className="community-rate-note">
             A megfejtéshez és az értékeléshez{' '}
             <a href={`/login?callbackUrl=${encodeURIComponent(`/kozossegi?r=${id}`)}`}>jelentkezz be vagy regisztrálj</a> - ingyenes.
@@ -169,23 +180,26 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
           az értékelő rész a reakciókkal. */}
       {!mine.solved && (
         <div className="community-rate community-rate-summary">
-          <div className="community-rate-title">Értékelés</div>
-          {data.avg != null ? (
-            <div className="community-rating">
-              <Stars value={data.avg} size={20} />
-              <span>
-                {data.avg.toLocaleString('hu-HU')} ({data.ratingCount} értékelés)
-              </span>
-            </div>
-          ) : (
-            <div className="community-rate-sum">Még nincs értékelése.</div>
-          )}
+          {/* Egy sorban (mobilon tördelődhet): "Értékelés: ★★★★½ (4,5 átlag, 2 értékelés)" */}
+          <div className="rate-line">
+            <span className="community-rate-title">Értékelés:</span>
+            {data.avg != null ? (
+              <>
+                <Stars value={data.avg} size={20} />
+                <span className="community-rate-sum">({data.avg.toLocaleString('hu-HU')} átlag, {data.ratingCount} értékelés)</span>
+              </>
+            ) : (
+              <span className="community-rate-sum">még nincs értékelése</span>
+            )}
+          </div>
           <p className="community-rate-note">Megoldás után értékelheted, és reakciót is adhatsz rá.</p>
         </div>
       )}
       {mine.solved && (
         <div className="community-rate">
-          <div className="community-rate-title">Értékeld a titkosírást!</div>
+          {/* Egy sorban (mobilon tördelődhet): "Értékeld: ★★★★★ (4,5 átlag, 2 értékelés)" */}
+          <div className="rate-line">
+          <span className="community-rate-title">Értékeld:</span>
           <div className="star-input" role="group" aria-label="Értékelés csillagokkal">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -201,8 +215,9 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
               </button>
             ))}
           </div>
-          <div className="community-rate-sum">
-            {data.avg != null ? `${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés` : 'Még nincs értékelés - legyél te az első!'}
+          <span className="community-rate-sum">
+            {data.avg != null ? `(${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés)` : '(még nincs értékelés - legyél te az első!)'}
+          </span>
           </div>
           <div className="reaction-row" role="group" aria-label="Reakciók">
             {emojis.map((e, k) => (

@@ -36,7 +36,14 @@ export default function CommunityPage() {
   function load() {
     fetch('/api/community', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((d) => setItems(d.items || []))
+      .then((d) => {
+        setItems(d.items || []);
+        // A főoldali "Új!" jelzéshez: eddig a legutóbbi beküldésig láttuk a közösségi listát.
+        try {
+          const latest = (d.items || []).reduce((mx, x) => Math.max(mx, Date.parse(x.createdAt) || 0), 0);
+          localStorage.setItem('community-seen-at', String(Math.max(latest, Number(localStorage.getItem('community-seen-at')) || 0)));
+        } catch {}
+      })
       .catch(() => setError('Nem sikerült betölteni a közösségi titkosírásokat.'));
   }
   // Megosztott link (/kozossegi?r=<azonosító>): betöltés után az a rejtvény nyílik meg.
