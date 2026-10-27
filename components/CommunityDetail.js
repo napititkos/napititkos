@@ -216,11 +216,12 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
               teljes emoji-sor látszik; utána csak azok, amelyekre már valaki reagált, darabszámmal,
               a saját reakció kiemelve. */}
           {mine.reaction == null || pickOpen ? (
-            <div className="reaction-row" role="group" aria-label="Reakció választása">
+            <div className={`reaction-row${pickOpen ? ' reaction-row-open' : ''}`} role="group" aria-label="Reakció választása">
               {emojis.map((e, k) => (
                 <button
                   key={k}
                   type="button"
+                  style={{ '--i': k }}
                   className={`reaction-btn${mine.reaction === k ? ' on' : ''}`}
                   aria-label={`${e} reakció, ${reactions[k]} darab`}
                   aria-pressed={mine.reaction === k}

@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import TutorialExtraTask from './TutorialExtraTask';
 import LetterBoxes from './LetterBoxes';
 import { fireConfetti } from './Confetti';
 import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
@@ -17,14 +18,34 @@ export default function JokerExample({ onProgress }) {
   const [solved, setSolved] = useState(false);
   const [wrongTried, setWrongTried] = useState(false);
 
+  // A szekció gyakorlatai (joker_1, joker_2); a szekció haladása a megoldottak száma.
+  const [done2, setDone2] = useState(false);
+  useEffect(() => {
+    const progress = loadTutorialProgress();
+    // Korábbi verzió: egyetlen gyakorlat volt (joker = 1) - az az 1. gyakorlatnak számít.
+    // (Más eszközről szinkronizálva csak a darabszám érkezik: abból állítjuk vissza.)
+    if (progress.joker >= 1 && !progress.joker_1 && !progress.joker_2) progress.joker_1 = 1;
+    if (progress.joker >= 2) {
+      progress.joker_1 = 1;
+      progress.joker_2 = 1;
+    }
+    if (progress.joker_1) setSolved(true);
+    if (progress.joker_2) setDone2(true);
+  }, []);
+  function saveTask(which) {
+    const progress = loadTutorialProgress();
+    if (which === 1) progress.joker_1 = 1;
+    if (which === 2) progress.joker_2 = 1;
+    progress.joker = (progress.joker_1 || 0) + (progress.joker_2 || 0);
+    saveTutorialProgress(progress);
+    onProgress && onProgress(progress);
+  }
+
   function checkAnswer() {
     if (norm(guess.join('')) === norm(ANSWER)) {
       setSolved(true);
       fireConfetti();
-      const progress = loadTutorialProgress();
-      progress.joker = 1;
-      saveTutorialProgress(progress);
-      onProgress && onProgress(progress);
+      saveTask(1);
     } else {
       setWrongTried(true);
     }
@@ -88,6 +109,25 @@ export default function JokerExample({ onProgress }) {
           pedig a definíció - együtt: PÁRNA. Ez a joker lényege: néha nincs egyértelmű jelzés,
           csak rá kell érezni a trükkre!
         </div>
+      )}
+      {solved && (
+        <TutorialExtraTask
+          title="2. formabontó rejtvény"
+          intro="Sokszor egészen formabontó rejtvényekkel találkozhatsz, ami már a képrejtvény határát súrolják. Mondd, miből látsz itt mennyit?"
+          clue="Ausztria -500Ft, Ukrajna -1000Ft, Szlovákia -1500Ft, Szlovénia -400Ft, Románia -800Ft, Szerbia -600Ft"
+          answer="HATÁR"
+          hints={[
+            'Nézd meg, mi szerepel a listában: országok, és mindegyik mellett egy összeg. Mi köti össze ezeket az országokat Magyarországgal?',
+            'Hat darab ár van valamiből, mi lehet a megfejtés?',
+          ]}
+          wrongText="Még nem ez az. Számold meg, hány összeg (ár) szerepel a listában, és gondold végig, mi közös az országokban!"
+          solvedText="✓ Pontosan! A listában hat ár szerepel - hat ár: HATÁR, és mind a hat ország a határunkon fekszik. A megfejtés: HATÁR."
+          initiallySolved={done2}
+          onSolved={() => {
+            setDone2(true);
+            saveTask(2);
+          }}
+        />
       )}
     </div>
   );
