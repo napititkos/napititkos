@@ -136,6 +136,12 @@ export default function CommunityPage() {
                 <ClueLine text={it.clue} className="community-clue" />
                 <span className="community-meta">
                   <span className="community-rating-row">
+                    {/* A sor a megfejtett-pipával kezdődik, utána a csillagok és a többi adat. */}
+                    {it.solved && (
+                      <span className="community-solved" title="Megfejtetted">
+                        ✓<span className="community-solved-text"> Megfejtetted</span>
+                      </span>
+                    )}
                     {it.avg != null ? (
                       <span className="community-rating">
                         <Stars value={it.avg} />
@@ -145,11 +151,6 @@ export default function CommunityPage() {
                       </span>
                     ) : (
                       <span className="community-rating muted">Még nincs értékelés</span>
-                    )}
-                    {it.solved && (
-                      <span className="community-solved" title="Megfejtetted">
-                        ✓<span className="community-solved-text"> Megfejtetted</span>
-                      </span>
                     )}
                   </span>
                   <span>

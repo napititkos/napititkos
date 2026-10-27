@@ -234,11 +234,6 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
                         {puzzle.hints[t].text}
                       </p>
                     )}
-                    {isBetu && betuCount > 0 && (
-                      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
-                        Eddig {betuCount} betűt fedtünk fel.
-                      </p>
-                    )}
                   </div>
                 );
               })}

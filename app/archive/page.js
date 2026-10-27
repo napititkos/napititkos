@@ -6,6 +6,7 @@ import { enumerationFor } from '../../lib/format';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
 import Comments from '../../components/Comments';
+import ClueLine from '../../components/ClueLine';
 
 const HU_MONTHS = [
   'Január', 'Február', 'Március', 'Április', 'Május', 'Június',
@@ -151,6 +152,8 @@ export default function ArchivePage() {
 
         {years.map((year) => {
           const months = grouped[year];
+          // Az év legutóbbi hónapja (alapból ez van nyitva).
+          const firstMonthKey = `${year}-${Object.keys(months).sort((a, b) => b.localeCompare(a))[0]}`;
           const yearItems = allYearItems(months);
           // Az évek alapból le vannak nyitva (a felhasználó becsukhatja őket).
           const yearOpen = openYears[year] ?? true;
@@ -173,66 +176,71 @@ export default function ArchivePage() {
                     .map((month) => {
                       const monthItems = months[month];
                       const key = `${year}-${month}`;
-                      const monthOpen = !!openMonths[key];
+                      // Alapból a legutóbbi hónap van nyitva, a többit a felhasználó nyithatja ki.
+                      const monthOpen = monthOpenOf(openMonths, key, firstMonthKey);
                       return (
-                        <div key={key} style={{ borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 10 }}>
-                          <div
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                            onClick={() => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }))}
+                        // Egy hónap = egy doboz (mappa), benne a napok önálló, kattintható kártyákként.
+                        <div key={key} className="archive-month">
+                          <button
+                            type="button"
+                            className="archive-month-head"
+                            aria-expanded={monthOpen}
+                            onClick={() => setOpenMonths((prev) => ({ ...prev, [key]: !monthOpenOf(prev, key, firstMonthKey) }))}
                           >
-                            <b style={{ fontSize: 14.5 }}>
+                            <b>
                               {monthOpen ? '▾' : '▸'} {HU_MONTHS[parseInt(month, 10) - 1]}
                             </b>
-                            <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                            <span>
                               {solvedCount(monthItems)}/{monthItems.length} megfejtve
                             </span>
-                          </div>
+                          </button>
 
                           {monthOpen && (
-                            <div style={{ marginTop: 10 }}>
+                            <div className="archive-month-items">
                               {monthItems
                                 .sort((a, b) => b.shownDate.localeCompare(a.shownDate))
                                 .map((it, i) => {
                                   const solved = isSolved(it);
                                   const itemKey = it.id + i;
                                   const isPlaying = playingId === itemKey;
+                                  const comments = commentCounts[it.shownDate] ?? it.commentCount ?? 0;
                                   return (
-                                    <div className="sub-item" key={itemKey}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                                        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-                                          {it.shownDate}
-                                          {it.totalSolvers != null && ` · ${it.totalSolvers} megfejtő összesen`}
-                                          {` · ${commentCounts[it.shownDate] ?? it.commentCount ?? 0} komment`}
-                                        </span>
-                                        <span style={{ fontSize: 12.5, color: solved ? 'var(--good)' : 'var(--ink-soft)' }}>
-                                          {solved ? '✓ megfejtetted' : '– nem oldottad meg'}
-                                        </span>
-                                      </div>
-
-                                      {!isPlaying && (
-                                        <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, gap: 8 }}>
-                                          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {it.clue} {enumerationFor(it.answer)}
-                                          </div>
-                                          <button className="ghost small" style={{ flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => setPlayingId(itemKey)}>
-                                            ▶ Játssz
-                                          </button>
-                                        </div>
+                                    <div className={`card community-item archive-item${isPlaying ? ' open' : ''}`} key={itemKey}>
+                                      {isPlaying ? (
+                                        <button type="button" className="community-close" aria-expanded={true} onClick={() => setPlayingId(null)}>
+                                          ▴ Bezárás
+                                        </button>
+                                      ) : (
+                                        <button type="button" className="community-head" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
+                                          <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" />
+                                          <span className="community-meta">
+                                            <span className="community-rating-row">
+                                              {solved && (
+                                                <span className="community-solved" title="Megfejtetted">
+                                                  ✓<span className="community-solved-text"> Megfejtetted</span>
+                                                </span>
+                                              )}
+                                              <span>{formatDay(it.shownDate)}</span>
+                                            </span>
+                                            <span>
+                                              {it.totalSolvers != null && `${it.totalSolvers} megfejtő összesen · `}
+                                              {comments} komment
+                                            </span>
+                                          </span>
+                                        </button>
                                       )}
-
                                       {isPlaying && (
-                                        <>
+                                        <div className="community-detail">
                                           <PuzzlePlayer
                                             puzzle={it}
                                             initiallySolved={solved}
+                                            dateLabel={formatDay(it.shownDate)}
                                             onSolved={() => handleSolved(it.id, it.shownDate)}
                                             onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />
                                           {solved && (
                                             <div style={{ marginTop: 12 }}>
-                                              <b style={{ fontSize: 14 }}>
-                                                Kommentek ezen a napon ({commentCounts[it.shownDate] ?? it.commentCount ?? 0})
-                                              </b>
+                                              <b style={{ fontSize: 14 }}>Kommentek ezen a napon ({comments})</b>
                                               <div style={{ marginTop: 6 }}>
                                                 <Comments
                                                   date={it.shownDate}
@@ -242,12 +250,7 @@ export default function ArchivePage() {
                                               </div>
                                             </div>
                                           )}
-                                          <div style={{ marginTop: 10 }}>
-                                            <button className="ghost small" onClick={() => setPlayingId(null)}>
-                                              Bezárás
-                                            </button>
-                                          </div>
-                                        </>
+                                        </div>
                                       )}
                                     </div>
                                   );
@@ -266,3 +269,18 @@ export default function ArchivePage() {
     </div>
   );
 }
+
+// Egy hónap nyitva van-e: amit a felhasználó állított, egyébként csak a legutóbbi hónap.
+function monthOpenOf(openMonths, key, firstKey) {
+  return openMonths[key] ?? key === firstKey;
+}
+
+// "2026-10-12" -> "2026. október 12."
+function formatDay(iso) {
+  try {
+    return new Date(`${iso}T12:00:00Z`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch {
+    return iso;
+  }
+}
+
