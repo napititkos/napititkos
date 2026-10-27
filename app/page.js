@@ -684,18 +684,10 @@ export default function HomePage() {
             </p>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
               Ahhoz, hogy belekezdj, először nézd át a{' '}
-              <a href="/help" style={{ color: 'var(--accent-text)', fontWeight: 700 }} onClick={dismissIntro}>
+              <a href="/kisokos" style={{ color: 'var(--accent-text)', fontWeight: 700 }} onClick={dismissIntro}>
                 Kisokost
               </a>{' '}
-              és a{' '}
-              <a
-                href="/tutorial"
-                style={{ color: 'var(--accent-text)', fontWeight: 700 }}
-                onClick={dismissIntro}
-              >
-                Tutorialt
-              </a>{' '}
-              – kattints rájuk, vagy bármikor megtalálod őket a menüben is.
+              – kattints rá, vagy bármikor megtalálod a főoldal gombjai között.
             </p>
             <div className="actions" style={{ marginTop: 18 }}>
               <button className="primary" onClick={dismissIntro}>
@@ -706,17 +698,14 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Gyors gombok balról: Értesítések, Ranglista, Kisokos, Tutorial, Trófeák (csak ikon és x/y). */}
+      {/* Gyors gombok: Értesítések, Ranglista, Kisokos, Trófeák (csak ikon és x/y). */}
       <div className="quick-row">
         <NotificationsButton />
         <button className="pill quick-pill" type="button" onClick={() => window.dispatchEvent(new Event('open-leaderboard'))}>
           <Icon src="/icons/Ranglista.png" size={16} className="quick-ico" /> Ranglista
         </button>
-        <a className="pill quick-pill" href="/help">
+        <a className="pill quick-pill" href="/kisokos">
           <Icon src="/icons/Sugo.png" size={15} className="quick-ico" /> Kisokos
-        </a>
-        <a className="pill quick-pill" href="/tutorial">
-          <Icon src="/icons/Tutorial.png" size={15} className="quick-ico" /> Tutorial
         </a>
         <button
           className="pill quick-pill"
