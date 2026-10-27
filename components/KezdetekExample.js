@@ -26,22 +26,22 @@ const PUZZLE = {
 
 const TIP_BTN = '.kezdetek-player .pa-right button.play-btn';
 
-export default function KezdetekExample({ onProgress }) {
-  const [done, setDone] = useState(false);
-  const [step, setStep] = useState(0); // 0..4 a kos üzenetei, 5 = szabad játék
+export default function KezdetekExample({ progress, onProgress }) {
+  // A haladást a Kisokos oldal adja: aki már megfejtette (akár másik eszközön), annak nincs
+  // bemutató, csak a megoldott rejtvény.
+  const done = (progress?.kezdetek || 0) >= 1;
+  const [step, setStep] = useState(done ? 5 : 0); // 0..4 a kos üzenetei, 5 = szabad játék
   const [replay, setReplay] = useState(false); // a kos gombbal újra elmondott magyarázat
+
   useEffect(() => {
-    if (loadTutorialProgress().kezdetek >= 1) {
-      setDone(true);
-      setStep(5);
-    }
-  }, []);
+    // Ha közben megoldottá válik (pl. a szerverről érkező haladásból), a bemutató leáll.
+    if (done && !replay) setStep(5);
+  }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function solved() {
     const p = loadTutorialProgress();
     p.kezdetek = 1;
     saveTutorialProgress(p);
-    setDone(true);
     onProgress && onProgress(p);
   }
 
@@ -92,7 +92,7 @@ export default function KezdetekExample({ onProgress }) {
         </RamCoach>
       )}
       {step === 1 && (
-        <RamCoach target=".kezdetek-player .clue-enum" place="below" onOk={() => setStep(replay ? 'types' : 2)}>
+        <RamCoach target=".kezdetek-player .clue-enum" place="below" onOk={() => setStep(replay || done ? 'types' : 2)}>
           Minden rejtvény mellé tartozik egy kis szám is, ami mutatja, hány karakterből áll a
           megfejtés. A dupla karakteres betűk (cs, gy stb.) kettőnek számítanak.
         </RamCoach>
@@ -122,7 +122,14 @@ export default function KezdetekExample({ onProgress }) {
         </RamCoach>
       )}
       {step === 'types' && (
-        <RamCoach target={null} place="bottom" onOk={() => setStep(5)}>
+        <RamCoach
+          target={null}
+          place="bottom"
+          onOk={() => {
+            setReplay(false);
+            setStep(5);
+          }}
+        >
           <b>Négyféle tippet kérhetsz:</b>
           <ul className="coach-list">
             <li>

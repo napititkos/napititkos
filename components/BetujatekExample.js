@@ -2,6 +2,6 @@
 import TutorialSection from './TutorialSection';
 
 // A Kisokos "Betujatek" szakasza (a feladatok: lib/tutorialPuzzles.js).
-export default function BetujatekExample({ onProgress }) {
-  return <TutorialSection sec="betujatek" onProgress={onProgress} />;
+export default function BetujatekExample({ progress, onProgress }) {
+  return <TutorialSection sec="betujatek" progress={progress} onProgress={onProgress} />;
 }
