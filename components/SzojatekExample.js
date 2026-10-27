@@ -1,8 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import TutorialExtraTask from './TutorialExtraTask';
 import LetterBoxes from './LetterBoxes';
 import { fireConfetti } from './Confetti';
 import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
+import RamCoach from './RamCoach';
+import RamNote from './RamNote';
 
 const ANSWER = 'BORZALMAS';
 const CLUE = 'Háborúban lelt ital, majd zavaros határok közt talált alma. Rettenetes vacsora!';
@@ -15,16 +18,37 @@ export default function SzojatekExample({ onProgress }) {
   const [guess, setGuess] = useState(Array(ANSWER.length).fill(''));
   const [stage, setStage] = useState(0);
   const [solved, setSolved] = useState(false);
+  const [intro1Seen, setIntro1Seen] = useState(false); // az 1. feladat bevezetője a kos üzeneteként
   const [wrongTried, setWrongTried] = useState(false);
+
+  // A szekció gyakorlatai (szojatek_1, szojatek_2); a szekció haladása a megoldottak száma.
+  const [done2, setDone2] = useState(false);
+  useEffect(() => {
+    const progress = loadTutorialProgress();
+    // Korábbi verzió: egyetlen gyakorlat volt (szojatek = 1) - az az 1. gyakorlatnak számít.
+    // (Más eszközről szinkronizálva csak a darabszám érkezik: abból állítjuk vissza.)
+    if (progress.szojatek >= 1 && !progress.szojatek_1 && !progress.szojatek_2) progress.szojatek_1 = 1;
+    if (progress.szojatek >= 2) {
+      progress.szojatek_1 = 1;
+      progress.szojatek_2 = 1;
+    }
+    if (progress.szojatek_1) setSolved(true);
+    if (progress.szojatek_2) setDone2(true);
+  }, []);
+  function saveTask(which) {
+    const progress = loadTutorialProgress();
+    if (which === 1) progress.szojatek_1 = 1;
+    if (which === 2) progress.szojatek_2 = 1;
+    progress.szojatek = (progress.szojatek_1 || 0) + (progress.szojatek_2 || 0);
+    saveTutorialProgress(progress);
+    onProgress && onProgress(progress);
+  }
 
   function checkAnswer() {
     if (norm(guess.join('')) === ANSWER) {
       setSolved(true);
       fireConfetti();
-      const progress = loadTutorialProgress();
-      progress.szojatek = 1;
-      saveTutorialProgress(progress);
-      onProgress && onProgress(progress);
+      saveTask(1);
     } else {
       setWrongTried(true);
       if (stage < 1) setStage(1);
@@ -46,11 +70,18 @@ export default function SzojatekExample({ onProgress }) {
   }
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 10px' }}>
-        Szójátéknál teljes szavakat keresünk - gyakran szinonimákat, vagy egy adott kategórián
+    <div className="tut-ex1" style={{ marginTop: 10 }}>
+      <h4 className="tut-task-title">1. szavakból építkezve</h4>
+      {!solved && !intro1Seen && (
+        <RamCoach target=".tut-ex1 .clue-box" place="below" onOk={() => setIntro1Seen(true)}>
+          Szójátéknál teljes szavakat keresünk - gyakran szinonimákat, vagy egy adott kategórián
         belüli szavakat (pl. italok, állatok, színek). Próbáld ki ezen a példán!
-      </p>
+        </RamCoach>
+      )}
+      {(solved || intro1Seen) && <RamNote>
+          Szójátéknál teljes szavakat keresünk - gyakran szinonimákat, vagy egy adott kategórián
+        belüli szavakat (pl. italok, állatok, színek). Próbáld ki ezen a példán!
+      </RamNote>}
       <div className="clue-box" style={{ marginBottom: 10 }}>
         <div className="clue-text">{renderClueWithHighlight()}</div>
       </div>
@@ -106,6 +137,25 @@ export default function SzojatekExample({ onProgress }) {
           szójáték-rejtvény: apró darabokból összerakva egy egészen más szót kapunk, ami
           passzol a definícióval!
         </div>
+      )}
+      {solved && (
+        <TutorialExtraTask
+          title="2. kulturális utalás"
+          intro="Szójátéknál gyakori a kultúrális-popkultúrális utalás, a baseball játékos itt megfeleltethető egy híres magyar emberrel, mert a neve egyezik egy baseballban található poszttal, mi lehet az összefüggés?"
+          clue="Magyar baseball játékos elveri a török csapatot?"
+          answer="DOBÓ"
+          hints={[
+            'Egy híres magyar ember, aki legyőzte a törököket - és a neve egy baseball-poszt neve is.',
+            'Baseball posztok: dobó, ütő, elkapó.',
+          ]}
+          wrongText="Még nem ez az. Melyik baseball-poszt neve egyezik egy híres magyar ember nevével, aki a törökök ellen harcolt?"
+          solvedText="✓ Pontosan! A baseballban az egyik poszt a dobó - Dobó István pedig Eger várában verte vissza a török sereget. A megfejtés: DOBÓ."
+          initiallySolved={done2}
+          onSolved={() => {
+            setDone2(true);
+            saveTask(2);
+          }}
+        />
       )}
     </div>
   );
