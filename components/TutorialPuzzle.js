@@ -9,15 +9,25 @@ import { isIntroSeen, markIntroSeen } from '../lib/tutorial';
 // lehet újra beírni). A bevezető (és anagrammánál a Keverés-üzenet) csak elsőre jön magától.
 export default function TutorialPuzzle({ task, solved, onSolved, hideShuffle = false }) {
   const [coach, setCoach] = useState(null); // null | 'intro' | 'shuffle'
+  const [manual, setManual] = useState(false); // a kos gombbal kérte-e (akkor megoldva is látszik)
   const scope = `tut-${task.id}`;
+  // A kos magától csak a még meg nem oldott, és még nem olvasott feladatnál szól. Ha a feladat
+  // megoldottá válik (itt, vagy a szerverről érkező haladásból), a magától nyílt üzenet bezárul,
+  // és a bevezető olvasottnak számít.
   useEffect(() => {
-    if (!solved && !isIntroSeen(task.id)) setCoach('intro');
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (solved) {
+      markIntroSeen(task.id);
+      setCoach((c) => (c && !manual ? null : c));
+    } else if (!isIntroSeen(task.id)) {
+      setCoach('intro');
+    }
+  }, [solved]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function next() {
     if (coach === 'intro' && task.shuffleCoach) setCoach('shuffle');
     else {
       setCoach(null);
+      setManual(false);
       markIntroSeen(task.id);
     }
   }
@@ -26,7 +36,10 @@ export default function TutorialPuzzle({ task, solved, onSolved, hideShuffle = f
     <div className={`tut-puzzle ${scope}`}>
       <div className="tut-title-row">
         <h4 className="tut-task-title">{task.title}</h4>
-        <button type="button" className="tut-ram-btn" aria-label="A kos magyarázata" title="A kos magyarázata" onClick={() => setCoach('intro')}>
+        <button type="button" className="tut-ram-btn" aria-label="A kos magyarázata" title="A kos magyarázata" onClick={() => {
+            setManual(true);
+            setCoach('intro');
+          }}>
           <img src="/logo-96.png" alt="" aria-hidden="true" width={34} height={34} />
         </button>
       </div>

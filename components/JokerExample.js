@@ -2,6 +2,6 @@
 import TutorialSection from './TutorialSection';
 
 // A Kisokos "Joker" szakasza (a feladatok: lib/tutorialPuzzles.js).
-export default function JokerExample({ onProgress }) {
-  return <TutorialSection sec="joker" onProgress={onProgress} />;
+export default function JokerExample({ progress, onProgress }) {
+  return <TutorialSection sec="joker" progress={progress} onProgress={onProgress} />;
 }

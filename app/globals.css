@@ -864,7 +864,6 @@ a.quick-pill:hover{ transform: scale(1.03); }
      trófea gombja ikonos marad). */
   .quick-row{ gap: 6px; }
   .quick-pill{ padding: 6px 9px; font-size: 12.5px; gap: 5px; }
-  .quick-pill .quick-ico{ display: none !important; }
 }
 
 /* Görgetősávok a weboldal arculatához igazítva (minden görgethető elemen): vékony, lekerekített,
@@ -1116,7 +1115,7 @@ button.tutorial-tile-head:disabled{ cursor: default; opacity: 1; }
   box-shadow: 0 12px 30px rgba(31, 26, 43, 0.3); font-size: 14px; line-height: 1.45;
 }
 /* A buborék farka (SVG): a jobb széle a buborék 2 px-es keretének közepére esik. */
-.coach-tail{ position: absolute; left: -13px; bottom: 20px; display: block; overflow: visible; }
+.coach-tail{ position: absolute; left: -13px; bottom: 20px; display: block; overflow: visible; shape-rendering: geometricPrecision; }
 /* A kos feje a buborék farkával egy magasságban (a farok a lekerekített saroktól távolabb ül). */
 .coach-wrap .coach-ram{ margin-bottom: 10px; }
 .ram-note .coach-ram{ margin-bottom: 12px; }
@@ -1164,3 +1163,19 @@ button.tut-ram-btn:hover:not(:disabled){ transform: scale(1.06); }
 
 /* Főoldali rejtvény kártya: a gombok alatt ugyanannyi a hely, mint a "Napi titkosírás" cím fölött. */
 .card.puzzle-card .clue-row{ padding-bottom: 0; }
+
+/* Kétsoros rejtvényszöveg (archívum): szóhatáron vágva. */
+.clue-line.clue-lines{ white-space: normal; overflow: hidden; }
+/* Korábbi titkosírások mobilon: az év doboza alig látható, a hónapé egy fokkal vékonyabb, a nap-
+   kártyák alacsonyabbak - így maga a rejtvény szélesebben fér el. */
+@media (max-width: 600px){
+  .archive-card{ padding: 10px; }
+  .archive-card .puzzle-editor{ padding: 4px 2px; border-width: 1px; border-color: color-mix(in srgb, var(--line) 55%, transparent); }
+  .archive-month{ padding: 4px 6px 6px; margin-top: 8px; }
+  .archive-month-items{ gap: 8px; }
+  .archive-item button.community-head{ padding: 10px 12px; gap: 5px; }
+  .archive-item .community-clue{ font-size: 15.5px; }
+  .archive-meta{ gap: 2px; }
+}
+/* Főoldali gyorsgombok: balra rendezve. */
+.quick-row{ justify-content: flex-start; }

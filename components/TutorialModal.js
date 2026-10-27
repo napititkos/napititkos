@@ -1,6 +1,7 @@
 'use client';
 import { Fragment, useEffect, useState } from 'react';
-import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount, basicsUnlocked } from '../lib/tutorial';
+import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount, basicsUnlocked, isTutorialSynced } from '../lib/tutorial';
+import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../lib/progress';
 import { computeNewAchievements, ACHIEVEMENTS } from '../lib/achievements';
 import Icon from './Icon';
@@ -27,12 +28,39 @@ export function TutorialContent() {
   const [expandedSection, setExpandedSection] = useState(null);
   const [newAchievementToast, setNewAchievementToast] = useState('');
 
+  // Bejelentkezve megvárjuk, amíg a haladás a szerverrel összefésülődik (legfeljebb 3 mp-ig), hogy
+  // a már máshol megoldott feladatoknál se induljon el a kos bemutatója; vendégként azonnal indul.
+  const { status } = useSession();
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    const p = loadTutorialProgress();
-    setProgress(p);
-    // Aki még nem végezte el a Kezdeteket, annak az nyílik meg elsőként.
-    if (!basicsUnlocked(p)) setExpandedSection('kezdetek');
+    const onUpdate = (e) => {
+      if (!e.detail) return;
+      setProgress(e.detail);
+      setReady(true);
+    };
+    window.addEventListener('tutorial-progress', onUpdate);
+    return () => window.removeEventListener('tutorial-progress', onUpdate);
   }, []);
+  useEffect(() => {
+    if (status === 'loading' || ready) return undefined;
+    if (status === 'unauthenticated' || isTutorialSynced()) {
+      setProgress(loadTutorialProgress());
+      setReady(true);
+      return undefined;
+    }
+    const t = setTimeout(() => {
+      setProgress(loadTutorialProgress());
+      setReady(true);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [status, ready]);
+  // Aki még nem végezte el a Kezdeteket, annak az nyílik meg elsőként (a végleges haladás alapján).
+  const [autoOpened, setAutoOpened] = useState(false);
+  useEffect(() => {
+    if (!ready || autoOpened || !progress) return;
+    setAutoOpened(true);
+    if (!basicsUnlocked(progress)) setExpandedSection('kezdetek');
+  }, [ready, progress, autoOpened]);
 
   function handleTutorialProgress(newTutorialProgress) {
     setProgress(newTutorialProgress);
@@ -63,7 +91,7 @@ export function TutorialContent() {
     }
   }
 
-  if (!progress) return null;
+  if (!progress || !ready) return <div className="card"><p style={{ margin: 0, color: 'var(--ink-soft)' }}>Betöltés…</p></div>;
   const allDone = completedSectionsCount(progress) === TUTORIAL_SECTIONS.length;
 
   return (
@@ -91,7 +119,9 @@ export function TutorialContent() {
                       <Icon src={s.icon} size={18} /> {s.title}
                     </b>
                     <span className="tutorial-tile-count">
-                      {done}/{s.totalTasks}
+                      <b>
+                        {done}/{s.totalTasks}
+                      </b>
                     </span>
                   </span>
                   <span className="tutorial-tile-bar">
@@ -106,13 +136,13 @@ export function TutorialContent() {
                 {hasExample && isExpanded && (
                   <div className="tutorial-tile-body">
                     {s.id === 'kezdetek' ? (
-                      <KezdetekExample onProgress={handleTutorialProgress} />
+                      <KezdetekExample progress={progress} onProgress={handleTutorialProgress} />
                     ) : s.id === 'betujatek' ? (
-                      <BetujatekExample onProgress={handleTutorialProgress} />
+                      <BetujatekExample progress={progress} onProgress={handleTutorialProgress} />
                     ) : s.id === 'szojatek' ? (
-                      <SzojatekExample onProgress={handleTutorialProgress} />
+                      <SzojatekExample progress={progress} onProgress={handleTutorialProgress} />
                     ) : (
-                      <JokerExample onProgress={handleTutorialProgress} />
+                      <JokerExample progress={progress} onProgress={handleTutorialProgress} />
                     )}
                   </div>
                 )}

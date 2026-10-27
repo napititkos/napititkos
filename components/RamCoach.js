@@ -14,6 +14,7 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
   const [rect, setRect] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [size, setSize] = useState({ w: 400, h: 800 });
+  const [shownAt] = useState(() => Date.now());
   useEffect(() => setMounted(true), []);
 
   useLayoutEffect(() => {
@@ -67,6 +68,9 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     style = below ? { left, top: rect.bottom + 12, width } : { left, bottom: vh - rect.top + 12, width };
   }
 
+  // Egész képpontokra kerekítve: tört képpontos helyzetben a buborék kerete és a nyúlvány
+  // élsimítása eltér, és a nyúlvány előtt halvány vonal látszik.
+  style = Object.fromEntries(Object.entries(style).map(([k, v]) => [k, typeof v === 'number' ? Math.round(v) : v]));
   return createPortal(
     <>
       {blocking && <div className="coach-blocker" aria-hidden="true" />}
@@ -77,7 +81,17 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
           <div className="coach-text">{children}</div>
           {onOk && (
             <div className="coach-actions">
-              <button type="button" className="primary small" onClick={onOk} autoFocus>
+              <button
+                type="button"
+                className="primary small"
+                onClick={() => {
+                  // Közvetlenül a megjelenés után érkező kattintást / Entert nem vesszük figyelembe:
+                  // asztalon az Enterrel beküldött megfejtés után az üzenet különben azonnal
+                  // be is zárulna, mielőtt el lehetne olvasni.
+                  if (Date.now() - shownAt < 700) return;
+                  onOk();
+                }}
+              >
                 {okLabel}
               </button>
             </div>
