@@ -15,6 +15,7 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [pickOpen, setPickOpen] = useState(false); // saját reakció újraválasztása
   const isAdmin = session?.user?.role === 'admin';
 
   function load() {
@@ -211,22 +212,55 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
             {data.avg != null ? `(${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés)` : '(még nincs értékelés - legyél te az első!)'}
           </span>
           </div>
-          <div className="reaction-row" role="group" aria-label="Reakciók">
-            {emojis.map((e, k) => (
-              <button
-                key={k}
-                type="button"
-                className={`reaction-btn${mine.reaction === k ? ' on' : ''}`}
-                aria-label={`${e} reakció, ${reactions[k]} darab`}
-                aria-pressed={mine.reaction === k}
-                disabled={!canRate}
-                onClick={() => rate({ reaction: mine.reaction === k ? null : k })}
-              >
-                <span aria-hidden="true">{e}</span>
-                {reactions[k] > 0 && <span className="reaction-count">{reactions[k]}</span>}
-              </button>
-            ))}
-          </div>
+          {/* Reakciók: amíg nincs saját reakció (vagy a sajátra kattintva újraválasztanál), a
+              teljes emoji-sor látszik; utána csak azok, amelyekre már valaki reagált, darabszámmal,
+              a saját reakció kiemelve. */}
+          {mine.reaction == null || pickOpen ? (
+            <div className="reaction-row" role="group" aria-label="Reakció választása">
+              {emojis.map((e, k) => (
+                <button
+                  key={k}
+                  type="button"
+                  className={`reaction-btn${mine.reaction === k ? ' on' : ''}`}
+                  aria-label={`${e} reakció, ${reactions[k]} darab`}
+                  aria-pressed={mine.reaction === k}
+                  disabled={!canRate}
+                  onClick={async () => {
+                    if (mine.reaction !== k) await rate({ reaction: k });
+                    setPickOpen(false);
+                  }}
+                >
+                  <span aria-hidden="true">{e}</span>
+                  {reactions[k] > 0 && <span className="reaction-count">{reactions[k]}</span>}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="reaction-row" role="group" aria-label="Reakciók">
+              {emojis.map((e, k) =>
+                reactions[k] > 0 ? (
+                  mine.reaction === k ? (
+                    <button
+                      key={k}
+                      type="button"
+                      className="reaction-btn on mine"
+                      aria-label={`A te reakciód: ${e}, összesen ${reactions[k]}. Koppints a módosításhoz.`}
+                      title="A te reakciód - kattints a módosításhoz"
+                      onClick={() => setPickOpen(true)}
+                    >
+                      <span aria-hidden="true">{e}</span>
+                      <span className="reaction-count">{reactions[k]}</span>
+                    </button>
+                  ) : (
+                    <span key={k} className="reaction-btn reaction-static" aria-label={`${e} reakció, ${reactions[k]} darab`} role="img">
+                      <span aria-hidden="true">{e}</span>
+                      <span className="reaction-count">{reactions[k]}</span>
+                    </span>
+                  )
+                ) : null
+              )}
+            </div>
+          )}
           {!data.canRate && <p className="community-rate-note">Az értékeléshez erősítsd meg az e-mail-címedet.</p>}
         </div>
       )}

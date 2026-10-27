@@ -980,7 +980,7 @@ button.round-btn.has-new-dot::after{
 
 /* Közösségi lista: pipa a megfejtett rejtvényeknél; ha nem fér el a szöveg, csak a pipa. */
 .community-head{ container-type: inline-size; }
-.community-rating-row{ display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.community-rating-row{ display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; }
 .community-solved{ flex: none; font-size: 12.5px; font-weight: 800; color: var(--good-text); white-space: nowrap; }
 @container (max-width: 300px){ .community-solved-text{ display: none; } }
 
@@ -1047,3 +1047,23 @@ b.hint-name .field-help-pop{ left: 0; top: calc(100% + 6px); width: min(260px, 6
   .rate-line > :nth-child(2){ justify-self: center; }
   .rate-line > :nth-child(3){ justify-self: start; text-align: left; }
 }
+
+/* Reakciók: a saját reakció más színű (kattintva újraválasztható), a többiek csak kijelzők. */
+button.reaction-btn.mine{ border-color: var(--btn-primary); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--btn-primary) inset; }
+button.reaction-btn.mine .reaction-count{ color: var(--accent-text); }
+.reaction-btn.reaction-static{
+  cursor: default; display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border-radius: 999px;
+  border: 2px solid var(--line); background: var(--card); font-size: 17px; line-height: 1; color: var(--ink);
+}
+
+/* Korábbi titkosírások: hónaponként egy doboz (mappa), benne a napok önálló kártyákként. */
+.archive-month{ background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px 10px; margin-top: 12px; }
+button.archive-month-head{
+  display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 4px 4px 6px;
+  background: none; border: none; color: var(--ink); font: inherit; cursor: pointer; border-radius: 0;
+}
+button.archive-month-head:hover:not(:disabled){ transform: none; }
+button.archive-month-head b{ font-size: 14.5px; }
+button.archive-month-head span{ font-size: 13px; color: var(--ink-soft); }
+.archive-month-items{ display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.archive-month-items .card.archive-item{ margin: 0; }

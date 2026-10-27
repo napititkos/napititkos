@@ -829,18 +829,14 @@ export default function HomePage() {
                             {isBetu
                               ? exhausted
                                 ? 'Nincs több betű'
-                                : `Kérek egy betűt (${betuCount} eddig)`
+                                : 'Kérek egy betűt'
                               : used
                               ? 'Felhasználva ✓'
                               : 'Ezt kérem'}
                           </button>
                         </div>
-                        {(isBetu ? betuCount > 0 : used) && (
-                          <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>
-                            {isBetu
-                              ? `Eddig ${betuCount} betűt fedtünk fel a válaszban.`
-                              : puzzle.hints[t].text}
-                          </p>
+                        {!isBetu && used && (
+                          <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '8px 0 0' }}>{puzzle.hints[t].text}</p>
                         )}
                       </div>
                     );
