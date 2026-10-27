@@ -119,7 +119,9 @@ export function TutorialContent() {
                       <Icon src={s.icon} size={18} /> {s.title}
                     </b>
                     <span className="tutorial-tile-count">
-                      {done}/{s.totalTasks}
+                      <b>
+                        {done}/{s.totalTasks}
+                      </b>
                     </span>
                   </span>
                   <span className="tutorial-tile-bar">

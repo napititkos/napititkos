@@ -17,12 +17,13 @@ export default function RamNote({ children }) {
 // A buborék "farka" a kos feje felé (balra), ugyanolyan lágy ívvel, mint az értesítés-doboz
 // nyúlványa: a buborék kerete folytatólagosan fut ki és vissza.
 export function CoachTail() {
-  // Ugyanaz a nyúlvány, mint az értesítés-dobozon (ott felfelé mutat, itt balra a kos felé):
-  // az alapvonal (x = 12) a buborék 2 px-es keretének közepére esik, a kitöltés eltakarja alatta a
-  // keret egyenes szakaszát, így a keret megszakítás nélkül fut ki a csúcsba és vissza.
+  // Ugyanaz a nyúlvány, mint az értesítés-dobozon (ott felfelé mutat, itt balra a kos felé).
+  // A kitöltés a buborék teljes, 2 px-es keretét (és 1 px-t a belsejéből) eltakarja a nyúlvány
+  // tövénél, így nem látszik ott a keret egyenes vonala; a nyúlvány vonala a keret közepéből
+  // (x = 12) fut ki és oda tér vissza.
   return (
-    <svg className="coach-tail" width="13" height="24" viewBox="0 0 13 24" aria-hidden="true">
-      <path className="coach-tail-fill" d="M13 0 L12 0 C12 5 9.5 7.5 5.5 9.5 Q0.5 12 5.5 14.5 C9.5 16.5 12 19 12 24 L13 24 Z" />
+    <svg className="coach-tail" width="16" height="24" viewBox="0 0 16 24" aria-hidden="true">
+      <path className="coach-tail-fill" d="M16 0 L12 0 C12 5 9.5 7.5 5.5 9.5 Q0.5 12 5.5 14.5 C9.5 16.5 12 19 12 24 L16 24 Z" />
       <path className="coach-tail-line" d="M12 0 C12 5 9.5 7.5 5.5 9.5 Q0.5 12 5.5 14.5 C9.5 16.5 12 19 12 24" />
     </svg>
   );

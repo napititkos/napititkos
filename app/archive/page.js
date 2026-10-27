@@ -214,20 +214,20 @@ export default function ArchivePage() {
                                         </button>
                                       ) : (
                                         <button type="button" className="community-head" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
-                                          <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" />
-                                          <span className="community-meta">
+                                          <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" lines={2} />
+                                          <span className="community-meta archive-meta">
                                             <span className="community-rating-row">
                                               {solved && (
                                                 <span className="community-solved" title="Megfejtetted">
                                                   ✓<span className="community-solved-text"> Megfejtetted</span>
                                                 </span>
                                               )}
-                                              <span>{formatDay(it.shownDate)}</span>
+                                              <span>
+                                                {formatDay(it.shownDate)}
+                                                {it.totalSolvers != null && ` – ${it.totalSolvers} megfejtő`}
+                                              </span>
                                             </span>
-                                            <span>
-                                              {it.totalSolvers != null && `${it.totalSolvers} megfejtő összesen · `}
-                                              {comments} komment
-                                            </span>
+                                            {comments > 0 && <span>{comments} komment</span>}
                                           </span>
                                         </button>
                                       )}
@@ -240,7 +240,7 @@ export default function ArchivePage() {
                                             onSolved={() => handleSolved(it.id, it.shownDate)}
                                             onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />
-                                          {solved && (
+                                          {solved && comments > 0 && (
                                             <div style={{ marginTop: 12 }}>
                                               <b style={{ fontSize: 14 }}>Kommentek ezen a napon ({comments})</b>
                                               <div style={{ marginTop: 6 }}>
