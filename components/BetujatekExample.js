@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import LetterBoxes from './LetterBoxes';
 import Icon from './Icon';
+import RamCoach from './RamCoach';
 import { fireConfetti } from './Confetti';
 import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
 
@@ -19,6 +20,7 @@ export default function BetujatekExample({ onProgress }) {
   const [guess, setGuess] = useState(Array(ANSWER.length).fill(''));
   const [stage, setStage] = useState(0); // 0: alap, 1: kiemelt szó, 2: mutató is látszik
   const [solved, setSolved] = useState(false);
+  const [intro1Seen, setIntro1Seen] = useState(false); // az 1. feladat bevezetője a kos üzeneteként
   const [wrongTried, setWrongTried] = useState(false);
 
   const [guess2, setGuess2] = useState(Array(ANAGRAM_ANSWER.length).fill(''));
@@ -27,6 +29,8 @@ export default function BetujatekExample({ onProgress }) {
   const [wrongTried2, setWrongTried2] = useState(false);
   const [flashShuffle, setFlashShuffle] = useState(false);
   const [toast2, setToast2] = useState('');
+  const [shuffleCoachDone, setShuffleCoachDone] = useState(false); // a kos Keverés-üzenete
+  const [intro2Seen, setIntro2Seen] = useState(false); // a 2. feladat bevezetője a kos üzeneteként
   function showHint2(msg) {
     setToast2(msg);
     setTimeout(() => setToast2(''), 2600);
@@ -122,11 +126,14 @@ export default function BetujatekExample({ onProgress }) {
   }
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 10px' }}>
-        Betűjátéknál egyes betűket kell megváltoztatni, pakolgatni, formálni - próbáld ki ezen a
+    <div className="tut-ex1" style={{ marginTop: 10 }}>
+      <h4 className="tut-task-title">1. betűcsere</h4>
+      {!solved && !intro1Seen && (
+        <RamCoach target=".tut-ex1 .clue-box" place="below" onOk={() => setIntro1Seen(true)}>
+          Betűjátéknál egyes betűket kell megváltoztatni, pakolgatni, formálni - próbáld ki ezen a
         példán!
-      </p>
+        </RamCoach>
+      )}
       <div className="clue-box" style={{ marginBottom: 10 }}>
         <div className="clue-text">{renderClueWithHighlight()}</div>
       </div>
@@ -184,17 +191,25 @@ export default function BetujatekExample({ onProgress }) {
         </div>
       )}
 
+      {solved && !solved2 && intro2Seen && !shuffleCoachDone && (
+        <RamCoach target=".betujatek-anagram .pa-left button.play-btn" place="above" okLabel="Kipróbálom!" onOk={() => setShuffleCoachDone(true)}>
+          Ez egy anagramma rejtvény, anagrammánál keverni kell a készlet betűket. Van egy{' '}
+          <b>Keverés</b> gombunk is ehhez - csak akkor használható, ha teleírtad a megoldást.
+          Próbáld ki!
+        </RamCoach>
+      )}
       {solved && (
         <>
           <div style={{ borderTop: '1px dashed var(--line)', margin: '18px 0 14px' }} />
 
-          <b style={{ fontSize: 14 }}>2. gyakorlat: anagramma</b>
-          <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '6px 0 10px' }}>
-            Az "összetörő", "zavaros", "zúzós" szavak anagramma-jelzők: a készlet szavak
-            betűit újrarendezve kapjuk a megfejtést. Van egy <b>Keverés</b> gombunk is ehhez -
-            csak akkor használható, ha teleírtad a megoldást.
-          </p>
-          <div className="clue-box" style={{ marginBottom: 10 }}>
+          <h4 className="tut-task-title">2. anagramma</h4>
+          {!solved2 && !intro2Seen && (
+            <RamCoach target=".tut-ex2-clue" place="below" onOk={() => setIntro2Seen(true)}>
+              Az "összetörő", "zavaros", "zúzós" szavak anagramma-jelzők: a készlet szavak betűit
+              újrarendezve kapjuk a megfejtést.
+            </RamCoach>
+          )}
+          <div className="clue-box tut-ex2-clue" style={{ marginBottom: 10 }}>
             <div className="clue-text">{renderAnagramClueWithHighlight()}</div>
           </div>
 
@@ -210,7 +225,7 @@ export default function BetujatekExample({ onProgress }) {
                   onEnter={checkAnswer2}
                 />
               </div>
-              <div className="play-actions-wrap">
+              <div className="play-actions-wrap betujatek-anagram">
                 <div className="play-actions tutorial-actions">
                   <div className="pa-left">
                     <button
