@@ -36,7 +36,7 @@ export default function PrivacyPage() {
         <div className="help-block">
           <h3>Játék közben gyűjtött adatok</h3>
           <p>
-            A megoldott rejtvényeid száma, a sorozatod (streak), a trófeáid és a tutorial
+            A megoldott rejtvényeid száma, a sorozatod (streak), a trófeáid és a Kisokosban elért
             haladásod bejelentkezés nélkül csak a saját eszközödön/böngésződben (ún.
             localStorage formájában) tárolódik. Ha bejelentkezel, ugyanezek az adatok a
             fiókodhoz kötve a szerverünkön is elmentődnek, hogy más eszközön bejelentkezve is

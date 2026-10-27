@@ -178,7 +178,7 @@ r = await post('/api/account/progress', '{"streak":"' + 'x'.repeat(70000) + '"}'
 r = await post('/api/account/progress', 'nem json', cookie); check('hibás JSON: 400', r.status === 400);
 r = await post('/api/account/tutorial', { szojatek: 99, betujatek: 1, hack: 1 }, cookie); check('tutorial mentése: 200', r.status === 200);
 const storedTut = JSON.parse(await redis.get(`tutorial:${u.id}`));
-check('tutorial: csak ismert szakaszok, maximumra vágva', storedTut.hack === undefined && storedTut.szojatek === 1 && storedTut.betujatek === 1, JSON.stringify(storedTut));
+check('tutorial: csak ismert szakaszok, maximumra vágva (a szójátéknak már 2 gyakorlata van)', storedTut.hack === undefined && storedTut.szojatek === 2 && storedTut.betujatek === 1, JSON.stringify(storedTut));
 
 // beküldések
 r = await post('/api/submissions', { clue: 'Kérdés?', answer: 'VÁLASZ', hints: { definicio: 'd' } }, cookie); check('rejtvény beküldése: 200', r.status === 200);
@@ -592,17 +592,19 @@ check('eltérő jelszavak: 400', r.status === 400 && /nem egyezik/.test(j.error 
 r = await fetch(BASE + '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '10.9.1.1' }, body: JSON.stringify({ email: 'ketszer@teszt.hu', password: 'Elso-Jelszo-1', password2: 'Elso-Jelszo-1', name: 'K' }) });
 check('egyező jelszavak: 200', r.status === 200, `(${r.status})`);
 
-section('Tutorial oldal, oldaltérkép, favicon');
-r = await fetch(BASE + '/tutorial'); check('a /tutorial oldal elérhető', r.status === 200 && /Tutorial/.test(await r.text()));
-r = await fetch(BASE + '/sitemap.xml'); check('az oldaltérképen szerepel a /tutorial', /napititkos\.hu\/tutorial/.test(await r.text()));
+section('Kisokos oldal (a korábbi Tutorial), oldaltérkép, favicon');
+r = await fetch(BASE + '/kisokos'); check('a /kisokos oldal elérhető', r.status === 200 && /Kisokos/.test(await r.text()));
+const smx = await (await fetch(BASE + '/sitemap.xml')).text();
+check('az oldaltérképen a /kisokos szerepel (a /tutorial és a /help már nem)', /napititkos\.hu\/kisokos/.test(smx) && !/\/tutorial</.test(smx) && !/\/help</.test(smx));
 r = await fetch(BASE + '/icon.png'); check('a favicon (a logóból, icon.png) elérhető', r.status === 200 && /png/.test(r.headers.get('content-type') || ''));
 r = await fetch(BASE + '/'); const homeHtml = await r.text();
 check('a főoldal a favicont és az Apple-ikont is hirdeti', /rel="icon"[^>]*icon\.png/.test(homeHtml) && /apple-touch-icon/.test(homeHtml));
 r = await fetch(BASE + '/logo-192.png'); check('a logó képfájl elérhető', r.status === 200);
 check('a láblécben szerepel a logó készítője', /Logó: bundaskifli/.test(homeHtml));
-r = await fetch(BASE + '/help'); const helpHtml = await r.text();
-check('a Kisokos elmondja a három tipptípust és linkel az archívumra', /három típusa/.test(helpHtml) && /href="\/archive"/.test(helpHtml));
-check('a Kisokos szerint betűfelfedés minden rejtvénynél van', /minden rejtvénynél kérhetsz betűfelfedést/.test(helpHtml));
+for (const old of ['/help', '/tutorial']) {
+  r = await fetch(BASE + old, { redirect: 'manual' });
+  check(`a régi ${old} cím a Kisokosra irányít át`, [307, 308].includes(r.status) && /\/kisokos$/.test(r.headers.get('location') || ''), `(${r.status})`);
+}
 
 // ---------------------------------------------------------------- ELKESEREDETT TRÓFEA, MEGOSZTÁSI KÉP
 section('Elkeseredett trófea (az összes tipp felhasználva) és megosztási kép');
@@ -803,8 +805,8 @@ j = await (await fetch(BASE + '/api/community')).json();
 check('vendégnél nincs megfejtett-jelzés', j.items.every((x) => x.solved === false));
 r = await fetch(BASE + `/api/community/${spId}`, { method: 'DELETE', headers: { cookie: ssJar.header() } });
 check('törléskor az értesítési jelzők is törlődnek', r.status === 200 && !(await redis.get(`community:notified:${spId}`)) && (await redis.keys(`community:*:${spId}`)).length === 0);
-r = await fetch(BASE + '/help'); const helpH = await r.text();
-check('a Kisokos szerint az alternatív rejtvény ritka, csak ha két változat van', /Ritkán elérhető segítség/.test(helpH) && /két változata/.test(helpH));
+r = await fetch(BASE + '/'); const homeH2 = await r.text();
+check('a főoldal a Kisokosra linkel, külön Tutorial gomb nincs', !/href="\/tutorial"/.test(homeH2) && !/href="\/help"/.test(homeH2));
 
 section('Új trófeák szerveroldali tényei, "bekerült" jelzés, Új! jelzés adatai');
 await seedUser('liga@teszt.hu', 'Liga-Jelszo-1', { name: 'Liga Lili' });
@@ -852,6 +854,17 @@ await post(`/api/community/${ripSub.id}/solve`, { answer: ripSub.answer }, { coo
 r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 10 }, { cookie: ujJar.header() }); j = await r.json();
 check('a 11. reakció (🪦) is megadható', r.status === 200 && j.reactions.length === 11 && j.reactions[10] >= 1);
 r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 11 }, { cookie: ujJar.header() }); check('a 12. már érvénytelen: 400', r.status === 400);
+
+section('Tutorial: Kezdetek szakasz');
+await seedUser('kezdo@teszt.hu', 'Kezdo-Jelszo-1', { name: 'Kezdő Kata' });
+const kdJar = (await credLogin('kezdo@teszt.hu', 'Kezdo-Jelszo-1')).jar;
+r = await post('/api/account/tutorial', { kezdetek: 5, joker: 9 }, { cookie: kdJar.header() });
+const kdUid = JSON.parse(await redis.get('au:userByEmail:kezdo@teszt.hu'));
+const kdTut = JSON.parse((await redis.get(`tutorial:${kdUid}`)) || (await redis.get(`progress:tutorial:${kdUid}`)) || 'null');
+r = await fetch(BASE + '/api/account/tutorial', { headers: { cookie: kdJar.header() } }); j = await r.json().catch(() => ({}));
+const kdState = j.tutorial || j.progress || j;
+check('a Kezdetek haladása mentődik, a maximumra (1) vágva; a Joker 2-re', kdState.kezdetek === 1 && kdState.joker === 2, JSON.stringify(kdState));
+r = await fetch(BASE + '/kisokos'); check('a Kisokos oldal betölt', r.status === 200);
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

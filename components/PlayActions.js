@@ -11,6 +11,8 @@ export default function PlayActions({ rowFull, onShuffle, onCheck, onOpenHints, 
     <div className="play-actions-wrap">
     <div className={`play-actions${compact ? ' compact' : ''}${String(hintsTotal).length > 1 ? ' long-tips' : ''}`}>
       <div className="pa-left">
+        {/* onShuffle nélkül (pl. a Kisokos legelső rejtvényénél) nincs Keverés gomb. */}
+        {onShuffle && (
         <button
           className="primary play-btn"
           aria-disabled={!rowFull}
@@ -21,6 +23,7 @@ export default function PlayActions({ rowFull, onShuffle, onCheck, onOpenHints, 
           <Icon src="/icons/Rejtveny_Keveres.png" size={16} className="icon-on-accent" />
           <span className="keveres-label">Keverés</span>
         </button>
+        )}
       </div>
       <button
         className="primary play-btn"
