@@ -140,7 +140,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
 
       {!answered && (
         <>
-          <div style={{ marginTop: 0 }}>
+          <div className="player-letters" style={{ marginTop: 0 }}>
             <LetterBoxes
               answer={puzzle.answer}
               value={guess}
@@ -199,7 +199,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
                 Összes szöveges tipp megjelenítése
               </button>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="hint-options" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {availableHints.map((t) => {
                 const isBetu = t === 'betu';
                 const used = isBetu ? false : revealed.includes(t);
