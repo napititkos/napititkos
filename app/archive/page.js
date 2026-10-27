@@ -32,8 +32,8 @@ export default function ArchivePage() {
     if (status !== 'unauthenticated') return;
     fetch('/api/archive/summary')
       .then((r) => r.json())
-      .then((d) => setTeaser(d))
-      .catch(() => {});
+      .then((d) => setTeaser(d || false))
+      .catch(() => setTeaser(false));
   }, [status]);
 
   useEffect(() => {
@@ -103,8 +103,10 @@ export default function ArchivePage() {
           <a href="/" className="back-home-btn"><svg className="back-arrow" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg> Főoldal</a>
         </div>
         <div className="card">
-          {status === 'loading' ? (
-            <p style={{ margin: 0 }}>Betöltés…</p>
+          {/* Amíg a bejelentkezés állapota vagy a darabszám nem ismert, csak "Betöltés…" látszik,
+              hogy ne villanjon fel egy másik szöveg. */}
+          {status === 'loading' || teaser === null ? (
+            <p style={{ margin: 0, color: 'var(--ink-soft)' }}>Betöltés…</p>
           ) : (
             <>
               {teaser && teaser.total > 0 ? (
@@ -176,7 +178,7 @@ export default function ArchivePage() {
                     .map((month) => {
                       const monthItems = months[month];
                       const key = `${year}-${month}`;
-                      // Alapból a legutóbbi hónap van nyitva, a többit a felhasználó nyithatja ki.
+                      // Alapból a hónapok csukva vannak, a felhasználó nyithatja ki őket.
                       const monthOpen = monthOpenOf(openMonths, key, firstMonthKey);
                       return (
                         // Egy hónap = egy doboz (mappa), benne a napok önálló, kattintható kártyákként.
@@ -270,9 +272,9 @@ export default function ArchivePage() {
   );
 }
 
-// Egy hónap nyitva van-e: amit a felhasználó állított, egyébként csak a legutóbbi hónap.
-function monthOpenOf(openMonths, key, firstKey) {
-  return openMonths[key] ?? key === firstKey;
+// Egy hónap nyitva van-e: amit a felhasználó állított; alapból mind csukva (csak az év nyitott).
+function monthOpenOf(openMonths, key) {
+  return openMonths[key] ?? false;
 }
 
 // "2026-10-12" -> "2026. október 12."
