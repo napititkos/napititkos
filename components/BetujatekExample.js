@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import LetterBoxes from './LetterBoxes';
 import Icon from './Icon';
+import RamCoach from './RamCoach';
 import { fireConfetti } from './Confetti';
 import { loadTutorialProgress, saveTutorialProgress } from '../lib/tutorial';
 
@@ -27,6 +28,7 @@ export default function BetujatekExample({ onProgress }) {
   const [wrongTried2, setWrongTried2] = useState(false);
   const [flashShuffle, setFlashShuffle] = useState(false);
   const [toast2, setToast2] = useState('');
+  const [shuffleCoachDone, setShuffleCoachDone] = useState(false); // a kos Keverés-üzenete
   function showHint2(msg) {
     setToast2(msg);
     setTimeout(() => setToast2(''), 2600);
@@ -184,15 +186,21 @@ export default function BetujatekExample({ onProgress }) {
         </div>
       )}
 
+      {solved && !solved2 && !shuffleCoachDone && (
+        <RamCoach target=".betujatek-anagram .pa-left button.play-btn" place="above" okLabel="Kipróbálom!" onOk={() => setShuffleCoachDone(true)}>
+          Ez egy anagramma rejtvény, anagrammánál keverni kell a készlet betűket. Van egy{' '}
+          <b>Keverés</b> gombunk is ehhez - csak akkor használható, ha teleírtad a megoldást.
+          Próbáld ki!
+        </RamCoach>
+      )}
       {solved && (
         <>
           <div style={{ borderTop: '1px dashed var(--line)', margin: '18px 0 14px' }} />
 
-          <b style={{ fontSize: 14 }}>2. gyakorlat: anagramma</b>
+          <b style={{ fontSize: 14 }}>2. anagramma</b>
           <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '6px 0 10px' }}>
             Az "összetörő", "zavaros", "zúzós" szavak anagramma-jelzők: a készlet szavak
-            betűit újrarendezve kapjuk a megfejtést. Van egy <b>Keverés</b> gombunk is ehhez -
-            csak akkor használható, ha teleírtad a megoldást.
+            betűit újrarendezve kapjuk a megfejtést.
           </p>
           <div className="clue-box" style={{ marginBottom: 10 }}>
             <div className="clue-text">{renderAnagramClueWithHighlight()}</div>
@@ -210,7 +218,7 @@ export default function BetujatekExample({ onProgress }) {
                   onEnter={checkAnswer2}
                 />
               </div>
-              <div className="play-actions-wrap">
+              <div className="play-actions-wrap betujatek-anagram">
                 <div className="play-actions tutorial-actions">
                   <div className="pa-left">
                     <button

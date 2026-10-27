@@ -178,7 +178,7 @@ r = await post('/api/account/progress', '{"streak":"' + 'x'.repeat(70000) + '"}'
 r = await post('/api/account/progress', 'nem json', cookie); check('hibás JSON: 400', r.status === 400);
 r = await post('/api/account/tutorial', { szojatek: 99, betujatek: 1, hack: 1 }, cookie); check('tutorial mentése: 200', r.status === 200);
 const storedTut = JSON.parse(await redis.get(`tutorial:${u.id}`));
-check('tutorial: csak ismert szakaszok, maximumra vágva', storedTut.hack === undefined && storedTut.szojatek === 1 && storedTut.betujatek === 1, JSON.stringify(storedTut));
+check('tutorial: csak ismert szakaszok, maximumra vágva (a szójátéknak már 2 gyakorlata van)', storedTut.hack === undefined && storedTut.szojatek === 2 && storedTut.betujatek === 1, JSON.stringify(storedTut));
 
 // beküldések
 r = await post('/api/submissions', { clue: 'Kérdés?', answer: 'VÁLASZ', hints: { definicio: 'd' } }, cookie); check('rejtvény beküldése: 200', r.status === 200);
@@ -852,6 +852,17 @@ await post(`/api/community/${ripSub.id}/solve`, { answer: ripSub.answer }, { coo
 r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 10 }, { cookie: ujJar.header() }); j = await r.json();
 check('a 11. reakció (🪦) is megadható', r.status === 200 && j.reactions.length === 11 && j.reactions[10] >= 1);
 r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 11 }, { cookie: ujJar.header() }); check('a 12. már érvénytelen: 400', r.status === 400);
+
+section('Tutorial: Kezdetek szakasz');
+await seedUser('kezdo@teszt.hu', 'Kezdo-Jelszo-1', { name: 'Kezdő Kata' });
+const kdJar = (await credLogin('kezdo@teszt.hu', 'Kezdo-Jelszo-1')).jar;
+r = await post('/api/account/tutorial', { kezdetek: 5, joker: 9 }, { cookie: kdJar.header() });
+const kdUid = JSON.parse(await redis.get('au:userByEmail:kezdo@teszt.hu'));
+const kdTut = JSON.parse((await redis.get(`tutorial:${kdUid}`)) || (await redis.get(`progress:tutorial:${kdUid}`)) || 'null');
+r = await fetch(BASE + '/api/account/tutorial', { headers: { cookie: kdJar.header() } }); j = await r.json().catch(() => ({}));
+const kdState = j.tutorial || j.progress || j;
+check('a Kezdetek haladása mentődik, a maximumra (1) vágva; a Joker 2-re', kdState.kezdetek === 1 && kdState.joker === 2, JSON.stringify(kdState));
+r = await fetch(BASE + '/tutorial'); check('a tutorial oldal betölt', r.status === 200);
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

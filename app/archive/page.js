@@ -176,7 +176,7 @@ export default function ArchivePage() {
                     .map((month) => {
                       const monthItems = months[month];
                       const key = `${year}-${month}`;
-                      // Alapból a legutóbbi hónap van nyitva, a többit a felhasználó nyithatja ki.
+                      // Alapból a hónapok csukva vannak, a felhasználó nyithatja ki őket.
                       const monthOpen = monthOpenOf(openMonths, key, firstMonthKey);
                       return (
                         // Egy hónap = egy doboz (mappa), benne a napok önálló, kattintható kártyákként.
@@ -270,9 +270,9 @@ export default function ArchivePage() {
   );
 }
 
-// Egy hónap nyitva van-e: amit a felhasználó állított, egyébként csak a legutóbbi hónap.
-function monthOpenOf(openMonths, key, firstKey) {
-  return openMonths[key] ?? key === firstKey;
+// Egy hónap nyitva van-e: amit a felhasználó állított; alapból mind csukva (csak az év nyitott).
+function monthOpenOf(openMonths, key) {
+  return openMonths[key] ?? false;
 }
 
 // "2026-10-12" -> "2026. október 12."

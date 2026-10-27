@@ -140,7 +140,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
 
       {!answered && (
         <>
-          <div style={{ marginTop: 0 }}>
+          <div className="player-letters" style={{ marginTop: 0 }}>
             <LetterBoxes
               answer={puzzle.answer}
               value={guess}
