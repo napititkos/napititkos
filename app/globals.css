@@ -1177,5 +1177,14 @@ button.tut-ram-btn:hover:not(:disabled){ transform: scale(1.06); }
   .archive-item .community-clue{ font-size: 15.5px; }
   .archive-meta{ gap: 2px; }
 }
-/* Főoldali gyorsgombok: balra rendezve. */
-.quick-row{ justify-content: flex-start; }
+/* Főoldali gyorsgombok: középen. */
+.quick-row{ justify-content: center; }
+
+/* Korábbi titkosírások: szűrő (összes / megfejtett / megfejtetlen). */
+.archive-filter{ display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+button.archive-filter-btn{
+  padding: 6px 14px; border-radius: 999px; border: 2px solid var(--line); background: var(--card);
+  color: var(--ink); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
+button.archive-filter-btn.on{ background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; }
+button.archive-filter-btn:hover:not(:disabled){ transform: none; border-color: var(--accent2); }

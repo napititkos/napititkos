@@ -73,10 +73,17 @@ export default function ArchivePage() {
     setArchiveSolved(prog.archiveSolved);
   }
 
+  // Szűrő: összes / megfejtett / megfejtetlen.
+  const [filter, setFilter] = useState('all');
   const grouped = useMemo(() => {
     if (!items) return {};
     const byYear = {};
-    for (const it of items) {
+    // A most nyitott (éppen játszott) rejtvény akkor is marad, ha közben kiesne a szűrőből
+    // (pl. a "Megfejtetlen" nézetben megfejted).
+    const list = items.filter(
+      (it) => (playingId && String(playingId).startsWith(it.id)) || (filter === 'all' ? true : filter === 'solved' ? isSolved(it) : !isSolved(it))
+    );
+    for (const it of list) {
       const [y, m] = (it.shownDate || '').split('-');
       if (!y || !m) continue;
       if (!byYear[y]) byYear[y] = {};
@@ -84,7 +91,7 @@ export default function ArchivePage() {
       byYear[y][m].push(it);
     }
     return byYear;
-  }, [items]);
+  }, [items, filter, history, archiveSolved, playingId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function solvedCount(list) {
     return list.filter((it) => isSolved(it)).length;
@@ -149,6 +156,25 @@ export default function ArchivePage() {
         {items && items.length === 0 && (
           <p style={{ color: 'var(--ink-soft)' }}>
             Még nincs egyetlen lezárt titkosírás sem - nézz vissza holnap!
+          </p>
+        )}
+
+        {items && items.length > 0 && (
+          <div className="archive-filter" role="group" aria-label="Szűrés">
+            {[
+              ['all', 'Összes'],
+              ['solved', 'Megfejtett'],
+              ['unsolved', 'Megfejtetlen'],
+            ].map(([key, label]) => (
+              <button key={key} type="button" className={`archive-filter-btn${filter === key ? ' on' : ''}`} aria-pressed={filter === key} onClick={() => setFilter(key)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {items && items.length > 0 && years.length === 0 && (
+          <p style={{ color: 'var(--ink-soft)', textAlign: 'center', margin: '8px 0 0' }}>
+            {filter === 'solved' ? 'Még nincs megfejtett korábbi titkosírásod.' : 'Minden korábbi titkosírást megfejtettél - szép munka!'}
           </p>
         )}
 
