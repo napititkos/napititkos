@@ -160,7 +160,7 @@ export default function AccountPage() {
                 }}
               >
                 <b>
-                  {(prog.unlocked || []).length}/{ACHIEVEMENTS.length}
+                  {(prog.unlocked || []).filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length}/{ACHIEVEMENTS.length}
                 </b>
                 <span>trófea</span>
               </a>

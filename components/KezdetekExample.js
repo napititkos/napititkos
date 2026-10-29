@@ -99,7 +99,7 @@ export default function KezdetekExample({ progress, onProgress }) {
       )}
       {step === 2 && (
         <RamCoach target={TIP_BTN} blink={TIP_BTN} place="above" onOk={() => setStep(2.5)}>
-          Ha elakadsz, tudsz használni <b>tippeket</b>, nézzük, milyenek vannak!
+          Ha elakadnál, kérhetsz <b>tippeket</b>. Lássuk ezek fajtáit!
         </RamCoach>
       )}
       {step === 3 && (

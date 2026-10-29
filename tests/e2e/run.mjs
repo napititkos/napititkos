@@ -68,6 +68,13 @@ try {
       ADMIN_PASSWORD: 'Helyi-Admin-Jelszo-1',
       RESEND_API_KEY: 'dummy',
       SITE_URL: `http://localhost:${PORT}`,
+      // Közösségi posztolás: a Graph API helyett a smoke2 hamis szervere (3199) válaszol.
+      CRON_SECRET: 'helyi-cron-titok',
+      FB_PAGE_ID: '111',
+      FB_PAGE_TOKEN: 'helyi-oldal-token',
+      IG_USER_ID: '178',
+      META_GRAPH_BASE: 'http://127.0.0.1:3199',
+      SOCIAL_POLL_MS: '10',
       NEXT_TELEMETRY_DISABLED: '1',
     }
   );
