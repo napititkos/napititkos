@@ -863,8 +863,94 @@ const kdUid = JSON.parse(await redis.get('au:userByEmail:kezdo@teszt.hu'));
 const kdTut = JSON.parse((await redis.get(`tutorial:${kdUid}`)) || (await redis.get(`progress:tutorial:${kdUid}`)) || 'null');
 r = await fetch(BASE + '/api/account/tutorial', { headers: { cookie: kdJar.header() } }); j = await r.json().catch(() => ({}));
 const kdState = j.tutorial || j.progress || j;
-check('a Kezdetek haladása mentődik, a maximumra (1) vágva; a Joker 2-re', kdState.kezdetek === 1 && kdState.joker === 2, JSON.stringify(kdState));
+check('a Kezdetek haladása mentődik, a maximumra (1) vágva; a Joker 3-ra (a Dobó-feladattal 3 gyakorlata van)', kdState.kezdetek === 1 && kdState.joker === 3, JSON.stringify(kdState));
 r = await fetch(BASE + '/kisokos'); check('a Kisokos oldal betölt', r.status === 200);
+
+section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
+{
+  const http = await import('node:http');
+  const fs = await import('node:fs');
+  const graphLog = [];
+  let failIgMedia = false;
+  let containerPolls = 0;
+  const graphSrv = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', (d) => (body += d));
+    req.on('end', () => {
+      const u = new URL(req.url, 'http://x');
+      graphLog.push({ method: req.method, path: u.pathname, query: u.search, auth: req.headers.authorization || '', body: Object.fromEntries(new URLSearchParams(body)) });
+      const send = (code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      if (req.method === 'POST' && u.pathname === '/111/photos') return send(200, { id: 'ph1', post_id: '111_p1' });
+      if (req.method === 'POST' && u.pathname === '/111_p1/comments') return send(200, { id: 'c1' });
+      if (req.method === 'POST' && u.pathname === '/178/media') {
+        if (failIgMedia) return send(400, { error: { message: 'Hamis Instagram-hiba', code: 9004 } });
+        return send(200, { id: 'ct1' });
+      }
+      if (req.method === 'GET' && u.pathname === '/ct1') return send(200, { status_code: ++containerPolls < 2 ? 'IN_PROGRESS' : 'FINISHED' });
+      if (req.method === 'POST' && u.pathname === '/178/media_publish') return send(200, { id: 'm1' });
+      send(404, { error: { message: 'ismeretlen végpont' } });
+    });
+  });
+  await new Promise((ok) => graphSrv.listen(3199, '127.0.0.1', ok));
+  const cron = (auth) => fetch(BASE + '/api/cron/social', { headers: auth ? { authorization: auth } : {} });
+  const posts = () => graphLog.filter((g) => g.method === 'POST');
+
+  r = await cron(); check('cron hitelesítés nélkül: 401', r.status === 401);
+  r = await cron('Bearer rossz-titok'); check('cron rossz titokkal: 401', r.status === 401);
+  check('a hibás hívások nem érték el a Graph API-t', graphLog.length === 0);
+
+  await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday);
+  const today = await getPuzzle();
+  r = await cron('Bearer helyi-cron-titok'); j = await r.json();
+  check('cron helyes titokkal: 200, mindkét platform rendben', r.status === 200 && j.fb?.status === 'ok' && j.ig?.status === 'ok' && j.fb.postId === '111_p1' && j.ig.mediaId === 'm1', JSON.stringify(j));
+  check('a mai (budapesti) napra posztol', j.date === budapestToday);
+  const photo = posts().find((g) => g.path === '/111/photos');
+  const comment = posts().find((g) => g.path === '/111_p1/comments');
+  const media = posts().find((g) => g.path === '/178/media');
+  const publish = posts().find((g) => g.path === '/178/media_publish');
+  check('Facebook: fotó a napi képpel', photo && photo.body.url === `${BASE}/api/social/card?d=${budapestToday}&f=fb`, JSON.stringify(photo?.body));
+  check('a poszt szövegében a rejtvény és a betűszám szerepel, a megfejtés nem', photo && photo.body.caption.includes(today.puzzle.clue) && /\(\d+(,\d+)*\)/.test(photo.body.caption) && !photo.body.caption.includes(today.puzzle.answer));
+  check('Facebook: az első hozzászólás a linkkel', comment && comment.body.message.includes(BASE));
+  check('Instagram: konténer a JPEG képpel, a link nélkül (nem kattintható ott)', media && media.body.image_url === `${BASE}/api/social/card?d=${budapestToday}&f=ig` && /profilban/.test(media.body.caption) && !media.body.caption.includes(today.puzzle.answer));
+  check('Instagram: a feldolgozást megvárja, majd publikál', containerPolls >= 2 && publish && publish.body.creation_id === 'ct1');
+  check('a token csak fejlécben megy, URL-ben soha', graphLog.every((g) => g.auth === 'Bearer helyi-oldal-token' && !/token/i.test(g.query)));
+  const fbFlag = JSON.parse(await redis.get('social:fb:' + budapestToday));
+  const fbTtl = await redis.ttl('social:fb:' + budapestToday);
+  check('a jelzők Redisben, lejárattal (legfeljebb 8 nap)', fbFlag?.postId === '111_p1' && fbFlag?.commentId === 'c1' && fbTtl > 0 && fbTtl <= 8 * 86400, `${JSON.stringify(fbFlag)} ttl=${fbTtl}`);
+
+  const before = posts().length;
+  r = await cron('Bearer helyi-cron-titok'); j = await r.json();
+  check('ismételt futás aznap: nem posztol újra', r.status === 200 && posts().length === before && j.fb.status === 'ok' && j.ig.status === 'ok');
+
+  await redis.del('social:ig:' + budapestToday);
+  failIgMedia = true;
+  const before2 = posts().length;
+  r = await cron('Bearer helyi-cron-titok'); j = await r.json();
+  check('Instagram-hiba: 500, a hiba szövegével; a Facebook rendben marad', r.status === 500 && j.ig.status === 'error' && /Hamis Instagram-hiba/.test(j.ig.error) && j.fb.status === 'ok', JSON.stringify(j));
+  check('a hiba miatt a Facebookra nem megy újra poszt', posts().slice(before2).every((g) => g.path.startsWith('/178/')));
+  failIgMedia = false;
+  r = await cron('Bearer helyi-cron-titok'); j = await r.json();
+  check('kézi újrafuttatással az Instagram pótolható', r.status === 200 && j.ig.status === 'ok');
+
+  r = await fetch(`${BASE}/api/social/card?d=${budapestToday}&f=fb`);
+  const fbImg = Buffer.from(await r.arrayBuffer());
+  check('posztkép (Facebook): PNG, 1200×630', r.status === 200 && r.headers.get('content-type') === 'image/png' && fbImg.readUInt32BE(16) === 1200 && fbImg.readUInt32BE(20) === 630);
+  r = await fetch(`${BASE}/api/social/card?d=${budapestToday}&f=ig`);
+  const igImg = Buffer.from(await r.arrayBuffer());
+  let igDims = null;
+  for (let i = 2; i < igImg.length - 9; ) {
+    if (igImg[i] !== 0xff) break;
+    const m = igImg[i + 1];
+    if (m >= 0xc0 && m <= 0xc3) { igDims = [igImg.readUInt16BE(i + 7), igImg.readUInt16BE(i + 5)]; break; }
+    i += 2 + igImg.readUInt16BE(i + 2);
+  }
+  check('posztkép (Instagram): JPEG, 1080×1350', r.status === 200 && r.headers.get('content-type') === 'image/jpeg' && igDims?.[0] === 1080 && igDims?.[1] === 1350, JSON.stringify(igDims));
+  r = await fetch(`${BASE}/api/social/card?d=2099-01-01&f=fb`); check('posztkép jövőbeli (meg nem jelent) napra: 404', r.status === 404);
+  r = await fetch(`${BASE}/api/social/card?d=holnap`); check('posztkép hibás dátummal: 400', r.status === 400);
+  const vj = JSON.parse(fs.readFileSync(new URL('../../vercel.json', import.meta.url), 'utf8'));
+  check('vercel.json: napi egy cron a /api/cron/social útvonalra', vj.crons?.length === 1 && vj.crons[0].path === '/api/cron/social' && /^\d+ \d+ \* \* \*$/.test(vj.crons[0].schedule));
+  graphSrv.close();
+}
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();

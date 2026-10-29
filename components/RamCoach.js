@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CoachTail } from './RamNote';
 
@@ -15,6 +15,14 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
   const [mounted, setMounted] = useState(false);
   const [size, setSize] = useState({ w: 400, h: 800 });
   const [shownAt] = useState(() => Date.now());
+  // A buborék mért magassága: felülről igazított helyzetben se lógjon ki a képernyő aljáról
+  // (kis telefonon a hosszabb üzeneteknél az "Értem" gomb különben elérhetetlen lenne).
+  const wrapRef = useRef(null);
+  const [boxH, setBoxH] = useState(0);
+  useLayoutEffect(() => {
+    const h = wrapRef.current?.offsetHeight || 0;
+    if (h && Math.abs(h - boxH) > 1) setBoxH(h);
+  });
   useEffect(() => setMounted(true), []);
 
   useLayoutEffect(() => {
@@ -68,13 +76,15 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     style = below ? { left, top: rect.bottom + 12, width } : { left, bottom: vh - rect.top + 12, width };
   }
 
+  if (typeof style.top === 'number' && boxH) style.top = Math.max(12, Math.min(style.top, vh - boxH - 12));
+
   // Egész képpontokra kerekítve: tört képpontos helyzetben a buborék kerete és a nyúlvány
   // élsimítása eltér, és a nyúlvány előtt halvány vonal látszik.
   style = Object.fromEntries(Object.entries(style).map(([k, v]) => [k, typeof v === 'number' ? Math.round(v) : v]));
   return createPortal(
     <>
       {blocking && <div className="coach-blocker" aria-hidden="true" />}
-      <div className="coach-wrap" style={style} role="dialog" aria-live="polite" aria-label="A kos üzenete">
+      <div className="coach-wrap" ref={wrapRef} style={style} role="dialog" aria-live="polite" aria-label="A kos üzenete">
         <img className="coach-ram" src="/logo-96.png" alt="" aria-hidden="true" width={44} height={44} />
         <div className="coach-bubble">
           <CoachTail />

@@ -626,6 +626,7 @@ export default function HomePage() {
           noHintSolves: prog.noHintSolves || 0,
           submittedPuzzle: prog.submittedPuzzle || false,
           readHelp: prog.readHelp || false,
+          introDone: prog.introDone || false,
           tutorialDone: prog.tutorialDone || false,
           sharedResult: true,
         },

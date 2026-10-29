@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../lib/progress';
 import { computeNewAchievements } from '../lib/achievements';
+import { loadTutorialProgress } from '../lib/tutorial';
 
 // Utólagos trófea-ellenőrzés oldalbetöltéskor (munkamenetenként egyszer): a helyben tárolt
 // haladásból (megfejtések, legjobb sorozat) és bejelentkezve a szerveren nyilvántartott tényekből
@@ -25,6 +26,8 @@ export default function AchievementCheck() {
           .catch(() => ({}));
       }
       const prog = loadProgress();
+      // A Kisokos bevezetőjét (Kezdetek) a trófea bevezetése előtt teljesítők is megkapják.
+      if (!prog.introDone && (loadTutorialProgress().kezdetek || 0) >= 1) prog.introDone = true;
       const { unlocked, newly } = computeNewAchievements(
         {
           totalSolved: prog.totalSolved || 0,
@@ -34,6 +37,7 @@ export default function AchievementCheck() {
           noHintSolves: prog.noHintSolves || 0,
           submittedPuzzle: prog.submittedPuzzle || false,
           readHelp: prog.readHelp || false,
+          introDone: prog.introDone || false,
           tutorialDone: prog.tutorialDone || false,
           sharedResult: prog.sharedResult || false,
           usedAllHints: prog.usedAllHints || false,

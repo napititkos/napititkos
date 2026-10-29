@@ -237,7 +237,7 @@ export default function SubmitPage() {
               <span className="hl-dot" />Készlet (opcionális)
             </label>
             <FieldHelp label="Készlet">
-              A rejtvény azon szavai, amiket a mutatók segítségével átformálunk a megoldássá. Be tudod jelölni a rejtvényben a szavakat, amik ebbe a kategóriába tartoznak.
+              A készlet azokat a szavakat jelenti, amelyeket valamilyen módon meg kell változtatni, kiegészíteni, manipulálni, hogy megkapjuk a megoldást. Be tudod jelölni a rejtvényben a szavakat, amik ebbe a kategóriába tartoznak.
             </FieldHelp>
           </div>
           {enabled.fodder && (
@@ -260,7 +260,7 @@ export default function SubmitPage() {
               <span className="hl-dot" />Mutató (opcionális)
             </label>
             <FieldHelp label="Mutató">
-              A rejtvény azon szavai, amik a készlet szavait a megoldássá formálják. Be tudod jelölni a rejtvényben a szavakat, amik ebbe a kategóriába tartoznak.
+              A mutató az, amelyik megmutatja, hogy hogyan kell a készlet szavait formálni a megoldáshoz. Be tudod jelölni a rejtvényben a szavakat, amik ebbe a kategóriába tartoznak.
             </FieldHelp>
           </div>
           {enabled.indikator && (

@@ -3,7 +3,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount, basicsUnlocked, isTutorialSynced } from '../lib/tutorial';
 import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../lib/progress';
-import { computeNewAchievements, ACHIEVEMENTS } from '../lib/achievements';
+import { computeNewAchievements } from '../lib/achievements';
 import Icon from './Icon';
 import BetujatekExample from './BetujatekExample';
 import SzojatekExample from './SzojatekExample';
@@ -62,33 +62,35 @@ export function TutorialContent() {
     if (!basicsUnlocked(progress)) setExpandedSection('kezdetek');
   }, [ready, progress, autoOpened]);
 
+  // A Kisokos két trófeája: a bevezető (Kezdetek) és a teljes Kisokos végigcsinálása.
   function handleTutorialProgress(newTutorialProgress) {
     setProgress(newTutorialProgress);
-    if (completedSectionsCount(newTutorialProgress) === TUTORIAL_SECTIONS.length) {
-      const mainProgress = loadProgress();
-      if (!mainProgress.tutorialDone) {
-        mainProgress.tutorialDone = true;
-        const { unlocked, newly } = computeNewAchievements(
-          {
-            totalSolved: mainProgress.totalSolved || 0,
-            streak: mainProgress.streak,
-            fastestTime: mainProgress.fastestTime,
-            noHintSolves: mainProgress.noHintSolves || 0,
-            submittedPuzzle: mainProgress.submittedPuzzle || false,
-            readHelp: mainProgress.readHelp || false,
-            tutorialDone: true,
-            sharedResult: mainProgress.sharedResult || false,
-          },
-          mainProgress.unlocked
-        );
-        mainProgress.unlocked = unlocked;
-        saveProgress(mainProgress);
-        if (newly.includes('tutorial_done')) {
-          const title = ACHIEVEMENTS.find((a) => a.id === 'tutorial_done')?.title;
-          window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: ['tutorial_done'] }));
-        }
-      }
-    }
+    const introNow = (newTutorialProgress.kezdetek || 0) >= 1;
+    const allNow = completedSectionsCount(newTutorialProgress) === TUTORIAL_SECTIONS.length;
+    const mainProgress = loadProgress();
+    const introNew = introNow && !mainProgress.introDone;
+    const allNew = allNow && !mainProgress.tutorialDone;
+    if (!introNew && !allNew) return;
+    if (introNew) mainProgress.introDone = true;
+    if (allNew) mainProgress.tutorialDone = true;
+    const { unlocked, newly } = computeNewAchievements(
+      {
+        totalSolved: mainProgress.totalSolved || 0,
+        streak: mainProgress.streak,
+        fastestTime: mainProgress.fastestTime,
+        noHintSolves: mainProgress.noHintSolves || 0,
+        submittedPuzzle: mainProgress.submittedPuzzle || false,
+        readHelp: mainProgress.readHelp || false,
+        introDone: !!mainProgress.introDone,
+        tutorialDone: !!mainProgress.tutorialDone,
+        sharedResult: mainProgress.sharedResult || false,
+      },
+      mainProgress.unlocked
+    );
+    mainProgress.unlocked = unlocked;
+    saveProgress(mainProgress);
+    const shown = newly.filter((id) => id === 'intro_done' || id === 'tutorial_done');
+    if (shown.length) window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: shown }));
   }
 
   if (!progress || !ready) return <div className="card"><p style={{ margin: 0, color: 'var(--ink-soft)' }}>Betöltés…</p></div>;
