@@ -49,3 +49,10 @@ test('trófeák: a bevezető trófeát a Kezdetek teljesítése adja, a Kisokos 
   assert.deepEqual(computeNewAchievements({ readHelp: true }, []).newly, []);
   assert.deepEqual(computeNewAchievements({ introDone: true }, ['intro_done']).newly, []);
 });
+
+test('posztkép témája: páratlan napon világos, párosan sötét', async () => {
+  const { themeForDay } = await import('../lib/socialTheme.js');
+  assert.equal(themeForDay(1), 'light');
+  assert.equal(themeForDay(2), 'dark');
+  assert.equal(themeForDay(37), 'light');
+});

@@ -343,8 +343,6 @@ button:disabled{ opacity:0.4; cursor:default; }
 .result h2{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 21px; margin: 0 0 4px; color: var(--accent-text); letter-spacing: 0.015em; }
 .squares{ font-size: 26px; letter-spacing: 4px; margin: 14px 0; }
 .stats{ display:flex; justify-content:center; gap: 22px; margin: 16px 0 20px; flex-wrap:wrap; }
-.result .stats{ gap: 16px; margin: 10px 0 12px; }
-.result .stat b{ font-size: 19px; }
 .stat b{ display:block; font-size: 22px; font-family:var(--font-baloo), 'Baloo 2', sans-serif; color: var(--accent-text); letter-spacing: 0.015em; }
 .stat span{ font-size: 12px; color: var(--ink-soft); }
 .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
@@ -453,7 +451,6 @@ button.comment-del{ margin-left:auto; border:none; padding: 2px 6px; font-size: 
 .result-action{ display:flex; flex-direction:column; align-items:center; gap:4px; }
 .result-action span{ font-size: 12.5px; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
 button.round-btn{ width:44px; height:44px; border-radius:50%; padding:0; }
-.result .stats{ margin: 10px 0 8px; }
 
 /* Új, még meg nem nézett kommentek jelzése a gomb felirata mellett. */
 .result-action span.has-new{ color: var(--accent-text); }
@@ -574,23 +571,21 @@ mark.hl-multi{ color: var(--ink); font-weight: 700; }
 /* Eredménykártya: a gombok és a statisztikák három egyforma oszlopban, így a középső
    pontosan középen van, a két szélső pedig a feliratok hosszától függetlenül egyenlő
    távolságra esik tőle (asztalon és mobilon is). */
-.result .result-actions,
-.result .stats{
+.result .result-actions{
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   justify-items: center;
   align-items: start;
   gap: 10px 6px;
   width: 100%;
-  max-width: 380px;
+  max-width: 260px;
   margin-left: auto;
   margin-right: auto;
 }
 .result .result-action{ width: 100%; text-align: center; }
 .result .result-action span{ white-space: normal; line-height: 1.25; }
-.result .stats .stat{ width: 100%; text-align: center; }
 @media (max-width: 420px){
-  .result .result-actions, .result .stats{ gap: 10px 4px; }
+  .result .result-actions{ gap: 10px 4px; }
 }
 
 /* Csak képernyőolvasónak szóló szöveg (vizuálisan rejtett). */
@@ -845,6 +840,37 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 .community-rate .star-input{ justify-content: center; }
 .community-rate .community-rate-sum{ display: block; margin: 4px 0 0; }
 .community-rate .reaction-row{ justify-content: center; }
+/* A napi titkosírások reakciói (főoldal: a Nyertél kártyában; korábbi titkosírások: kinagyítva). */
+.daily-reactions{ text-align: center; margin: 6px 0 0; }
+.daily-reactions .reaction-row{ justify-content: center; margin-top: 0; }
+/* Tömörebb rejtvénydoboz: a cím közelebb a tetejéhez, megfejtés után a doboz alja szorosan a
+   reakciók (a darabszámok) alá zárkózik. */
+.card.puzzle-card{ padding-top: 12px; }
+.card.puzzle-card.is-answered{ padding-bottom: 10px; }
+@media (max-width: 640px){
+  .card.puzzle-card{ padding-top: 10px; }
+  .card.puzzle-card.is-answered{ padding-bottom: 8px; }
+}
+.community-detail .daily-reactions{ margin-top: 12px; }
+/* A keretben csak az emoji, a darabszám a kereten kívül, alatta (a 0 nem látszik, de a helyét
+   megtartja, így a gombok egy vonalban maradnak). */
+.reaction-row.reaction-stacked{ gap: 6px 6px; align-items: flex-start; }
+.reaction-item{ display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
+.reaction-row.reaction-stacked .reaction-btn{ justify-content: center; min-width: 44px; }
+.reaction-row.reaction-stacked .reaction-count{ line-height: 1.1; min-height: 14px; }
+.reaction-row.reaction-stacked .reaction-count.zero{ visibility: hidden; }
+/* Újraválasztáskor ugyanaz a felbukkanó animáció, mint a közösségi rejtvényeknél, a szám együtt
+   mozog az emojival (a gombot magát ilyenkor nem animáljuk külön). */
+.reaction-row-open .reaction-item{ animation: reaction-pop 0.28s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(var(--i, 0) * 30ms); }
+.reaction-row-open.reaction-stacked .reaction-btn{ animation: none; }
+@media (prefers-reduced-motion: reduce){ .reaction-row-open .reaction-item{ animation: none; } }
+/* Az emoji gomb tiszta gombként működik: koppintásra nem jelölődik ki, nem másolható, nincs
+   hosszú érintéses menü és kék villanás (a közösségi rejtvényeknél is). */
+.reaction-btn, .reaction-btn *, .reaction-item, .reaction-count{
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button.reaction-btn{ touch-action: manipulation; }
 
 /* Főoldal: gyors gombok balról (értesítések elöl, trófeák a végén); keskeny kijelzőn tördelődnek. */
 .quick-row{ display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -929,9 +955,15 @@ h1.page-title{
 /* Nyertél kártya tömörebben: kisebb belső térköz, a cím fölött/alatt és a kártya alján is. */
 .card.result{ padding: 10px 14px 10px; }
 .result h2{ line-height: 1.15; margin: 2px 0 6px; }
-.result .result-meta{ margin-top: 0; }
-.result .result-actions{ margin-top: 8px; }
-.result .stats{ margin: 8px auto 0; } /* középen marad (a rács max. 380 px széles) */
+.result .result-meta{ margin-top: 10px; }
+.result .result-actions{ margin-top: 4px; }
+.result-stats{ display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 6px; }
+.result-stats .pill{ font-size: 12.5px; white-space: nowrap; }
+/* Keskeny kijelzőn is egy sorban férjen el a három buborék. */
+@media (max-width: 420px){
+  .result-stats{ gap: 4px; }
+  .result-stats .pill{ font-size: 11.5px; padding: 5px 9px; }
+}
 /* A hosszú cím ("Közösségi titkosírások") és a Főoldal gomb mobilon is elférjen egymás mellett. */
 .page-title-row h1.page-title{ min-width: 0; }
 

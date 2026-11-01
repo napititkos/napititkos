@@ -84,6 +84,7 @@ function run(a) {
     case 'ZREM': { const e = get(a[1], 'zset'); let n = 0; if (e) for (const m of a.slice(2)) if (e.v.delete(m)) n++; return int(n); }
     // Lista-parancsok (a kommentek használják).
     case 'RPUSH': { const e = get(a[1], 'list', true); e.v.push(...a.slice(2)); return int(e.v.length); }
+    case 'TYPE': { const e = alive(a[1]); return `+${e ? e.type : 'none'}\r\n`; }
     case 'LLEN': { const e = get(a[1], 'list'); return int(e ? e.v.length : 0); }
     case 'LRANGE': {
       const e = get(a[1], 'list'); if (!e) return arr([]);

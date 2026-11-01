@@ -5,11 +5,14 @@ import sharp from 'sharp';
 import { kv } from '../../../../lib/kv';
 import { isValidDateStr } from '../../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../../lib/rateLimit';
-import { renderSocialCard } from '../../../../lib/socialCard';
+import { renderSocialCard, themeForDay } from '../../../../lib/socialCard';
+import { socialEntryFor } from '../../../../lib/social';
 
-// A közösségi posztok képe: /api/social/card?d=YYYY-MM-DD&f=fb|ig. Csak már megjelent (az
-// előzményben szereplő) titkosításhoz ad képet, így jövőbeli rejtvény nem szivároghat ki; a
-// megfejtés nem kerül a képre. A Facebook PNG-t, az Instagram (API) csak JPEG-et fogad el.
+// A közösségi posztok képe: /api/social/card?d=YYYY-MM-DD&f=fb|ig[&v=...]. Csak már megjelent
+// (az előzményben szereplő) titkosításhoz ad képet, így jövőbeli rejtvény nem szivároghat ki; a
+// megfejtés nem kerül a képre. A rejtvény szövegét mindig az aktuális (élő) változatból vesszük,
+// így a posztolás előtti admin-módosítások is megjelennek; a "v" paraméter (a tartalom
+// lenyomata) csak a gyorsítótárakat választja szét. A Facebook PNG-t, az Instagram csak JPEG-et fogad el.
 export async function GET(req) {
   if (await isLimited('social-card:ip', clientIp(req), 60, 60)) return tooMany(60);
   const url = new URL(req.url);
@@ -17,18 +20,17 @@ export async function GET(req) {
   const format = url.searchParams.get('f') === 'ig' ? 'ig' : 'fb';
   if (!isValidDateStr(date)) return Response.json({ error: 'invalid-date' }, { status: 400 });
 
-  const history = (await kv.get('rotation:history')) || [];
-  // Ha egy napon belül (admin beütemezéssel) csere történt, az utolsó, vagyis az aktuális számít.
-  const index = history.findLastIndex((h) => h.shownDate === date);
-  if (index < 0) return Response.json({ error: 'not-found' }, { status: 404 });
+  const found = await socialEntryFor(date);
+  if (!found) return Response.json({ error: 'not-found' }, { status: 404 });
 
-  const image = renderSocialCard({ entry: history[index], format, dayNumber: index + 1 });
+  const image = renderSocialCard({ entry: found.entry, format, dayNumber: found.dayNumber, theme: themeForDay(found.dayNumber) });
   const png = Buffer.from(await image.arrayBuffer());
   const body = format === 'ig' ? await sharp(png).jpeg({ quality: 90, mozjpeg: true }).toBuffer() : png;
   return new Response(body, {
     headers: {
       'Content-Type': format === 'ig' ? 'image/jpeg' : 'image/png',
-      'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+      // Rövid gyorsítótár: egy későbbi javítás (új "v") úgyis új címet kap.
+      'Cache-Control': 'public, max-age=300, s-maxage=300',
     },
   });
 }
