@@ -28,14 +28,10 @@ export async function GET() {
     .filter((p) => String(p.submittedByEmail || '').toLowerCase() === email)
     .map((p) => ({ id: p.id, clue: p.clue, answer: p.answer, hints: p.hints }));
 
-  const comments = [];
-  for (const k of await kv.scan('comments:*')) {
-    for (const item of await kv.raw().lrange(k, 0, -1)) {
-      try {
-        const c = JSON.parse(item);
-        if (c.uid === id) comments.push({ date: k.slice('comments:'.length), text: c.text, ts: c.ts });
-      } catch {}
-    }
+  const dailyReactions = [];
+  for (const k of await kv.scan('daily:reactions:*')) {
+    const v = await kv.raw().hget(k, `u:${id}`);
+    if (v != null) dailyReactions.push({ date: k.slice('daily:reactions:'.length), emoji: EMOJIS[Number(v)] || null });
   }
 
   const data = {
@@ -53,7 +49,7 @@ export async function GET() {
     tutorial: (await kv.get(`tutorial:${id}`)) || null,
     submissions,
     publishedPuzzles,
-    comments,
+    dailyReactions,
     notifications: await userNotifications(user.email),
     communityRatings: await myCommunityRatings(user.id),
   };

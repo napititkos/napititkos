@@ -343,8 +343,6 @@ button:disabled{ opacity:0.4; cursor:default; }
 .result h2{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 21px; margin: 0 0 4px; color: var(--accent-text); letter-spacing: 0.015em; }
 .squares{ font-size: 26px; letter-spacing: 4px; margin: 14px 0; }
 .stats{ display:flex; justify-content:center; gap: 22px; margin: 16px 0 20px; flex-wrap:wrap; }
-.result .stats{ gap: 16px; margin: 10px 0 12px; }
-.result .stat b{ font-size: 19px; }
 .stat b{ display:block; font-size: 22px; font-family:var(--font-baloo), 'Baloo 2', sans-serif; color: var(--accent-text); letter-spacing: 0.015em; }
 .stat span{ font-size: 12px; color: var(--ink-soft); }
 .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
@@ -453,7 +451,6 @@ button.comment-del{ margin-left:auto; border:none; padding: 2px 6px; font-size: 
 .result-action{ display:flex; flex-direction:column; align-items:center; gap:4px; }
 .result-action span{ font-size: 12.5px; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
 button.round-btn{ width:44px; height:44px; border-radius:50%; padding:0; }
-.result .stats{ margin: 10px 0 8px; }
 
 /* Új, még meg nem nézett kommentek jelzése a gomb felirata mellett. */
 .result-action span.has-new{ color: var(--accent-text); }
@@ -574,23 +571,21 @@ mark.hl-multi{ color: var(--ink); font-weight: 700; }
 /* Eredménykártya: a gombok és a statisztikák három egyforma oszlopban, így a középső
    pontosan középen van, a két szélső pedig a feliratok hosszától függetlenül egyenlő
    távolságra esik tőle (asztalon és mobilon is). */
-.result .result-actions,
-.result .stats{
+.result .result-actions{
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   justify-items: center;
   align-items: start;
   gap: 10px 6px;
   width: 100%;
-  max-width: 380px;
+  max-width: 260px;
   margin-left: auto;
   margin-right: auto;
 }
 .result .result-action{ width: 100%; text-align: center; }
 .result .result-action span{ white-space: normal; line-height: 1.25; }
-.result .stats .stat{ width: 100%; text-align: center; }
 @media (max-width: 420px){
-  .result .result-actions, .result .stats{ gap: 10px 4px; }
+  .result .result-actions{ gap: 10px 4px; }
 }
 
 /* Csak képernyőolvasónak szóló szöveg (vizuálisan rejtett). */
@@ -845,6 +840,15 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 .community-rate .star-input{ justify-content: center; }
 .community-rate .community-rate-sum{ display: block; margin: 4px 0 0; }
 .community-rate .reaction-row{ justify-content: center; }
+/* A napi titkosírások reakciói (főoldal: a Nyertél kártyában; korábbi titkosírások: kinagyítva). */
+.daily-reactions{ text-align: center; margin: 4px 0 10px; }
+.daily-reactions .reaction-row{ justify-content: center; margin-top: 6px; }
+.community-detail .daily-reactions{ margin-top: 12px; }
+/* Az emoji alatt a darabszám (a 0 is), egységes szélességű gombokban. */
+.reaction-row.reaction-stacked .reaction-btn{ flex-direction: column; justify-content: center; gap: 2px; min-width: 44px; padding: 6px 8px 4px; border-radius: 14px; }
+.reaction-row.reaction-stacked .reaction-count{ line-height: 1.1; }
+/* A 0 darabszám nem látszik, de a helyét megtartja (egyforma magas gombok). */
+.reaction-row.reaction-stacked .reaction-count.zero{ visibility: hidden; }
 
 /* Főoldal: gyors gombok balról (értesítések elöl, trófeák a végén); keskeny kijelzőn tördelődnek. */
 .quick-row{ display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -931,7 +935,13 @@ h1.page-title{
 .result h2{ line-height: 1.15; margin: 2px 0 6px; }
 .result .result-meta{ margin-top: 0; }
 .result .result-actions{ margin-top: 8px; }
-.result .stats{ margin: 8px auto 0; } /* középen marad (a rács max. 380 px széles) */
+.result-stats{ display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 6px; }
+.result-stats .pill{ font-size: 12.5px; white-space: nowrap; }
+/* Keskeny kijelzőn is egy sorban férjen el a három buborék. */
+@media (max-width: 420px){
+  .result-stats{ gap: 4px; }
+  .result-stats .pill{ font-size: 11.5px; padding: 5px 9px; }
+}
 /* A hosszú cím ("Közösségi titkosírások") és a Főoldal gomb mobilon is elférjen egymás mellett. */
 .page-title-row h1.page-title{ min-width: 0; }
 

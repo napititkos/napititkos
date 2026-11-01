@@ -81,15 +81,8 @@ export async function POST(req) {
     if (changed) await kv.set('rotation:history', history);
   }
 
-  // Kommentek (minden napról).
-  for (const k of await kv.scan('comments:*')) {
-    const raw = await r.lrange(k, 0, -1);
-    for (const item of raw) {
-      try {
-        if (JSON.parse(item).uid === id) await r.lrem(k, 1, item);
-      } catch {}
-    }
-  }
+  // A napi titkosírásokra adott reakciók (fiókhoz kötöttek; a vendég-reakciók névtelenek).
+  for (const k of await kv.scan('daily:reactions:*')) await r.hdel(k, `u:${id}`);
 
   // Ranglista-bejegyzések (az utóbbi ~45 napból).
   const playerKey = `u:${id}`;

@@ -258,40 +258,13 @@ for (let i = 0; i < 35; i++) lbs.push((await post('/api/leaderboard', { name: `S
 check('ranglista: a címenkénti óránkénti 30 küldés után 429', lbs.filter((s) => s === 200).length === 30 - before && lbs.filter((s) => s === 429).length === 35 - (30 - before), `(${before}) ${JSON.stringify(lbs)}`);
 
 
-// ---------------------------------------------------------------- KOMMENTEK
-section('Kommentek');
-r = await fetch(BASE + '/api/comments?count=1'); let j = await r.json();
-check('darabszám vendégként is: 200, 0', r.status === 200 && j.count === 0, JSON.stringify(j));
-r = await fetch(BASE + '/api/comments'); check('lista vendégként: 401 (a megfejtést is elárulhatja)', r.status === 401);
-r = await post('/api/comments', { text: 'Vendég vagyok' }); check('írás vendégként: 401', r.status === 401);
+// ---------------------------------------------------------------- KOMMENTEK (MEGSZŰNTEK)
+section('Kommentek: a funkció megszűnt');
+r = await fetch(BASE + '/api/comments?count=1'); let j = null;
+check('a kommentek végpontja nincs többé (GET 404)', r.status === 404, `(${r.status})`);
+r = await post('/api/comments', { text: 'Vendég vagyok' }); check('kommentet írni sem lehet (POST 404 vagy 405)', r.status === 404 || r.status === 405, `(${r.status})`);
 await seedUser('kommentelo@teszt.hu', 'Komment-Jelszo-1', { name: 'Kommentelő Kata' });
 const cA = (await credLogin('kommentelo@teszt.hu', 'Komment-Jelszo-1')).jar;
-await seedUser('masik@teszt.hu', 'Komment-Jelszo-2', { name: '' });
-const cB = (await credLogin('masik@teszt.hu', 'Komment-Jelszo-2')).jar;
-await seedUser('nincsmeg@teszt.hu', 'Komment-Jelszo-3', { emailVerified: null });
-const cC = (await credLogin('nincsmeg@teszt.hu', 'Komment-Jelszo-3')).jar;
-r = await post('/api/comments', { text: 'Nem megerősített' }, { cookie: cC.header() }); check('írás megerősítetlen fiókkal: 403', r.status === 403, `(${r.status})`);
-r = await post('/api/comments', { text: '   ' }, { cookie: cA.header() }); check('üres komment: 400', r.status === 400);
-r = await post('/api/comments', { text: 'Szép rejtvény!\u200b\u0007', evil: 1 }, { cookie: cA.header() }); j = await r.json();
-check('komment elküldve: 200', r.status === 200, `(${r.status})`);
-check('a név a fiókból jön, e-mail nincs benne', j.comment?.name === 'Kommentelő Kata' && !JSON.stringify(j).includes('@'));
-check('láthatatlan és vezérlőkarakterek kiszűrve', j.comment?.text === 'Szép rejtvény!');
-r = await post('/api/comments', { text: 'x'.repeat(900) }, { cookie: cB.header() }); j = await r.json();
-check('név nélküli fiók: "Névtelen", nem e-mail', j.comment?.name === 'Névtelen', JSON.stringify(j.comment?.name));
-check('túl hosszú szöveg 500 karakterre vágva', j.comment?.text?.length === 500);
-r = await fetch(BASE + '/api/comments?count=1'); check('darabszám: 2', (await r.json()).count === 2);
-r = await fetch(BASE + '/api/comments', { headers: { cookie: cB.header() } }); j = await r.json();
-check('lista bejelentkezve: 2 komment, uid és e-mail nélkül', j.comments?.length === 2 && !JSON.stringify(j).includes('"uid"') && !JSON.stringify(j).includes('@'));
-check('a saját komment "mine" jelölést kap', j.comments?.[1]?.mine === true && j.comments?.[0]?.mine === false);
-const firstId = j.comments[0].id;
-r = await fetch(BASE + `/api/comments?date=${budapestToday}&id=${firstId}`, { method: 'DELETE', headers: { cookie: cB.header() } });
-check('más kommentjének törlése: 403', r.status === 403, `(${r.status})`);
-r = await fetch(BASE + `/api/comments?date=${budapestToday}&id=${firstId}`, { method: 'DELETE', headers: { cookie: cA.header() } });
-check('saját komment törlése: 200', r.status === 200, `(${r.status})`);
-const secondId = (await (await fetch(BASE + '/api/comments', { headers: { cookie: cB.header() } })).json()).comments[0].id;
-r = await fetch(BASE + `/api/comments?date=${budapestToday}&id=${secondId}`, { method: 'DELETE', headers: adm });
-check('admin bármelyiket törölheti: 200', r.status === 200, `(${r.status})`);
-r = await fetch(BASE + '/api/comments?count=1'); check('törlések után: 0', (await r.json()).count === 0);
 
 // ---------------------------------------------------------------- ÉRTESÍTÉSEK
 section('Értesítések');
@@ -428,29 +401,6 @@ const rhJar = (await credLogin('rohano@teszt.hu', 'Rohano-Jelszo-1')).jar;
 const rush = await Promise.all(Array.from({ length: 4 }, (_, i) => post('/api/submissions', { clue: `Egyszerre ${i}`, answer: 'SZÓ' }, { cookie: rhJar.header() })));
 check('4 párhuzamos beküldésből pontosan egy megy át', rush.filter((x) => x.status === 200).length === 1 && rush.filter((x) => x.status === 429).length === 3, JSON.stringify(rush.map((x) => x.status)));
 
-// ---------------------------------------------------------------- KOMMENT: VÁRAKOZÁS, ISMÉTLÉS
-section('Komment: 30 mp várakozás és ismételt szöveg');
-await seedUser('csevego@teszt.hu', 'Csevego-Jelszo-1', { name: 'Csevegő Csaba' });
-const cmJar = (await credLogin('csevego@teszt.hu', 'Csevego-Jelszo-1')).jar;
-const cmId = JSON.parse(await redis.get('au:userByEmail:csevego@teszt.hu'));
-r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cmJar.header() });
-check('első komment: 200', r.status === 200, `(${r.status})`);
-r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cmJar.header() }); j = await r.json();
-check('ugyanaz a szöveg újra: 409 (ismétlés)', r.status === 409 && j.error === 'duplicate' && /már elküldted/.test(j.message || ''), JSON.stringify(j));
-r = await post('/api/comments', { text: 'Még egy gondolat' }, { cookie: cmJar.header() }); j = await r.json();
-check('más szöveg rögtön: 429, legfeljebb 30 mp várakozás', r.status === 429 && j.error === 'cooldown' && j.retryAfter > 0 && j.retryAfter <= 30 && /30 másodpercet/.test(j.message || ''), JSON.stringify(j));
-r = await post('/api/comments', { text: '   ' }, { cookie: cmJar.header() });
-check('üres komment várakozás közben is 400', r.status === 400, `(${r.status})`);
-await redis.del(`rl:cd:comment:user:${cmId}`); // a 30 mp leteltét szimuláljuk
-r = await post('/api/comments', { text: 'Még egy gondolat' }, { cookie: cmJar.header() });
-check('a várakozás után: 200', r.status === 200, `(${r.status})`);
-await redis.del(`rl:cd:comment:user:${cmId}`);
-r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cmJar.header() });
-check('a korábbi szöveg várakozás után is ismétlésnek számít: 409', r.status === 409, `(${r.status})`);
-await redis.del(`rl:cd:comment:user:${otherId}`); // a korábbi kommentje óta eltelt időt szimuláljuk
-r = await post('/api/comments', { text: 'Ez nagyon jó volt!' }, { cookie: cA.header() });
-check('ugyanazt a szöveget más felhasználó elküldheti: 200', r.status === 200, `(${r.status})`);
-
 // ---------------------------------------------------------------- ADMIN: FIÓKTILTÁS
 section('Admin: fióktiltás');
 const patchUser = (bodyObj, headers) => fetch(BASE + '/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(bodyObj) });
@@ -476,8 +426,6 @@ let ul = await (await fetch(BASE + '/api/admin/users', { headers: adm })).json()
 check('a felhasználólista jelzi a tiltást', ul.users.find((x) => x.id === tbId)?.banned === true && ul.users.find((x) => x.id === meId)?.banned === false);
 let tbSess = await (await fetch(BASE + '/api/auth/session', { headers: { cookie: tbLogin.jar.header() } })).json();
 check('a meglévő munkamenet azonnal megszűnik', !tbSess?.user, JSON.stringify(tbSess));
-r = await post('/api/comments', { text: 'Tiltva is írnék' }, { cookie: tbLogin.jar.header() });
-check('a régi sütivel sem kommentelhet: 401', r.status === 401, `(${r.status})`);
 r = await post('/api/submissions', { clue: 'Tiltva', answer: 'NEM' }, { cookie: tbLogin.jar.header() });
 check('a régi sütivel sem küldhet be rejtvényt: 401', r.status === 401, `(${r.status})`);
 check('helyes jelszóval sem léphet be', !(await credLogin('tiltando@teszt.hu', 'Tiltando-Jelszo-1')).ok);
@@ -572,8 +520,6 @@ r = await fetch(BASE + '/api/archive', { headers: { cookie: nv.jar.header() } })
 check('archívum meg nem erősítve: 403 unverified', r.status === 403 && j.error === 'unverified', `(${r.status})`);
 r = await post('/api/archive/solve', { date: '2026-01-01' }, { cookie: nv.jar.header() });
 check('archív megfejtés meg nem erősítve: 403', r.status === 403, `(${r.status})`);
-r = await post('/api/comments', { text: 'Megerősítés nélkül' }, { cookie: nv.jar.header() });
-check('komment meg nem erősítve: 403', r.status === 403, `(${r.status})`);
 r = await post('/api/submissions', { clue: 'X', answer: 'Y' }, { cookie: nv.jar.header() });
 check('beküldés meg nem erősítve: 403', r.status === 403, `(${r.status})`);
 await post('/api/leaderboard', { name: guest, hintsUsed: 0, elapsed: 4000 }, { cookie: nv.jar.header() });
@@ -900,6 +846,14 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   check('a hibás hívások nem érték el a Graph API-t', graphLog.length === 0);
 
   await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday);
+  // A megszűnt kommentek egyszeri törléséhez: régi komment-listák és mellettük más kulcsok.
+  await redis.rpush('comments:2026-01-01', JSON.stringify({ id: 'a', text: 'régi' }), JSON.stringify({ id: 'b', text: 'régi 2' }));
+  await redis.rpush('comments:2026-01-02', JSON.stringify({ id: 'c', text: 'régi 3' }));
+  await redis.rpush('comments:nem-datum', 'marad');
+  await redis.set('comments:2026-01-03', 'nem lista, marad');
+  await redis.set('commentsx:2026-01-01', 'marad');
+  await redis.hset('community:reactions:valami', 'u:1', '2');
+  const keysBefore = (await redis.keys('*')).filter((k) => !/^comments:2026-01-0[12]$/.test(k)).sort();
   const today = await getPuzzle();
   r = await cron('Bearer helyi-cron-titok'); j = await r.json();
   check('cron helyes titokkal: 200, mindkét platform rendben', r.status === 200 && j.fb?.status === 'ok' && j.ig?.status === 'ok' && j.fb.postId === '111_p1' && j.ig.mediaId === 'm1', JSON.stringify(j));
@@ -908,10 +862,15 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   const comment = posts().find((g) => g.path === '/111_p1/comments');
   const media = posts().find((g) => g.path === '/178/media');
   const publish = posts().find((g) => g.path === '/178/media_publish');
-  check('Facebook: fotó a napi képpel', photo && photo.body.url === `${BASE}/api/social/card?d=${budapestToday}&f=fb`, JSON.stringify(photo?.body));
+  check('Facebook: fotó a napi képpel (a tartalom lenyomatával)', photo && new RegExp(`^${BASE}/api/social/card\\?d=${budapestToday}&f=fb&v=[a-f0-9]{12}$`).test(photo.body.url), JSON.stringify(photo?.body));
+  check('Facebook: az Instagram hashtagjei is', photo && photo.body.caption.includes('#kriptikusrejtvény #napirejtvény #fejtörő #magyarrejtvény #napititkos'));
   check('a poszt szövegében a rejtvény és a betűszám szerepel, a megfejtés nem', photo && photo.body.caption.includes(today.puzzle.clue) && /\(\d+(,\d+)*\)/.test(photo.body.caption) && !photo.body.caption.includes(today.puzzle.answer));
   check('Facebook: az első hozzászólás a linkkel', comment && comment.body.message.includes(BASE));
-  check('Instagram: konténer a JPEG képpel, a link nélkül (nem kattintható ott)', media && media.body.image_url === `${BASE}/api/social/card?d=${budapestToday}&f=ig` && /profilban/.test(media.body.caption) && !media.body.caption.includes(today.puzzle.answer));
+  check('Instagram: konténer a JPEG képpel, a link nélkül (nem kattintható ott)', media && media.body.image_url === photo.body.url.replace('&f=fb&', '&f=ig&') && /profilban/.test(media.body.caption) && !media.body.caption.includes(today.puzzle.answer));
+  const maint = j.maintenance?.legacyComments;
+  check('karbantartás: a régi kommentek törölve (2 lista, 3 komment)', maint?.deletedKeys === 2 && maint?.deletedComments === 3, JSON.stringify(j.maintenance));
+  const keysAfter = (await redis.keys('*')).filter((k) => !k.startsWith('social:') && !k.startsWith('maintenance:') && !k.startsWith('rl:') && !k.startsWith('lock:')).sort();
+  check('karbantartás: minden más kulcs érintetlen (a nem dátumos és a nem lista komment-kulcs is)', JSON.stringify(keysAfter) === JSON.stringify(keysBefore.filter((k) => !k.startsWith('rl:') && !k.startsWith('lock:'))) && (await redis.get('comments:2026-01-03')) === 'nem lista, marad' && (await redis.lrange('comments:nem-datum', 0, -1))[0] === 'marad' && (await redis.hget('community:reactions:valami', 'u:1')) === '2', JSON.stringify({ hiányzik: keysBefore.filter((k) => !keysAfter.includes(k)) }));
   check('Instagram: a feldolgozást megvárja, majd publikál', containerPolls >= 2 && publish && publish.body.creation_id === 'ct1');
   check('a token csak fejlécben megy, URL-ben soha', graphLog.every((g) => g.auth === 'Bearer helyi-oldal-token' && !/token/i.test(g.query)));
   const fbFlag = JSON.parse(await redis.get('social:fb:' + budapestToday));
@@ -921,6 +880,7 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   const before = posts().length;
   r = await cron('Bearer helyi-cron-titok'); j = await r.json();
   check('ismételt futás aznap: nem posztol újra', r.status === 200 && posts().length === before && j.fb.status === 'ok' && j.ig.status === 'ok');
+  check('karbantartás csak egyszer fut', j.maintenance?.legacyComments?.skipped === true && j.maintenance.legacyComments.deletedKeys === 2, JSON.stringify(j.maintenance));
 
   await redis.del('social:ig:' + budapestToday);
   failIgMedia = true;
@@ -931,6 +891,44 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   failIgMedia = false;
   r = await cron('Bearer helyi-cron-titok'); j = await r.json();
   check('kézi újrafuttatással az Instagram pótolható', r.status === 200 && j.ig.status === 'ok');
+
+  // A posztolás előtti admin-módosítás (a mai rejtvény szövegének és beküldőjének átírása) a képen
+  // és a szövegben is megjelenik, és a kép új címet (lenyomatot) kap.
+  const oldUrl = photo.body.url;
+  const oldPng = Buffer.from(await (await fetch(oldUrl)).arrayBuffer());
+  const plist = JSON.parse(await redis.get('puzzles:list'));
+  const savedList = JSON.stringify(plist);
+  const cur = plist.find((p) => p.id === today.puzzle.id);
+  cur.clue = 'Javított szöveg posztolás előtt.';
+  cur.submittedBy = 'Beküldő Béla';
+  await redis.set('puzzles:list', JSON.stringify(plist));
+  await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday);
+  const before3 = posts().length;
+  r = await cron('Bearer helyi-cron-titok'); j = await r.json();
+  const photo2 = posts().slice(before3).find((g) => g.path === '/111/photos');
+  const media2 = posts().slice(before3).find((g) => g.path === '/178/media');
+  check('módosítás után: a szövegben az új rejtvény és a beküldő', r.status === 200 && photo2?.body.caption.includes('„Javított szöveg posztolás előtt.”') && /\nBeküldte: Beküldő Béla\n/.test(photo2.body.caption) && /Beküldte: Beküldő Béla/.test(media2?.body.caption || ''), photo2?.body.caption);
+  check('módosítás után: új képcím (más lenyomat)', photo2 && photo2.body.url !== oldUrl);
+  const newPng = Buffer.from(await (await fetch(photo2.body.url)).arrayBuffer());
+  check('módosítás után: a kép is az új szöveggel készül (eltér a korábbitól)', newPng.length > 0 && !newPng.equals(oldPng));
+  await redis.set('puzzles:list', savedList);
+
+  // Téma: a titkosírás sorszáma szerint páratlan napon világos, párosan sötét a kép.
+  const sharp = require('sharp');
+  const hist = JSON.parse(await redis.get('rotation:history'));
+  const dayNo = hist.map((h) => h.shownDate).lastIndexOf(budapestToday) + 1;
+  const px = (await sharp(newPng).removeAlpha().extract({ left: 2, top: 2, width: 1, height: 1 }).raw().toBuffer()).toString('hex');
+  check(`téma: a(z) ${dayNo}. napon ${dayNo % 2 ? 'világos' : 'sötét'} háttér`, px === (dayNo % 2 ? 'f0f0fc' : '16121e'), px);
+  const shiftedDate = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); })();
+  if (!hist.some((h) => h.shownDate === shiftedDate)) {
+    hist.splice(hist.length - 1, 0, { ...hist[hist.length - 1], shownDate: shiftedDate });
+    await redis.set('rotation:history', JSON.stringify(hist));
+  }
+  const h2 = JSON.parse(await redis.get('rotation:history'));
+  const prevNo = h2.map((h) => h.shownDate).lastIndexOf(shiftedDate) + 1;
+  const prevPng = Buffer.from(await (await fetch(`${BASE}/api/social/card?d=${shiftedDate}&f=fb`)).arrayBuffer());
+  const px2 = (await sharp(prevPng).removeAlpha().extract({ left: 2, top: 2, width: 1, height: 1 }).raw().toBuffer()).toString('hex');
+  check(`téma: a(z) ${prevNo}. napon (előző nap) ${prevNo % 2 ? 'világos' : 'sötét'} háttér`, px2 === (prevNo % 2 ? 'f0f0fc' : '16121e'), `${prevNo}: ${px2}`);
 
   r = await fetch(`${BASE}/api/social/card?d=${budapestToday}&f=fb`);
   const fbImg = Buffer.from(await r.arrayBuffer());
@@ -950,6 +948,36 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   const vj = JSON.parse(fs.readFileSync(new URL('../../vercel.json', import.meta.url), 'utf8'));
   check('vercel.json: napi egy cron a /api/cron/social útvonalra', vj.crons?.length === 1 && vj.crons[0].path === '/api/cron/social' && /^\d+ \d+ \* \* \*$/.test(vj.crons[0].schedule));
   graphSrv.close();
+}
+
+section('Napi titkosírás: emoji-reakciók (bárki reagálhat)');
+{
+  const devA = 'a'.repeat(32);
+  const devB = 'b'.repeat(32);
+  const rget = (q, opts) => fetch(`${BASE}/api/reactions?${q}`, opts);
+  r = await rget(`date=2099-01-01&device=${devA}`); check('meg nem jelent napra: 404', r.status === 404);
+  r = await rget('date=hibas'); check('hibás dátum: 404', r.status === 404);
+  r = await rget(`date=${budapestToday}&device=${devA}`); j = await r.json();
+  check('mai nap: 200, a közösségi emojik, még nincs reakció', r.status === 200 && j.emojis?.length === 11 && j.emojis[0] === '😍' && j.reactions.every((n) => n === 0) && j.mine === null, JSON.stringify(j));
+  check('a válasz nem gyorsítótárazható', /no-store/.test(r.headers.get('cache-control') || ''));
+  r = await post('/api/reactions', { date: budapestToday, reaction: 2, device: devA }); j = await r.json();
+  check('vendég reagál (eszközazonosítóval): 200, a sajátja megjelölve', r.status === 200 && j.reactions[2] === 1 && j.mine === 2, JSON.stringify(j));
+  r = await post('/api/reactions', { date: budapestToday, reaction: 2, device: devB }); j = await r.json();
+  check('másik vendég ugyanarra: 2 darab', j.reactions[2] === 2 && j.mine === 2);
+  r = await post('/api/reactions', { date: budapestToday, reaction: 5, device: devA }); j = await r.json();
+  check('módosítás: egy eszköz egy reakció (2→5)', j.reactions[2] === 1 && j.reactions[5] === 1 && j.mine === 5, JSON.stringify(j.reactions));
+  r = await post('/api/reactions', { date: budapestToday, reaction: null, device: devB }); j = await r.json();
+  check('visszavonás (null)', j.reactions[2] === 0 && j.mine === null);
+  r = await post('/api/reactions', { date: budapestToday, reaction: 99, device: devA }); check('érvénytelen emoji: 400', r.status === 400);
+  r = await post('/api/reactions', { date: budapestToday, reaction: 1 }); check('vendég eszközazonosító nélkül: 400', r.status === 400);
+  r = await post('/api/reactions', { date: budapestToday, reaction: 1, device: 'nem-hex' }); check('hibás eszközazonosító: 400', r.status === 400);
+  r = await post('/api/reactions', { date: '2099-01-01', reaction: 1, device: devA }); check('jövőbeli napra nem lehet: 404', r.status === 404);
+  r = await post('/api/reactions', { date: budapestToday, reaction: 0, device: devA }, { cookie: cA.header() }); j = await r.json();
+  check('bejelentkezve a fiókhoz kötődik (az eszköztől függetlenül)', j.reactions[0] === 1 && j.reactions[5] === 1 && j.mine === 0, JSON.stringify(j.reactions));
+  const rk = await redis.hgetall('daily:reactions:' + budapestToday);
+  check('tárolás: fiók "u:", vendég "d:" azonosítóval, név és IP nélkül', Object.keys(rk).every((k) => /^(u:[^@\s]+|d:[a-f0-9]{32})$/.test(k)) && Object.keys(rk).some((k) => k.startsWith('u:')) && Object.keys(rk).some((k) => k.startsWith('d:')), JSON.stringify(rk));
+  r = await rget(`date=${budapestToday}&device=${devA}`); j = await r.json();
+  check('a vendég a saját (eszközhöz kötött) reakcióját látja', j.mine === 5);
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);

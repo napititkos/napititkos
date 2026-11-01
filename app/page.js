@@ -17,7 +17,7 @@ import PlayActions from '../components/PlayActions';
 import ClueText from '../components/ClueText';
 import { HL_TYPES, highlightMap } from '../lib/clue';
 import { enumerationFor } from '../lib/format';
-import Comments from '../components/Comments';
+import DailyReactions from '../components/DailyReactions';
 import NotificationsButton from '../components/NotificationsButton';
 import { HINT_HELP } from '../lib/puzzleLogic';
 import FieldHelp from '../components/FieldHelp';
@@ -155,10 +155,7 @@ export default function HomePage() {
   }, [session?.user]);
   const timerRef = useRef(null);
   const finishedRef = useRef(false);
-  const [showComments, setShowComments] = useState(false);
   const [showExplain, setShowExplain] = useState(false);
-  const [commentCount, setCommentCount] = useState(0);
-  const [commentsSeen, setCommentsSeen] = useState(false);
   const toastTimeout = useRef(null);
 
   useEffect(() => {
@@ -587,27 +584,6 @@ export default function HomePage() {
     };
   }, [answered, puzzleMeta?.date]);
 
-  // A kommentek darabszáma zárójelben csak addig látszik, amíg ma még nem nyitotta meg.
-  const COMMENTS_SEEN_KEY = 'titkositas_comments_seen_v1';
-  useEffect(() => {
-    if (!answered || !puzzleMeta?.date) return;
-    try {
-      setCommentsSeen(localStorage.getItem(COMMENTS_SEEN_KEY) === puzzleMeta.date);
-    } catch {}
-    fetch(`/api/comments?date=${puzzleMeta.date}&count=1`)
-      .then((r) => r.json())
-      .then((d) => setCommentCount(d.count || 0))
-      .catch(() => {});
-  }, [answered, puzzleMeta?.date]);
-
-  function openComments() {
-    setShowComments(true);
-    setCommentsSeen(true);
-    try {
-      localStorage.setItem(COMMENTS_SEEN_KEY, puzzleMeta.date);
-    } catch {}
-  }
-
   function share() {
     const text = shareText();
     if (navigator.clipboard) {
@@ -874,12 +850,34 @@ export default function HomePage() {
           ) : (
             <h2>Ennyi mára</h2>
           )}
+          {/* Emoji-reakciók a mai titkosírásra (megfejtés vagy feladás után, bárki reagálhat). */}
+          {puzzleMeta?.date && <DailyReactions date={puzzleMeta.date} interactive />}
           <div className="result-meta">
             <span className="pill result-streak">
               <Icon src="/icons/Streak.png" size={14} /> {progress.streak} napos sorozat
             </span>
             <span className="pill"><Icon src="/icons/Kovetkezo_rejtveny.png" size={14} /> Kövi titkosírásig: {hoursLeft || '…'}</span>
           </div>
+          {/* A napi statisztikák buborékban, szorosan a sorozat és a visszaszámláló alatt. */}
+          {(solverCount !== null || playingCount !== null || avgHints !== null) && (
+            <div className="result-stats">
+              {solverCount !== null && (
+                <span className="pill">
+                  {solverCount} megfejtő ma
+                </span>
+              )}
+              {playingCount !== null && (
+                <span className="pill">
+                  {playingCount} még fejti
+                </span>
+              )}
+              {avgHints !== null && (
+                <span className="pill">
+                  {avgHints.toFixed(1)} átlag tipp
+                </span>
+              )}
+            </div>
+          )}
           <div className="result-actions">
             <div className="result-action">
               <button className="primary round-btn" onClick={share} aria-label="Eredmény másolása">
@@ -893,38 +891,6 @@ export default function HomePage() {
               </button>
               <span>Magyarázat</span>
             </div>
-            <div className="result-action">
-              <button
-                className={`primary round-btn${!commentsSeen && commentCount > 0 ? ' has-new-dot' : ''}`}
-                onClick={openComments}
-                aria-label={commentCount > 0 && !commentsSeen ? `Kommentek (${commentCount}, új)` : 'Kommentek'}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.8A8 8 0 1 1 21 12z" />
-                </svg>
-              </button>
-              <span className={!commentsSeen && commentCount > 0 ? 'has-new' : ''}>Kommentek ({commentCount})</span>
-            </div>
-          </div>
-          <div className="stats">
-            {solverCount !== null && (
-              <div className="stat">
-                <b>{solverCount}</b>
-                <span>megfejtő ma</span>
-              </div>
-            )}
-            {playingCount !== null && (
-              <div className="stat">
-                <b>{playingCount}</b>
-                <span>még fejti</span>
-              </div>
-            )}
-            {avgHints !== null && (
-              <div className="stat">
-                <b>{avgHints.toFixed(1)}</b>
-                <span>átlag tipp / játékos</span>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -986,21 +952,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {showComments && (
-        <div className="modal-overlay" onClick={() => setShowComments(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0 }}>
-              Mai kommentek ({commentCount})
-            </h2>
-            <Comments date={puzzleMeta.date} onCountChange={setCommentCount} />
-            <div className="actions" style={{ marginTop: 14 }}>
-              <button className="ghost" onClick={() => setShowComments(false)}>
-                Bezárás
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
 
       <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>
