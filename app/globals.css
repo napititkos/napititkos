@@ -841,8 +841,16 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 .community-rate .community-rate-sum{ display: block; margin: 4px 0 0; }
 .community-rate .reaction-row{ justify-content: center; }
 /* A napi titkosírások reakciói (főoldal: a Nyertél kártyában; korábbi titkosírások: kinagyítva). */
-.daily-reactions{ text-align: center; margin: 12px 0 2px; }
-.daily-reactions .reaction-row{ justify-content: center; margin-top: 6px; }
+.daily-reactions{ text-align: center; margin: 6px 0 0; }
+.daily-reactions .reaction-row{ justify-content: center; margin-top: 0; }
+/* Tömörebb rejtvénydoboz: a cím közelebb a tetejéhez, megfejtés után a doboz alja szorosan a
+   reakciók (a darabszámok) alá zárkózik. */
+.card.puzzle-card{ padding-top: 12px; }
+.card.puzzle-card.is-answered{ padding-bottom: 10px; }
+@media (max-width: 640px){
+  .card.puzzle-card{ padding-top: 10px; }
+  .card.puzzle-card.is-answered{ padding-bottom: 8px; }
+}
 .community-detail .daily-reactions{ margin-top: 12px; }
 /* A keretben csak az emoji, a darabszám a kereten kívül, alatta (a 0 nem látszik, de a helyét
    megtartja, így a gombok egy vonalban maradnak). */

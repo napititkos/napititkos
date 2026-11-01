@@ -695,7 +695,7 @@ export default function HomePage() {
         </button>
       </div>
 
-      <div className="card puzzle-card">
+      <div className={`card puzzle-card${answered ? ' is-answered' : ''}`}>
         <div className="topbar">
           <div className="topbar-main">
             <div className="puzzle-title">
