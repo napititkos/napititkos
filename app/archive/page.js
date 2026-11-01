@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { enumerationFor } from '../../lib/format';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
-import Comments from '../../components/Comments';
+import DailyReactions from '../../components/DailyReactions';
 import ClueLine from '../../components/ClueLine';
 
 const HU_MONTHS = [
@@ -24,7 +24,6 @@ export default function ArchivePage() {
   const [openMonths, setOpenMonths] = useState({});
   const [playingId, setPlayingId] = useState(null);
   const [gaveUpIds, setGaveUpIds] = useState([]);
-  const [commentCounts, setCommentCounts] = useState({});
 
   // Vendégeknek előzetes: csak az összes korábbi titkosírás száma (konkrét rejtvény nélkül).
   const [teaser, setTeaser] = useState(null);
@@ -122,13 +121,13 @@ export default function ArchivePage() {
                     <b>{teaser.total} korábbi titkosírás</b> vár megfejtésre.
                   </p>
                   <p style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>
-                    Jelentkezz be, és újrajátszhatod őket tippekkel és a régi kommentekkel együtt. Azt is
+                    Jelentkezz be, és újrajátszhatod őket tippekkel, és reagálhatsz is rájuk. Azt is
                     látod majd, melyiket fejtetted már meg, és hányan fejtették meg összesen.
                   </p>
                 </>
               ) : (
                 <p style={{ marginTop: 0 }}>
-                  A korábbi titkosírások újrajátszásához és a régi kommentek megtekintéséhez jelentkezz be.
+                  A korábbi titkosírások újrajátszásához jelentkezz be.
                 </p>
               )}
               <a href="/login?callbackUrl=/archive" style={{ textDecoration: 'none' }}>
@@ -231,7 +230,6 @@ export default function ArchivePage() {
                                   const solved = isSolved(it);
                                   const itemKey = it.id + i;
                                   const isPlaying = playingId === itemKey;
-                                  const comments = commentCounts[it.shownDate] ?? it.commentCount ?? 0;
                                   return (
                                     <div className={`card community-item archive-item${isPlaying ? ' open' : ''}`} key={itemKey}>
                                       {isPlaying ? (
@@ -253,7 +251,6 @@ export default function ArchivePage() {
                                                 {it.totalSolvers != null && ` – ${it.totalSolvers} megfejtő`}
                                               </span>
                                             </span>
-                                            {comments > 0 && <span>{comments} komment</span>}
                                           </span>
                                         </button>
                                       )}
@@ -266,18 +263,8 @@ export default function ArchivePage() {
                                             onSolved={() => handleSolved(it.id, it.shownDate)}
                                             onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />
-                                          {solved && comments > 0 && (
-                                            <div style={{ marginTop: 12 }}>
-                                              <b style={{ fontSize: 14 }}>Kommentek ezen a napon ({comments})</b>
-                                              <div style={{ marginTop: 6 }}>
-                                                <Comments
-                                                  date={it.shownDate}
-                                                  readOnly
-                                                  onCountChange={(n) => setCommentCounts((prev) => ({ ...prev, [it.shownDate]: n }))}
-                                                />
-                                              </div>
-                                            </div>
-                                          )}
+                                          {/* Kinagyítva látszanak a reakciók; reagálni megfejtés után lehet. */}
+                                          <DailyReactions date={it.shownDate} interactive={solved} />
                                         </div>
                                       )}
                                     </div>

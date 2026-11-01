@@ -61,14 +61,13 @@ export default function PrivacyPage() {
           </p>
         </div>
         <div className="help-block">
-          <h3>Kommentek</h3>
+          <h3>Reakciók</h3>
           <p>
-            Kommentet írni és olvasni csak bejelentkezve lehet, írni csak megerősített fiókkal. A
-            kommented mellett a fiókodhoz tartozó név jelenik meg (név nélküli fióknál
-            "Névtelen") - az e-mail-címed soha. A kommenteket az adott napi titkosírás mellett
-            tároljuk, így a korábbi titkosírásoknál is visszanézhetők. A saját kommentedet
-            bármikor törölheted; a szabályokat sértő kommenteket az üzemeltető eltávolíthatja.
-            Fióktörléskor az összes kommented is törlődik.
+            A napi titkosírásokra emojival reagálhatsz, bejelentkezés nélkül is. Ilyenkor a
+            reakciódat egy, az eszközödön tárolt, véletlenszerű és névtelen azonosítóhoz kötjük
+            (így titkosírásonként egy reakciód lehet, és később módosíthatod); bejelentkezve a
+            fiókodhoz. A reakciók csak összesítve, darabszámként jelennek meg, név nélkül.
+            Fióktörléskor a fiókodhoz kötött reakciók is törlődnek.
           </p>
         </div>
         <div className="help-block">
@@ -139,7 +138,7 @@ export default function PrivacyPage() {
             A fiókot és a haladást a fiók törléséig őrizzük. A napi ranglisták legfeljebb 45 napig,
             a napi összesített statisztikák legfeljebb 120 napig maradnak meg - kivéve az egyes
             titkosírások összesített, névtelen megfejtőszámát, amit az archívumhoz tartósan
-            megőrzünk. A kommenteket a fiók vagy a komment törléséig, a közösségi titkosírásokat és
+            megőrzünk. A napi titkosírásokra adott reakciókat, a közösségi titkosírásokat és
             az értékeléseket a fiók vagy a rejtvény törléséig, a személyes értesítéseket legfeljebb
             180 napig őrizzük. A megerősítő és
             belépő linkek 15 perc, illetve 24 óra után lejárnak. A visszaélések elleni védelemhez
