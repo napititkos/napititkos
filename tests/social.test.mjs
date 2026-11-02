@@ -56,3 +56,11 @@ test('posztkép témája: páratlan napon világos, párosan sötét', async () 
   assert.equal(themeForDay(2), 'dark');
   assert.equal(themeForDay(37), 'light');
 });
+
+test('rejtvény mentése: a nehézség 1-5, minden más értéknél 0 (nincs megadva)', async () => {
+  const { sanitizePuzzle } = await import('../lib/validate.js');
+  const base = { id: 'x1', clue: 'Szöveg', answer: 'ALMA' };
+  assert.equal(sanitizePuzzle({ ...base, difficulty: 3 }).difficulty, 3);
+  assert.equal(sanitizePuzzle({ ...base, difficulty: '5' }).difficulty, 5);
+  for (const bad of [0, 6, -1, 2.5, 'nehéz', null, undefined]) assert.equal(sanitizePuzzle({ ...base, difficulty: bad }).difficulty, 0, String(bad));
+});

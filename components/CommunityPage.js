@@ -133,7 +133,7 @@ export default function CommunityPage() {
               </button>
             ) : (
               <button type="button" className="community-head" aria-expanded={false} onClick={() => setOpenId(it.id)}>
-                <ClueLine text={it.clue} className="community-clue" />
+                <ClueLine text={`${it.clue} ${it.enumeration || ''}`.trim()} className="community-clue" lines={8} />
                 <span className="community-meta">
                   <span className="community-rating-row">
                     {/* A sor a megfejtett-pipával kezdődik, utána a csillagok és a többi adat. */}

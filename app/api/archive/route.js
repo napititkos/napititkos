@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../lib/kv';
 import { auth } from '../../../auth';
+import { EMOJIS } from '../../../lib/emojis';
+import { dailyReactionsKey } from '../../../lib/reactions';
 
 // Összesített megfejtőszám egy korábbi titkosírásra = aznapi megfejtők + azóta az
 // archívumban megfejtők. Az aznapi szám a napi statisztikából jön, ami 120 nap után
@@ -67,12 +69,36 @@ export async function GET() {
   } catch (err) {
     console.error('Archív megfejtőszám hiba:', err.message);
   }
+  // A reakciókat (darabszámok és a saját) előre letöltjük, hogy lenyitáskor ne kelljen várni rájuk.
+  const reacts = {};
+  try {
+    const dates = [...new Set(past.map((p) => p.shownDate).filter(Boolean))];
+    if (dates.length) {
+      const pl = kv.raw().pipeline();
+      for (const d of dates) pl.hgetall(dailyReactionsKey(d));
+      const res = await pl.exec();
+      const me = `u:${session.user.id}`;
+      dates.forEach((d, i) => {
+        const all = res[i]?.[1] || {};
+        const counts = EMOJIS.map(() => 0);
+        for (const v of Object.values(all)) {
+          const k = Number(v);
+          if (Number.isInteger(k) && k >= 0 && k < EMOJIS.length) counts[k] += 1;
+        }
+        const m = all[me] != null ? Number(all[me]) : null;
+        reacts[d] = { reactions: counts, mine: Number.isInteger(m) ? m : null };
+      });
+    }
+  } catch (err) {
+    console.error('Archív reakció hiba:', err.message);
+  }
   const archive = past.map((p) => ({
     ...p,
     totalSolvers: totals[p.shownDate] ?? null,
+    reactions: reacts[p.shownDate] || null,
   }));
-    return Response.json(
-    { archive },
+  return Response.json(
+    { archive, emojis: EMOJIS },
     // Bejelentkezéshez kötött tartalom: a CDN nem tárolhatja (különben egy eltárolt választ
     // bejelentkezés nélkül is kiadhatna), és a böngésző sem.
     { headers: { 'Cache-Control': 'private, no-store' } }

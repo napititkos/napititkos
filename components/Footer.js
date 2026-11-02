@@ -12,7 +12,11 @@ export default function Footer() {
         <a href="https://www.flaticon.com" target="_blank" rel="noopener noreferrer">
           Flaticon
         </a>
-        {' · '}Logó: bundaskifli
+        {' · '}Logó: bundaskifli{' · '}Emoji:{' '}
+        <a href="https://github.com/jdecked/twemoji" target="_blank" rel="noopener noreferrer">
+          Twemoji
+        </a>{' '}
+        (CC-BY 4.0)
       </div>
     </footer>
   );

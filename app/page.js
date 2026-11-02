@@ -554,6 +554,7 @@ export default function HomePage() {
     const lines = [
       `Titkosírás · ${puzzleMeta?.date || ''}`,
       `"${puzzle.clue}"`,
+      ...(puzzle.difficulty >= 1 ? [`Nehézség: ${puzzle.difficulty}/5`] : []),
       correct ? feedbackText(true, totalHints) : feedbackText(false, 0, puzzle.answer),
       `Idő: ${formatTime(elapsed)}`,
       `Eddigi megfejtők száma ma: ${solverCount ?? 0}`,
@@ -701,12 +702,16 @@ export default function HomePage() {
             <div className="puzzle-title">
               Napi titkosírás{puzzleMeta?.dayNumber ? ` #${puzzleMeta.dayNumber}` : ''}
             </div>
+            {/* Bal oldalt a cím alatt az időzítő és a nehézség, jobb oldalt felül a dátum, alul a beküldő. */}
             <div className="topbar-sub">
-              <span>{puzzleMeta?.date ? formatHuDate(puzzleMeta.date) : 'minden nap új!'}</span>
+              <span className="topbar-pills">
+                <span className="timer">{formatTime(elapsed)}</span>
+                {puzzle.difficulty >= 1 && <span className="timer difficulty-pill">Nehézség: {puzzle.difficulty}/5</span>}
+              </span>
               {puzzle.submittedBy && <span className="submitted-by">Beküldte: {puzzle.submittedBy}</span>}
             </div>
           </div>
-          <div className="timer topbar-timer">{formatTime(elapsed)}</div>
+          <div className="topbar-date">{puzzleMeta?.date ? formatHuDate(puzzleMeta.date) : 'minden nap új!'}</div>
         </div>
 
         {/* Megfejtés után a doboz alja közvetlenül a visszajelzés alá zárkózik fel. */}
