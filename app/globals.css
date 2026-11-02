@@ -190,16 +190,24 @@ nav.topnav{
    alatta egy sorban balra a "minden nap új!", jobbra a beküldő neve. */
 .topbar{ position: relative; }
 .topbar-main{ flex: 1; min-width: 0; }
-.topbar-main .puzzle-title{ padding-right: 84px; }
+.topbar-main .puzzle-title{ padding-right: 128px; }
 .topbar-timer{ position: absolute; top: 0; right: 0; }
+/* Jobb oldalt felül a dátum (abszolút, így nem növeli a sor magasságát), alul a beküldő; bal
+   oldalt a cím alatt az időzítő és a nehézség buborékja. */
+.topbar-date{ position: absolute; top: 6px; right: 0; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
 .topbar-sub{
-  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
-  margin-top: 9px; font-size: 13px; color: var(--ink-soft);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin-top: 6px; font-size: 13px; color: var(--ink-soft);
 }
 .topbar-sub > span:first-child{ flex-shrink: 0; }
+.topbar-pills{ display: inline-flex; align-items: center; gap: 6px; }
+/* Ha a beküldő neve nem fér el a buborékok mellett, jobbra igazítva a következő sorba kerül
+   (nem vágjuk le). */
+.topbar-sub{ flex-wrap: wrap; row-gap: 4px; }
+
+.topbar-pills .timer{ padding: 4px 11px; font-size: 13px; }
 .topbar-sub .submitted-by{
-  margin: 0; font-size: 13px; text-align: right; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin: 0 0 0 auto; font-size: 13px; text-align: right; min-width: 0;
 }
 .puzzle-title{ font-family:var(--font-baloo), 'Baloo 2', sans-serif; font-size: 22px; font-weight:700; color: var(--accent-text); letter-spacing: 0.015em; }
 .timer, .pill{
@@ -782,7 +790,7 @@ button.field-help-btn[aria-expanded="true"]{ background: var(--accent2-text); co
 a.community-cta{
   display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;
   background: var(--btn-primary); color: #fff; font-weight: 800; font-size: 18px;
-  border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+  border-radius: var(--radius); padding: 16px; margin: 0 0 18px; box-shadow: var(--shadow);
 }
 a.community-cta:active{ transform: scale(0.98); }
 .community-sort{ display: flex; align-items: center; gap: 8px; margin: 0 2px 12px; font-size: 14px; }
@@ -851,7 +859,7 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
   .card.puzzle-card{ padding-top: 10px; }
   .card.puzzle-card.is-answered{ padding-bottom: 8px; }
 }
-.community-detail .daily-reactions{ margin-top: 12px; }
+.community-detail .daily-reactions{ margin-top: 10px; }
 /* A keretben csak az emoji, a darabszám a kereten kívül, alatta (a 0 nem látszik, de a helyét
    megtartja, így a gombok egy vonalban maradnak). */
 .reaction-row.reaction-stacked{ gap: 6px 6px; align-items: flex-start; }
@@ -871,6 +879,18 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
   -webkit-tap-highlight-color: transparent;
 }
 button.reaction-btn{ touch-action: manipulation; }
+/* A képként megjelenített (túl új) emoji ugyanakkora, mint a szöveges emojik. */
+.emoji-img{ display: block; width: 1.15em; height: 1.15em; pointer-events: none; }
+/* Asztali gépen (egérrel) visszajelzés, ha az egér egy emoji fölé ér. */
+button.reaction-btn{ transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease; }
+@media (hover: hover) and (pointer: fine){
+  button.reaction-btn:not(:disabled):hover{
+    transform: translateY(-2px) scale(1.08); border-color: var(--btn-primary);
+    background: var(--accent-soft); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  }
+  .reaction-item:hover .reaction-count{ color: var(--accent-text); }
+}
+@media (prefers-reduced-motion: reduce){ button.reaction-btn:not(:disabled):hover{ transform: none; } }
 
 /* Főoldal: gyors gombok balról (értesítések elöl, trófeák a végén); keskeny kijelzőn tördelődnek. */
 .quick-row{ display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -1205,7 +1225,8 @@ button.tut-ram-btn:hover:not(:disabled){ transform: scale(1.06); }
   .archive-card .puzzle-editor{ padding: 4px 2px; border-width: 1px; border-color: color-mix(in srgb, var(--line) 55%, transparent); }
   .archive-month{ padding: 4px 6px 6px; margin-top: 8px; }
   .archive-month-items{ gap: 8px; }
-  .archive-item button.community-head{ padding: 10px 12px; gap: 5px; }
+  .archive-item button.community-head{ padding: 8px 12px; gap: 4px; }
+  .archive-item .daily-reactions{ margin-top: 6px; }
   .archive-item .community-clue{ font-size: 15.5px; }
   .archive-meta{ gap: 2px; }
 }
@@ -1220,3 +1241,17 @@ button.archive-filter-btn{
 }
 button.archive-filter-btn.on{ background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; }
 button.archive-filter-btn:hover:not(:disabled){ transform: none; border-color: var(--accent2); }
+
+/* A közösségi és a korábbi titkosírások kártyái mobilon alacsonyabbak (kevesebb üres hely alul-felül). */
+@media (max-width: 600px){
+  button.community-head{ padding: 8px 12px; gap: 4px; }
+  .community-meta{ gap: 2px; }
+}
+/* Az emojisorok sorai közel egymáshoz; a korábbi titkosírásoknál kinagyítva a kártya alja
+   közvetlenül az emojik alatt. */
+.reaction-row.reaction-stacked{ row-gap: 2px; }
+.archive-item .community-detail{ padding-bottom: 6px; }
+.archive-item .community-rate-note{ margin-top: 4px; }
+@media (max-width: 640px){
+  .reaction-row.reaction-stacked .reaction-count{ min-height: 12px; font-size: 12px; }
+}

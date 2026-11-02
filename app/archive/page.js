@@ -16,6 +16,7 @@ const HU_MONTHS = [
 export default function ArchivePage() {
   const { status } = useSession();
   const [items, setItems] = useState(null);
+  const [emojis, setEmojis] = useState(null);
   const [error, setError] = useState(null);
   const [unverified, setUnverified] = useState(false);
   const [history, setHistory] = useState({});
@@ -44,7 +45,10 @@ export default function ArchivePage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.error === 'unverified') setUnverified(true);
-        else setItems(data.archive || []);
+        else {
+          setEmojis(data.emojis || null);
+          setItems(data.archive || []);
+        }
       })
       .catch(() => setError('Nem sikerült betölteni az archívumot.'));
   }, [status]);
@@ -238,7 +242,7 @@ export default function ArchivePage() {
                                         </button>
                                       ) : (
                                         <button type="button" className="community-head" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
-                                          <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" lines={2} />
+                                          <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" lines={8} />
                                           <span className="community-meta archive-meta">
                                             <span className="community-rating-row">
                                               {solved && (
@@ -264,7 +268,9 @@ export default function ArchivePage() {
                                             onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />
                                           {/* Kinagyítva látszanak a reakciók; reagálni megfejtés után lehet. */}
-                                          <DailyReactions date={it.shownDate} interactive={solved} />
+                                          <DailyReactions date={it.shownDate} interactive={solved} initial={emojis && it.reactions ? { emojis, ...it.reactions } : null}
+                                            onChange={(r) => setItems((prev) => prev.map((x) => (x.shownDate === it.shownDate ? { ...x, reactions: r } : x)))}
+                                          />
                                         </div>
                                       )}
                                     </div>

@@ -606,8 +606,25 @@ export default function AdminPage() {
                     </i>
                   </p>
 
-                  {/* A nehézség (parHints) mezője egyelőre kikerült: sehol nem jelenik meg a játékban.
-                      A meglévő érték megmarad, és mentéskor változatlanul tárolódik. */}
+                  {/* A régi "parHints" mező egyelőre kikerült (a meglévő érték változatlanul tárolódik).
+                      A nehézség 1-5: a főoldalon, a megosztott eredményben és a közösségi
+                      posztokban jelenik meg; üresen hagyva sehol. */}
+                  <label className="field-label" htmlFor={`difficulty-${ei}`}>
+                    Nehézség (opcionális, 1 = könnyű, 5 = nagyon nehéz)
+                  </label>
+                  <select
+                    id={`difficulty-${ei}`}
+                    value={e.difficulty || ''}
+                    onChange={(ev) => updateEntry(ei, (en) => ({ ...en, difficulty: ev.target.value ? Number(ev.target.value) : 0 }))}
+                  >
+                    <option value="">Nincs megadva</option>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+
 
                   <label className="field-label">Beküldő neve (opcionális - megjelenik a játékosoknak)</label>
                   <input

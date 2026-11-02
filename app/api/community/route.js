@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { auth } from '../../../auth';
 import { kv } from '../../../lib/kv';
 import { todayStr } from '../../../lib/date';
+import { enumerationFor } from '../../../lib/format';
 import { communityList, migrateLegacyOnce, solvedKey, summaries } from '../../../lib/community';
 
 // A Közösségi titkosírások listája: csak a lista-nézethez szükséges adatok (rejtvény, beküldő,
@@ -29,6 +30,8 @@ export async function GET() {
       items: list.map((s) => ({
         id: s.id,
         clue: s.clue,
+        // A betűszám (pl. "(5)") a kicsinyített nézethez; a megfejtést nem árulja el.
+        enumeration: enumerationFor(s.answer),
         name: s.name && s.name !== 'Névtelen' ? s.name : '',
         createdAt: s.createdAt,
         avg: sums[s.id]?.avg ?? null,

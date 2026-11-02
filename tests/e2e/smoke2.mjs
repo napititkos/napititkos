@@ -901,6 +901,7 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   const cur = plist.find((p) => p.id === today.puzzle.id);
   cur.clue = 'Javított szöveg posztolás előtt.';
   cur.submittedBy = 'Beküldő Béla';
+  cur.difficulty = 4;
   await redis.set('puzzles:list', JSON.stringify(plist));
   await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday);
   const before3 = posts().length;
@@ -909,6 +910,9 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   const media2 = posts().slice(before3).find((g) => g.path === '/178/media');
   check('módosítás után: a szövegben az új rejtvény és a beküldő', r.status === 200 && photo2?.body.caption.includes('„Javított szöveg posztolás előtt.”') && /\nBeküldte: Beküldő Béla\n/.test(photo2.body.caption) && /Beküldte: Beküldő Béla/.test(media2?.body.caption || ''), photo2?.body.caption);
   check('módosítás után: új képcím (más lenyomat)', photo2 && photo2.body.url !== oldUrl);
+  check('a poszt "Mai rejtvényünk" sorral, dátummal kezdődik, és benne a nehézség', /^🔐 Mai rejtvényünk – \d{4}\. [a-zé]+ \d{1,2}\.\n/.test(photo2?.body.caption || '') && /\nNehézség: 4\/5\n/.test(photo2.body.caption) && /\nNehézség: 4\/5\n/.test(media2?.body.caption || ''), photo2?.body.caption);
+  const live = await getPuzzle();
+  check('a napi rejtvény API-ja a nehézséget is adja', live.puzzle.difficulty === 4, String(live.puzzle.difficulty));
   const newPng = Buffer.from(await (await fetch(photo2.body.url)).arrayBuffer());
   check('módosítás után: a kép is az új szöveggel készül (eltér a korábbitól)', newPng.length > 0 && !newPng.equals(oldPng));
   await redis.set('puzzles:list', savedList);
@@ -978,6 +982,19 @@ section('Napi titkosírás: emoji-reakciók (bárki reagálhat)');
   check('tárolás: fiók "u:", vendég "d:" azonosítóval, név és IP nélkül', Object.keys(rk).every((k) => /^(u:[^@\s]+|d:[a-f0-9]{32})$/.test(k)) && Object.keys(rk).some((k) => k.startsWith('u:')) && Object.keys(rk).some((k) => k.startsWith('d:')), JSON.stringify(rk));
   r = await rget(`date=${budapestToday}&device=${devA}`); j = await r.json();
   check('a vendég a saját (eszközhöz kötött) reakcióját látja', j.mine === 5);
+  check('a 😅 helyén a 🫪 (képként jelenik meg)', j.emojis[7] === '🫪' && !j.emojis.includes('😅'));
+  // A korábbi titkosírások listája a reakciókat előre adja (darabszám és a saját).
+  const yd = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3); return d.toISOString().slice(0, 10); })();
+  const hh = JSON.parse(await redis.get('rotation:history'));
+  hh.splice(hh.length - 1, 0, { id: 'arch-react', clue: 'Archív reakció teszt.', answer: 'ALMA', hints: {}, shownDate: yd });
+  await redis.set('rotation:history', JSON.stringify(hh));
+  await post('/api/reactions', { date: yd, reaction: 3, device: devB });
+  await post('/api/reactions', { date: yd, reaction: 1, device: devA }, { cookie: cA.header() });
+  r = await fetch(BASE + '/api/archive', { headers: { cookie: cA.header() } }); j = await r.json();
+  const ar = (j.archive || []).find((x) => x.shownDate === yd);
+  check('archívum: az emojik és a napi reakciók előre letöltve (a sajátja is)', j.emojis?.length === 11 && ar?.reactions?.reactions?.[3] === 1 && ar.reactions.reactions[1] === 1 && ar.reactions.mine === 1, JSON.stringify(ar?.reactions));
+  r = await fetch(BASE + '/api/community'); j = await r.json();
+  check('közösségi lista: betűszám a kicsinyített nézethez, a megfejtés nélkül', (j.items || []).length > 0 && j.items.every((x) => /^\(\d+(,\d+)*\)$/.test(x.enumeration) && !('answer' in x)), JSON.stringify((j.items || []).slice(0, 2)));
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
