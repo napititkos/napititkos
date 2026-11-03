@@ -855,6 +855,11 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
    reakciók (a darabszámok) alá zárkózik. */
 .card.puzzle-card{ padding-top: 12px; }
 .card.puzzle-card.is-answered{ padding-bottom: 10px; }
+/* Asztali gépen a doboz alja ugyanolyan közel van a darabszámokhoz, mint azok az emojikhoz. */
+@media (min-width: 641px){
+  .card.puzzle-card.is-answered{ padding-bottom: 0; }
+  .card.puzzle-card .reaction-row.reaction-stacked .reaction-count{ line-height: 1; }
+}
 @media (max-width: 640px){
   .card.puzzle-card{ padding-top: 10px; }
   .card.puzzle-card.is-answered{ padding-bottom: 8px; }
@@ -901,9 +906,8 @@ button.reaction-btn{ transition: transform 0.12s ease, border-color 0.12s ease, 
 a.quick-pill:hover{ transform: scale(1.03); }
 /* Nyertél doboz: az idő mellett a sorozat. */
 /* Az idő és a sorozat két buborékban; a kettő közötti rés pontosan a doboz közepén van. */
-.result-meta{ display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; align-items: center; margin-top: 6px; }
-.result-meta > :first-child{ justify-self: end; }
-.result-meta > :last-child{ justify-self: start; }
+/* A sorozat és a visszaszámláló együtt, középre igazítva (nem a kettő közé esik a tengely). */
+.result-meta{ display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; margin-top: 6px; }
 .result-meta .pill{ font-size: 12.5px; white-space: nowrap; }
 @media (max-width: 420px){
   /* Mobilon egy sorba férjen: kisebb térköz, és a szöveges gombok ikon nélkül (az értesítés és a
@@ -1254,4 +1258,38 @@ button.archive-filter-btn:hover:not(:disabled){ transform: none; border-color: v
 .archive-item .community-rate-note{ margin-top: 4px; }
 @media (max-width: 640px){
   .reaction-row.reaction-stacked .reaction-count{ min-height: 12px; font-size: 12px; }
+}
+
+/* Felugró ablak bezárás gombja jobbra fent (mobilon; asztali gépen az alsó Bezárás gomb elég). */
+button.modal-x{ display: none; }
+@media (max-width: 640px){
+  button.modal-x{
+    display: flex; align-items: center; justify-content: center; position: sticky; top: 0; float: right;
+    width: 36px; height: 36px; margin: -6px -6px 0 8px; padding: 0; border-radius: 50%;
+    border: 2px solid var(--line); background: var(--card); color: var(--ink); font-size: 22px; line-height: 1; z-index: 2;
+  }
+}
+
+/* Kisokos: az ötödik („Ha még gyakorolnál…”) kártya a korábbi titkosírásokhoz. */
+a.tutorial-tile.tutorial-practice{ display: block; margin-top: 12px; text-decoration: none; color: var(--ink); }
+a.tutorial-practice .tutorial-tile-head{ display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+.tutorial-practice-body{ display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0 2px; color: var(--accent-text); }
+
+/* Admin főoldal: csempék az egyes részekhez. */
+.admin-tiles{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 520px){ .admin-tiles{ grid-template-columns: 1fr; } }
+a.card.admin-tile{ display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0; text-decoration: none; color: var(--ink); transition: transform 0.15s ease, border-color 0.15s ease; }
+a.card.admin-tile:hover{ transform: translateY(-2px); }
+.admin-tile-icon{ font-size: 26px; line-height: 1; }
+.admin-tile-count{ font-size: 13px; font-weight: 700; color: var(--accent-text); }
+.admin-tile-desc{ font-size: 13px; color: var(--ink-soft); }
+a.admin-back{
+  display: inline-flex; align-items: center; text-decoration: none; font-weight: 700; font-size: 12.5px;
+  border-radius: 999px; border: 2px solid var(--line); color: var(--ink-soft); padding: 5px 12px; white-space: nowrap;
+}
+
+/* Profilom: a saját közösségi titkosírás szerkesztése (gombként megjelenő link). */
+a.my-sub-edit{
+  display: inline-flex; align-items: center; text-decoration: none; font-weight: 700; font-size: 12.5px;
+  border-radius: 999px; border: 2px solid var(--line); color: var(--ink-soft); padding: 5px 12px; white-space: nowrap;
 }

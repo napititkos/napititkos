@@ -22,6 +22,9 @@ export async function GET() {
       id: s.id,
       clue: s.clue,
       answer: s.answer,
+      // A szerkesztéshez (a Beküldés oldal szerkesztő módja).
+      hints: s.hints || {},
+      hintWords: s.hintWords || {},
       createdAt: s.createdAt,
       avg: sums[s.id]?.avg ?? null,
       ratingCount: sums[s.id]?.ratingCount || 0,

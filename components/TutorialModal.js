@@ -30,7 +30,7 @@ export function TutorialContent() {
 
   // Bejelentkezve megvárjuk, amíg a haladás a szerverrel összefésülődik (legfeljebb 3 mp-ig), hogy
   // a már máshol megoldott feladatoknál se induljon el a kos bemutatója; vendégként azonnal indul.
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const onUpdate = (e) => {
@@ -92,6 +92,23 @@ export function TutorialContent() {
     const shown = newly.filter((id) => id === 'intro_done' || id === 'tutorial_done');
     if (shown.length) window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: shown }));
   }
+
+  // A gyakorló kártya számlálója: ugyanúgy számolva, mint a főoldali „Korábbi titkosírások” gombon.
+  const [archiveCount, setArchiveCount] = useState(null);
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/archive', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const list = d?.archive || [];
+        if (!list.length) return;
+        const prog = loadProgress();
+        const hist = prog.history || {};
+        const arch = prog.archiveSolved || [];
+        setArchiveCount({ solved: list.filter((it) => !!hist[it.shownDate]?.correct || arch.includes(it.id)).length, total: list.length });
+      })
+      .catch(() => {});
+  }, [session?.user]);
 
   if (!progress || !ready) return <div className="card"><p style={{ margin: 0, color: 'var(--ink-soft)' }}>Betöltés…</p></div>;
   const allDone = completedSectionsCount(progress) === TUTORIAL_SECTIONS.length;
@@ -156,13 +173,32 @@ export function TutorialContent() {
             );
           })}
         </div>
+        {/* Ha mind a négy rész kész: ötödik kártya a korábbi titkosírásokhoz, a főoldali gombhoz
+            hasonló számlálóval (hányat fejtett meg az összesből) és haladásjelzővel. */}
         {allDone && (
-          <div className="feedback good tutorial-done" style={{ marginLeft: 0, marginTop: 16 }}>
-            <b>Gratulálunk, végigcsináltad a Kisokost!</b> Most már készen állsz a napi
-            titkosírásra. Ha még gyakorolnál, a{' '}
-            <a href="/archive" style={{ color: 'inherit', fontWeight: 800 }}>Korábbi titkosírások</a>{' '}
-            menüpontban kipróbálhatod az összes eddigi rejtvényt.
-          </div>
+          <a className="tutorial-tile tutorial-practice" href="/archive">
+            <span className="tutorial-tile-head">
+              <span className="tutorial-tile-row">
+                <b>Ha még gyakorolnál…</b>
+                {archiveCount && (
+                  <span className="tutorial-tile-count" aria-label={`${archiveCount.solved} / ${archiveCount.total} korábbi titkosírást fejtettél meg`}>
+                    <b>
+                      {archiveCount.solved}/{archiveCount.total}
+                    </b>
+                  </span>
+                )}
+              </span>
+              <span className="tutorial-practice-body">
+                <Icon src="/icons/Korabbi_titkosirasok.png" size={30} />
+                <b>Korábbi titkosírások</b>
+              </span>
+              {archiveCount && (
+                <span className="tutorial-tile-bar">
+                  <span style={{ width: `${Math.round((archiveCount.solved / Math.max(1, archiveCount.total)) * 100)}%` }} />
+                </span>
+              )}
+            </span>
+          </a>
         )}
         {newAchievementToast && (
           <div className="feedback good" style={{ marginLeft: 0, marginTop: 12 }}>

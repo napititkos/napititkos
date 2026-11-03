@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { EMOJI_IMAGES } from '../lib/emojis';
+import { EMOJI_IMAGES, EMOJI_ORDER } from '../lib/emojis';
 
 // Egységes emoji-reakció sor (napi titkosírások, korábbi titkosírások, közösségi titkosírások).
 // - A keretes gombban csak az emoji van, a darabszám alatta, a kereten kívül; a 0 nem látszik.
@@ -14,6 +14,12 @@ export function EmojiGlyph({ e }) {
   const src = EMOJI_IMAGES[e];
   if (src) return <img className="emoji-img" src={src} alt="" aria-hidden="true" draggable={false} />;
   return <span aria-hidden="true">{e}</span>;
+}
+
+// A megjelenítési sorrend: [emoji, tárolt sorszám] párok (az arcos emojik elöl).
+function order(emojis) {
+  const idx = EMOJI_ORDER.length === emojis.length ? EMOJI_ORDER : emojis.map((_, k) => k);
+  return idx.map((k) => [emojis[k], k]);
 }
 
 export default function ReactionBar({ emojis, reactions, mine, interactive = true, disabled = false, onReact }) {
@@ -47,8 +53,8 @@ export default function ReactionBar({ emojis, reactions, mine, interactive = tru
   if (showPicker) {
     return (
       <div className={`reaction-row reaction-stacked${pickOpen || intro ? ' reaction-row-open' : ''}`} role="group" aria-label="Reakció választása">
-        {emojis.map((e, k) => (
-          <span key={k} className="reaction-item" style={{ '--i': k }}>
+        {order(emojis).map(([e, k], i) => (
+          <span key={k} className="reaction-item" style={{ '--i': i }}>
             <button
               type="button"
               className={`reaction-btn${mine === k ? ' on' : ''}`}
@@ -73,7 +79,7 @@ export default function ReactionBar({ emojis, reactions, mine, interactive = tru
   if (!reactions.some((n) => n > 0)) return null;
   return (
     <div className="reaction-row reaction-stacked" role="group" aria-label="Reakciók">
-      {emojis.map((e, k) =>
+      {order(emojis).map(([e, k], i) =>
         reactions[k] > 0 ? (
           interactive && mine === k ? (
             <span key={k} className="reaction-item">

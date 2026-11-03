@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import { computeNewAchievements } from '../../lib/achievements';
@@ -26,6 +26,32 @@ export default function SubmitPage() {
   const [consent, setConsent] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState(null);
+  // Szerkesztő mód (/submit?edit=<azonosító>): a saját közösségi titkosírás módosítása a Profilom
+  // oldalról. A korábbi megfejtések, értékelések és reakciók megmaradnak; ha a titkosírást beemelték
+  // a napi titkosírások közé, az ottani példány nem változik.
+  const [edit, setEdit] = useState(null); // { id, answer: eredeti megfejtés, promoted } | { error }
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('edit');
+    if (!id || authStatus !== 'authenticated') return;
+    fetch('/api/account/my-submissions', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const sub = (d?.submissions || []).find((x) => x.id === id);
+        if (!sub) {
+          setEdit({ error: 'Ezt a titkosírást nem találjuk a saját beküldéseid között.' });
+          return;
+        }
+        const h = sub.hints || {};
+        const hw = sub.hintWords || {};
+        setForm({ clue: sub.clue || '', answer: sub.answer || '', fodder: h.fodder || '', indikator: h.indikator || '', definicio: h.definicio || '', alternativ: h.alternativ || '' });
+        setEnabled({ definicio: !!h.definicio, fodder: !!h.fodder, indikator: !!h.indikator, alternativ: !!h.alternativ });
+        setWords({ definicio: hw.definicio || [], indikator: hw.indikator || [], fodder: hw.fodder || [] });
+        setEdit({ id, answer: sub.answer || '', promoted: !!sub.promoted });
+      })
+      .catch(() => setEdit({ error: 'Nem sikerült betölteni a titkosírást.' }));
+  }, [authStatus]);
+  const editing = !!edit?.id;
+  const answerChanged = editing && form.answer.trim().toUpperCase() !== String(edit.answer).trim().toUpperCase();
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -42,14 +68,15 @@ export default function SubmitPage() {
       setStatus({ ok: false, msg: 'A rejtvény szövege és a válasz kitöltése kötelező.' });
       return;
     }
-    if (!consent) {
+    if (!consent && !editing) {
       setStatus({ ok: false, msg: 'A beküldéshez el kell fogadnod az alábbi feltételt.' });
       return;
     }
+    if (answerChanged && !confirm('Módosítod a megfejtést. A korábbi megfejtőket ez nem érinti. Folytatod?')) return;
     setSending(true);
     try {
-      const res = await fetch('/api/submissions', {
-        method: 'POST',
+      const res = await fetch(editing ? `/api/community/${encodeURIComponent(edit.id)}` : '/api/submissions', {
+        method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clue: form.clue,
@@ -67,7 +94,10 @@ export default function SubmitPage() {
           },
         }),
       });
-      if (res.ok) {
+      if (res.ok && editing) {
+        setEdit((e) => ({ ...e, answer: form.answer }));
+        setStatus({ ok: true, msg: 'Mentve! A módosított titkosírás már a Közösségi titkosírások között látszik.' });
+      } else if (res.ok) {
         let extra = '';
         const prog = loadProgress();
         if (!prog.submittedPuzzle) {
@@ -166,12 +196,27 @@ export default function SubmitPage() {
 
   return (
     <div className="wrap">
-      <h1 className="page-title">Közösségi rejtvény beküldése</h1>
+      <h1 className="page-title">{editing ? 'Közösségi titkosírás szerkesztése' : 'Közösségi rejtvény beküldése'}</h1>
       <div className="card">
+        {edit?.error && <div className="feedback hint" style={{ marginLeft: 0, marginTop: 0, marginBottom: 12 }}>{edit.error}</div>}
+        {editing ? (
+          <p style={{ fontSize: 14.5, color: 'var(--ink-soft)', marginTop: 0 }}>
+            A módosítás után a korábbi megfejtések, értékelések és reakciók megmaradnak.{' '}
+            <a href="/account">← Vissza a profilomra</a>
+            {edit.promoted && (
+              <>
+                <br />
+                Ez a titkosírás bekerült a napi titkosírások közé: az ottani példány nem változik, azt csak az admin
+                módosíthatja.
+              </>
+            )}
+          </p>
+        ) : (
         <p style={{ fontSize: 14.5, color: 'var(--ink-soft)', marginTop: 0 }}>
           Van egy jó ötleted egy kriptikus rejtvényhez? Küldd be, és ha beválik, bekerülhet a napi
           rejtvények közé! Beküldőként ez fog megjelenni: <b>{session.user.name || session.user.email}</b>
         </p>
+        )}
         <form onSubmit={submit}>
           <div className="field-label-row">
             <label className="field-label" htmlFor="sub-clue">A rejtvény szövege *</label>
@@ -292,6 +337,13 @@ export default function SubmitPage() {
             </>
           )}
 
+          {answerChanged && (
+            <p className="feedback hint" style={{ marginLeft: 0, marginTop: 12 }}>
+              A megfejtés módosítása nem érinti a korábbi megfejtőket.
+            </p>
+          )}
+
+          {!editing && (
           <div className="checkbox-row" style={{ marginTop: 16, alignItems: 'flex-start' }}>
             <input
               type="checkbox"
@@ -308,10 +360,11 @@ export default function SubmitPage() {
               .
             </label>
           </div>
+          )}
 
           <div style={{ marginTop: 16 }}>
-            <button className="primary" type="submit" disabled={sending || !consent}>
-              {sending ? 'Küldés…' : 'Beküldés'}
+            <button className="primary" type="submit" disabled={sending || (!consent && !editing)}>
+              {sending ? (editing ? 'Mentés…' : 'Küldés…') : editing ? 'Módosítás mentése' : 'Beküldés'}
             </button>
           </div>
         </form>
