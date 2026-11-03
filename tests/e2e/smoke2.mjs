@@ -71,6 +71,9 @@ check('nincs X-Powered-By', !h('x-powered-by'));
 const html = await r.text();
 check('az oldal nem tölt külső (Google) betűtípust', !html.includes('fonts.googleapis.com') && !html.includes('fonts.gstatic.com'));
 r = await fetch(BASE + '/admin'); check('/admin: X-Robots-Tag noindex', /noindex/.test(h('x-robots-tag')));
+for (const sub of ['titkositasok', 'felhasznalok', 'ertesitesek', 'archivum']) {
+  r = await fetch(BASE + '/admin/' + sub); check(`/admin/${sub}: elérhető, X-Robots-Tag noindex`, r.status === 200 && /noindex/.test(r.headers.get('x-robots-tag') || ''));
+}
 r = await fetch(BASE + '/api/puzzle'); check('/api/*: X-Robots-Tag noindex', /noindex/.test(h('x-robots-tag')));
 
 // ---------------------------------------------------------------- RÉJTVÉNY KIADÁSA, ROTÁCIÓ
@@ -689,6 +692,23 @@ const promotedId = j.puzzleId;
 let mainList = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
 check('a fő lista végére került egy másolat', mainList.at(-1)?.id === promotedId && mainList.at(-1).answer === 'KOS JUH');
 r = await post('/api/admin/community', { id: kItem.id }, adm); check('másodszor nem emelhető be: 409', r.status === 409);
+// Szerkesztés a Profilomból: csak a beküldő; a megfejtések, értékelések, reakciók megmaradnak, a
+// beemelt (napi) példány nem változik.
+const patch = (body, jar) => fetch(BASE + `/api/community/${kItem.id}`, { method: 'PATCH', headers: { 'content-type': 'application/json', ...(jar ? { cookie: jar.header() } : {}) }, body: JSON.stringify(body) });
+const solvedBefore = await redis.hlen(`community:solved:${kItem.id}`);
+r = await patch({ clue: 'Átírt kérdés?', answer: 'KOS BIRKA' }); check('szerkesztés bejelentkezés nélkül: 401', r.status === 401);
+r = await patch({ clue: 'Átírt kérdés?', answer: 'KOS BIRKA' }, erJar); check('más nem szerkesztheti: 403', r.status === 403, `(${r.status})`);
+r = await patch({ clue: '', answer: 'KOS BIRKA' }, kkJar); check('üres szöveggel nem menthető: 400', r.status === 400);
+r = await patch({ clue: 'Átírt kérdés?', answer: 'KOS BIRKA', hints: { definicio: 'állatok', fodder: 'kos' }, hintWords: { definicio: [0], fodder: [1, 99999] } }, kkJar);
+check('a beküldő szerkesztheti: 200', r.status === 200, `(${r.status})`);
+const edited = JSON.parse(await redis.get('submissions:list')).find((x) => x.id === kItem.id);
+check('a módosítás elmentve (szöveg, megfejtés, tippek, kijelölt szavak, időpont)', edited.clue === 'Átírt kérdés?' && edited.answer === 'KOS BIRKA' && edited.hints.fodder === 'kos' && JSON.stringify(edited.hintWords.fodder) === '[1]' && !!edited.editedAt && edited.submitterEmail && edited.createdAt, JSON.stringify(edited));
+j = await (await fetch(BASE + '/api/account/my-submissions', { headers: { cookie: kkJar.header() } })).json();
+const mySub2 = j.submissions?.find((x) => x.id === kItem.id);
+check('a korábbi értékelések és reakciók megmaradnak, a megfejtők is', mySub2?.ratingCount === 3 && mySub2.reactionCount === 2 && (await redis.hlen(`community:solved:${kItem.id}`)) === solvedBefore && solvedBefore > 0);
+check('a Profilom a szerkesztéshez a tippeket is adja', mySub2?.hints?.definicio === 'állatok' && JSON.stringify(mySub2.hintWords?.definicio) === '[0]');
+mainList = (await (await fetch(BASE + '/api/admin/puzzles', { headers: adm })).json()).puzzles;
+check('a beemelt (napi) példány nem változik', mainList.find((x) => x.id === promotedId)?.answer === 'KOS JUH');
 await post('/api/admin/puzzles', { puzzles: mainList.filter((x) => x.id !== promotedId) }, adm);
 check('ha a beemelt másolatot törlik a fő listából, a "bekerült" értesítés is visszavonódik', !(await myNotifs(kkJar)).some((n) => /napi titkosírások közé/.test(n.text)));
 // Törlés: más nem törölheti, a beküldő igen

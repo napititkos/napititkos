@@ -113,6 +113,9 @@ export default function AccountPage() {
                     {sub.promoted ? (sub.shownDate ? ` · napi titkosírás volt: ${sub.shownDate}` : ' · bekerült a napi titkosírások közé') : ''}
                   </span>
                 </div>
+                <a className="ghost small my-sub-edit" href={`/submit?edit=${encodeURIComponent(sub.id)}`} aria-label={`Szerkesztés: ${sub.clue}`}>
+                  Szerkesztés
+                </a>
                 <button
                   type="button"
                   className="ghost small"

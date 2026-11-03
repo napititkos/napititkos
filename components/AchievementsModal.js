@@ -23,6 +23,10 @@ export default function AchievementsModal() {
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        {/* Mobilon jobbra fent is van bezárás gomb (görgetéskor is látszik). */}
+        <button type="button" className="modal-x" aria-label="Bezárás" onClick={() => setOpen(false)}>
+          ×
+        </button>
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Trofeak.png" size={24} /> Trófeák
         </h2>
