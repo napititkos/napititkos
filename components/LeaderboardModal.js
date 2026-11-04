@@ -39,9 +39,6 @@ export default function LeaderboardModal() {
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Ranglista.png" size={24} /> Mai ranglista
         </h2>
-        <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: -6 }}>
-          Sorrend: kevesebb tipp, majd gyorsabb idő számít. Éjfélkor nullázódik.
-        </p>
         {entries === null && <p>Betöltés...</p>}
         {entries && entries.length === 0 && (
           <p style={{ color: 'var(--ink-soft)' }}>Ma még senki nem fejtette meg - légy te az első!</p>

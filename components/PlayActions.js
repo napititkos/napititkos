@@ -3,7 +3,8 @@ import Icon from './Icon';
 
 // A rejtvény alatti gombsor: Keverés | Ellenőrzés | Tippek (x/y). Az Ellenőrzés pontosan
 // középen van; mindhárom gomb azonos színű és magasságú, a szélességük a felirathoz igazodik.
-// Amíg a sor nincs kitöltve, a Keverés és az Ellenőrzés halványabb, megnyomva üzenetet ad.
+// Amíg a sor nincs kitöltve, a Keverés halványabb; az Ellenőrzés teljes színű marad. Megnyomva
+// mindkettő üzenetet ad.
 // compact: az archívum beágyazott lejátszója jelzi magát vele. A feliratok megjelenítését a
 // gombsor tényleges szélessége dönti el (container query a globals.css-ben).
 export default function PlayActions({ rowFull, onShuffle, onCheck, onOpenHints, hintsUsed, hintsTotal, notify, compact = false }) {
@@ -26,7 +27,7 @@ export default function PlayActions({ rowFull, onShuffle, onCheck, onOpenHints, 
         )}
       </div>
       <button
-        className="primary play-btn"
+        className="primary play-btn check-btn"
         aria-disabled={!rowFull}
         onClick={() => (rowFull ? onCheck() : notify('Töltsd ki előbb, vagy használj tippet, ha elakadtál!'))}
       >

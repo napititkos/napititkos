@@ -658,19 +658,18 @@ export default function HomePage() {
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
               A Titkosírás a találós kérdések egy különleges formája, ahol a gyakorlott szem
-              elsőre lehetetlennek tűnő rejtvényeket is meg tud fejteni.
+              elsőre lehetetlennek tűnő rejtvényeket is meg tud fejteni. Ha belevágnál, de még nem
+              oldottál ilyen rejtvényt, javasoljuk a Kisokos átnézését.
             </p>
-            <p style={{ fontSize: 15, lineHeight: 1.6 }}>
-              Ahhoz, hogy belekezdj, először nézd át a{' '}
-              <a href="/kisokos" style={{ color: 'var(--accent-text)', fontWeight: 700 }} onClick={dismissIntro}>
-                Kisokost
-              </a>{' '}
-              – kattints rá, vagy bármikor megtalálod a főoldal gombjai között.
-            </p>
-            <div className="actions" style={{ marginTop: 18 }}>
-              <button className="primary" onClick={dismissIntro}>
-                Értem, kezdjünk neki!
+            {/* Két gomb egymás mellett: a Bezárás visszafogott, a Kisokos a feltűnőbb. */}
+            <div className="intro-actions">
+              <button className="ghost" onClick={dismissIntro}>
+                Bezárás
               </button>
+              <a className="intro-kisokos" href="/kisokos" onClick={dismissIntro}>
+                <Icon src="/icons/Tutorial.png" size={18} className="icon-on-accent" />
+                Kisokos
+              </a>
             </div>
           </div>
         </div>

@@ -472,6 +472,8 @@ button.notif-btn.has-new::after{
 
 /* A Keverés gomb nem letiltott (így üresen megnyomva üzenetet ad), csak halványabb. */
 button[aria-disabled="true"]{ opacity: 0.75; }
+/* Az Ellenőrzés gomb kitöltés előtt sem halványul el (megnyomva üzenetet ad). */
+button.play-btn.check-btn[aria-disabled="true"]{ opacity: 1; }
 button[aria-disabled="true"]:hover{ transform: none; }
 .inline-toast{ text-align:center; font-size: 13px; font-weight: 700; color: var(--accent-text); max-height: 0; opacity: 0; overflow: hidden; transition: opacity .25s ease, max-height .25s ease, margin .25s ease; }
 .inline-toast.show{ max-height: 60px; opacity: 1; margin-top: 8px; }
@@ -885,7 +887,9 @@ button.reaction-btn:disabled{ cursor: default; opacity: 1; }
 }
 button.reaction-btn{ touch-action: manipulation; }
 /* A képként megjelenített (túl új) emoji ugyanakkora, mint a szöveges emojik. */
-.emoji-img{ display: block; width: 1.15em; height: 1.15em; pointer-events: none; }
+/* A kép valamivel nagyobb, mint 1em (mint a szöveges emojik rajza), de a negatív margó miatt nem
+   növeli a gomb magasságát: így minden emoji-gomb egyforma. */
+.emoji-img{ display: block; width: 1.15em; height: 1.15em; margin: -0.075em 0; pointer-events: none; }
 /* Asztali gépen (egérrel) visszajelzés, ha az egér egy emoji fölé ér. */
 button.reaction-btn{ transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease; }
 @media (hover: hover) and (pointer: fine){
@@ -1293,3 +1297,14 @@ a.my-sub-edit{
   display: inline-flex; align-items: center; text-decoration: none; font-weight: 700; font-size: 12.5px;
   border-radius: 999px; border: 2px solid var(--line); color: var(--ink-soft); padding: 5px 12px; white-space: nowrap;
 }
+
+/* Üdvözlő ablak: Bezárás (visszafogott) és Kisokos (kiemelt) egymás mellett. */
+.intro-actions{ display: flex; justify-content: center; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.intro-actions > *{ flex: 1 1 0; min-width: 120px; max-width: 180px; }
+a.intro-kisokos{
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+  font-weight: 800; font-size: 14px; border-radius: 999px; padding: 9px 16px;
+  background: var(--btn-primary); color: #fff; border: 2px solid var(--btn-primary);
+  box-shadow: 0 4px 14px rgba(148, 80, 127, 0.35); transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+a.intro-kisokos:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(148, 80, 127, 0.45); }
