@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { EMOJI_IMAGES, EMOJI_ORDER } from '../lib/emojis';
 
 // Egységes emoji-reakció sor (napi titkosírások, korábbi titkosírások, közösségi titkosírások).
@@ -22,10 +22,44 @@ function order(emojis) {
   return idx.map((k) => [emojis[k], k]);
 }
 
+// Ha az emojik több sorba törnek, egyenletesen oszlanak el (pl. 6 + 5, nem 10 + 1): a sor
+// szélességét annyira korlátozzuk, hogy soronként egyforma számú (legfeljebb eggyel eltérő) férjen el.
+function useBalancedRows(deps) {
+  const ref = useRef(null);
+  const [maxW, setMaxW] = useState(null);
+  useLayoutEffect(() => {
+    const row = ref.current;
+    if (!row || !row.parentElement) return;
+    const measure = () => {
+      const items = [...row.children];
+      if (!items.length) return;
+      const avail = row.parentElement.clientWidth;
+      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+      const itemW = Math.max(...items.map((el) => el.offsetWidth));
+      const perRowMax = Math.max(1, Math.floor((avail + gap) / (itemW + gap)));
+      const rows = Math.ceil(items.length / perRowMax);
+      if (rows <= 1) {
+        setMaxW(null);
+        return;
+      }
+      const per = Math.ceil(items.length / rows);
+      setMaxW(Math.ceil(per * itemW + (per - 1) * gap) + 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(row.parentElement);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return [ref, maxW ? { maxWidth: maxW, marginLeft: 'auto', marginRight: 'auto' } : undefined];
+}
+
 export default function ReactionBar({ emojis, reactions, mine, interactive = true, disabled = false, onReact }) {
   const [pickOpen, setPickOpen] = useState(false);
   const [intro, setIntro] = useState(false);
   const showPicker = interactive && (mine == null || pickOpen);
+  const visible = showPicker ? emojis.length : reactions.filter((n) => n > 0).length;
+  const [rowRef, rowStyle] = useBalancedRows([showPicker, visible]);
 
   useEffect(() => {
     if (!(interactive && mine == null)) return;
@@ -52,7 +86,7 @@ export default function ReactionBar({ emojis, reactions, mine, interactive = tru
 
   if (showPicker) {
     return (
-      <div className={`reaction-row reaction-stacked${pickOpen || intro ? ' reaction-row-open' : ''}`} role="group" aria-label="Reakció választása">
+      <div ref={rowRef} style={rowStyle} className={`reaction-row reaction-stacked${pickOpen || intro ? ' reaction-row-open' : ''}`} role="group" aria-label="Reakció választása">
         {order(emojis).map(([e, k], i) => (
           <span key={k} className="reaction-item" style={{ '--i': i }}>
             <button
@@ -78,7 +112,7 @@ export default function ReactionBar({ emojis, reactions, mine, interactive = tru
 
   if (!reactions.some((n) => n > 0)) return null;
   return (
-    <div className="reaction-row reaction-stacked" role="group" aria-label="Reakciók">
+    <div ref={rowRef} style={rowStyle} className="reaction-row reaction-stacked" role="group" aria-label="Reakciók">
       {order(emojis).map(([e, k], i) =>
         reactions[k] > 0 ? (
           interactive && mine === k ? (
