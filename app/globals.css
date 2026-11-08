@@ -1426,3 +1426,20 @@ button.mini-cluebar-nav{ border: none; background: transparent; color: var(--min
 .mini-edit-tools{ display: flex; flex-direction: column; gap: 8px; align-items: flex-start; flex: 1; min-width: 200px; }
 .mini-edit-tools p{ margin: 0 0 4px; }
 .mini-edit-tools kbd{ font-family: inherit; font-size: 12px; font-weight: 700; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--card); }
+
+/* Mini: szóbank és kérdésbank (admin) */
+.mini-tabs{ display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.mini-bank-controls{ display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px; }
+.mini-bank-controls select{ font-family: inherit; font-size: 15px; padding: 9px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--card); color: var(--ink); }
+.mini-bank-filters{ display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.mini-bank-list{ margin-top: 12px; display: flex; flex-direction: column; }
+.mini-bank-row{ display: grid; grid-template-columns: minmax(110px, 170px) 1fr; gap: 6px 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+.mini-bank-row.excluded{ opacity: 0.75; }
+.mini-bank-word{ font-size: 15px; }
+.mini-bank-badges{ display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 4px; }
+.mini-bank-badges .mini-src{ margin-left: 0; }
+.mini-bank-clues ul{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mini-bank-clues li{ display: flex; flex-direction: column; gap: 1px; font-size: 14px; line-height: 1.35; }
+.mini-bank-meta{ font-size: 11.5px; color: var(--ink-soft); }
+.mini-bank-pager{ display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+@media (max-width: 480px){ .mini-bank-row{ grid-template-columns: 1fr; } .mini-bank-badges{ flex-direction: row; flex-wrap: wrap; } }

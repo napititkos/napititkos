@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
 import MiniEditor from './MiniEditor';
+import MiniBank from './MiniBank';
 import { N, numbering } from '../lib/miniGrid';
 
 // Admin: mini keresztrejtvény (5x5). A táblák piszkozatként elmenthetők (akkor is, ha még nincs
@@ -46,6 +47,8 @@ export default function AdminMini() {
   const [msg, setMsg] = useState(null);
   const [newWord, setNewWord] = useState({ word: '', clue: '' });
   const [trying, setTrying] = useState(null); // a várólistáról kipróbált rejtvény
+  const [tab, setTab] = useState('boards'); // 'boards' (táblák) | 'bank' (szóbank és kérdésbank)
+  const [bankKey, setBankKey] = useState(0); // új szó felvitelekor a szóbank lista frissül
 
   async function load() {
     const [a, b] = await Promise.all([fetch('/api/admin/mini', { cache: 'no-store' }), fetch('/api/admin/mini/drafts', { cache: 'no-store' })]);
@@ -84,6 +87,7 @@ export default function AdminMini() {
     if (!ok) return setMsg({ ok: false, text: data.message || 'Nem sikerült felvinni.' });
     setMsg({ ok: true, text: `A(z) „${data.word.toUpperCase()}” bekerült a bankba (${data.variants} kérdésváltozat).` });
     setNewWord({ word: '', clue: '' });
+    setBankKey((k) => k + 1);
     load();
   }
 
@@ -122,7 +126,22 @@ export default function AdminMini() {
         </div>
       )}
 
-      {editing ? (
+      {!editing && (
+        <div className="mini-tabs" role="tablist" aria-label="Mini keresztrejtvény nézetek">
+          {[
+            ['boards', 'Táblák'],
+            ['bank', 'Szóbank és kérdésbank'],
+          ].map(([v, t]) => (
+            <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? 'primary small' : 'ghost small'} onClick={() => setTab(v)}>
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!editing && tab === 'bank' ? (
+        <MiniBank refreshKey={bankKey} />
+      ) : editing ? (
         <MiniEditor
           key={editing.key}
           initial={editing.initial}
@@ -197,6 +216,7 @@ export default function AdminMini() {
         </div>
       </div>
 
+      {(editing || tab === 'boards') && (
       <div className="card">
         <b>Várólista ({state?.queue.length || 0})</b>
         {state && state.queue.length === 0 && <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még üres a várólista.</p>}
@@ -221,6 +241,7 @@ export default function AdminMini() {
           ))}
         </div>
       </div>
+      )}
       {/* Kipróbálás: a rejtvény úgy, ahogy a játékosok látni fogják. */}
       {trying && (
         <div className="modal-overlay mini-try-overlay" onClick={() => setTrying(null)}>

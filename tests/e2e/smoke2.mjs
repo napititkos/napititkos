@@ -1220,6 +1220,62 @@ section('Mini keresztrejtvény: piszkozatok (mentés kész kérdések nélkül, 
   await redis.del('mini:drafts');
 }
 
+section('Mini: szóbank és kérdésbank áttekintése (csak olvasás, keresés, szűrők, lapozás)');
+{
+  const bank = async (q = '', headers = adm) => fetch(BASE + `/api/admin/mini/bank${q}`, { headers });
+  r = await bank('', {}); check('szóbank: bejelentkezés nélkül 401', r.status === 401);
+
+  // Ismert tartalom: 2 kézi kérdés az "alma"-hoz, 1 a "kő"-höz, egy titkosírásból származó a "cipő"-höz.
+  const past = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 12); return d.toISOString().slice(0, 10); })();
+  const hist = JSON.parse((await redis.get('rotation:history')) || '[]').filter((h) => h.id !== 'bank-tk');
+  hist.unshift({ id: 'bank-tk', clue: 'Régi titkosírás a cipőről (szóbank).', answer: 'CIPŐ', shownDate: past, hints: {} });
+  await redis.set('rotation:history', JSON.stringify(hist));
+  await redis.set('mini:bank', JSON.stringify({
+    alma: [{ id: 'a1', clue: 'Gyümölcs.', at: '2026-10-01T10:00:00.000Z' }, { id: 'a2', clue: 'Piros vagy zöld, fán terem.', at: '2026-10-05T10:00:00.000Z' }],
+    kő: [{ id: 'k1', clue: 'Kemény ásvány', at: '2026-11-01T10:00:00.000Z' }],
+    xqzvw: [{ id: 'x1', clue: 'Nem létező szó', at: '2026-09-01T10:00:00.000Z' }], // nincs az alap szótárban
+  }));
+  await redis.set('mini:excluded', JSON.stringify(['ló', 'qzqzq']));
+  await redis.set('mini:queue', JSON.stringify([{ id: 'q1', rows: [], entries: [{ word: 'alma' }] }]));
+  await redis.set('mini:published', JSON.stringify([{ id: 'p1', week: '2026-10-26', rows: [], entries: [{ word: 'alma' }, { word: 'kő' }] }]));
+
+  r = await bank(); j = await r.json();
+  const byWord = Object.fromEntries(j.rows.map((x) => [x.word, x]));
+  check('alapnézet: a kérdéssel rendelkező szavak (alma, kő, cipő), kérdés nélküli nincs', r.status === 200 && ['alma', 'kő', 'cipő'].every((w) => byWord[w]) && !byWord.ablak && j.filter === 'clues', JSON.stringify(j.rows.map((x) => x.word)));
+  const almaOwn = byWord.alma.clues.filter((c) => c.src === 'kézi');
+  check('az alma kérdései: a legújabb kézi elöl, forrás és dátum; a kéziek a titkosírásból származók előtt',
+    almaOwn.length === 2 && byWord.alma.clues[0].clue.startsWith('Piros') && !!byWord.alma.clues[0].at && byWord.alma.clues.slice(0, 2).every((c) => c.src === 'kézi') && byWord.alma.clues.slice(2).every((c) => c.src === 'titkosírás'), JSON.stringify(byWord.alma.clues));
+  check('a cipő kérdése titkosírásból származik', byWord['cipő'].clues[0].src === 'titkosírás' && /cipőről/.test(byWord['cipő'].clues[0].clue));
+  check('használat: az alma 2 rejtvényben (várólista + megjelent), utoljára 2026-10-26', byWord.alma.used === 2 && byWord.alma.lastWeek === '2026-10-26' && byWord['kő'].used === 1);
+  r = await bank('?q=xqzvw'); const nx = (await r.json()).rows[0];
+  check('az alap szótárban szereplő szó (alma) és az onnan hiányzó (xqzvw) megkülönböztetve', byWord.alma.inDict === true && nx?.word === 'xqzvw' && nx.inDict === false && nx.clues[0].src === 'kézi');
+  check('összesítők: 3 szó 4 kézi kérdéssel, 2 kizárt, 8000+ szótári szó', j.stats.bankWords === 3 && j.stats.bankClues === 4 && j.stats.excluded === 2 && j.stats.dictWords > 8000 && j.stats.noClue > 8000, JSON.stringify(j.stats));
+
+  r = await bank('?filter=excluded&sort=word'); j = await r.json();
+  check('kizárt szűrő: a ló és a (szótárban sem szereplő) qzqzq', j.rows.map((x) => x.word).sort().join() === 'ló,qzqzq' && j.rows.every((x) => x.excluded));
+  r = await bank('?q=GYÜMÖLCS'); j = await r.json();
+  check('keresés a kérdés szövegében (kis/nagybetű mindegy)', j.rows.length === 1 && j.rows[0].word === 'alma');
+  r = await bank('?filter=noclue&q=ablak'); j = await r.json();
+  check('kérdés nélküli szűrő + keresés: az alap szótár szava', j.rows.length === 1 && j.rows[0].word === 'ablak' && j.rows[0].clues.length === 0);
+  r = await bank('?filter=bank&sort=recent'); j = await r.json();
+  check('kézi kérdés szűrő, legutóbb felvitt elöl: kő, alma, xqzvw', j.rows.map((x) => x.word).join() === 'kő,alma,xqzvw', j.rows.map((x) => x.word).join());
+  r = await bank('?filter=titkos'); j = await r.json();
+  check('titkosírásból szűrő: csak titkosírásból származó kérdéssel rendelkező szavak (cipő köztük)', j.rows.length > 0 && j.rows.some((x) => x.word === 'cipő') && j.rows.every((x) => x.clues.some((c) => c.src === 'titkosírás')) && !j.rows.some((x) => x.word === 'xqzvw'));
+
+  r = await bank('?filter=all&sort=word'); j = await r.json();
+  const p1 = j;
+  check('minden szó: lapozva (50 / oldal), több mint 8000 szó', j.rows.length === 50 && j.total > 8000 && j.pages > 100 && j.page === 1, JSON.stringify([j.rows.length, j.total, j.pages]));
+  r = await bank('?filter=all&sort=word&page=2'); j = await r.json();
+  check('a 2. oldal más szavakat ad, folytatja az ábécét', j.page === 2 && j.rows[0].word !== p1.rows[0].word && !j.rows.some((x) => p1.rows.some((y) => y.word === x.word)));
+  r = await bank('?filter=all&page=99999999'); j = await r.json();
+  check('túl nagy oldalszám: az utolsó oldalra esik', j.page === j.pages && j.rows.length > 0 && j.rows.length <= 50);
+  r = await bank('?filter=all&page=abc'); j = await r.json();
+  check('hibás oldalszám: az 1. oldal', r.status === 200 && j.page === 1);
+  r = await bank('?filter=hamis&sort=hamis&q=' + 'x'.repeat(500)); j = await r.json();
+  check('hibás szűrő/rendezés/hosszú keresés: alapértelmezés, nincs hiba', r.status === 200 && j.filter === 'clues' && j.sort === 'word');
+  await redis.del('mini:excluded', 'mini:queue');
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
