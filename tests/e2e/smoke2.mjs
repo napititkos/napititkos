@@ -1273,8 +1273,24 @@ section('Mini: szóbank és kérdésbank áttekintése (csak olvasás, keresés,
   check('hibás oldalszám: az 1. oldal', r.status === 200 && j.page === 1);
   r = await bank('?filter=hamis&sort=hamis&q=' + 'x'.repeat(500)); j = await r.json();
   check('hibás szűrő/rendezés/hosszú keresés: alapértelmezés, nincs hiba', r.status === 200 && j.filter === 'clues' && j.sort === 'word');
+  // ---- Hossz és kezdőbetű szerinti szűrés ----
+  r = await bank('?filter=all&len=5&sort=word'); j = await r.json();
+  check('hosszszűrő: csak 5 betűs szavak, a darabszámok a gombsorhoz', r.status === 200 && j.len === 5 && j.total > 1000 && j.rows.every((x) => x.len === 5) && j.lenCounts[5] === j.total && j.lenCounts[4] > 100, JSON.stringify(j.lenCounts));
+  r = await bank('?filter=all&letter=k&sort=word'); j = await r.json();
+  check('kezdőbetű: a K alatt csak k-val kezdődő szavak, sok van belőlük', j.letter === 'k' && j.total > 100 && j.rows.every((x) => x.word.startsWith('k')));
+  r = await bank('?filter=bank&letter=k'); j = await r.json();
+  check('kezdőbetű + kézi kérdés szűrő: a kő', j.rows.map((x) => x.word).join() === 'kő', j.rows.map((x) => x.word).join());
+  r = await bank('?filter=all&letter=%C3%A9&sort=word'); j = await r.json();
+  check('ékezetes betű (é) az alapbetűt (e) jelenti', j.letter === 'e' && j.rows.length > 0 && j.rows.every((x) => /^[eé]/.test(x.word)));
+  r = await bank('?filter=all&len=2&letter=k'); j = await r.json();
+  check('hossz + kezdőbetű együtt: kő', j.rows.every((x) => x.len === 2 && x.word.startsWith('k')) && j.rows.some((x) => x.word === 'kő'));
+  check('a betűsáv a hosszt követi: 2 betűsnél csak a ténylegesen előforduló betűk', j.letters.length > 0 && j.letters.length < 26 && j.letters.every(([ch, n]) => /^[a-z]$/.test(ch) && n > 0) && j.letters.some(([ch]) => ch === 'k'));
+  r = await bank('?filter=clues&len=4'); j = await r.json();
+  check('"Van kérdése" + 4 betű: csak 4 betűs szavak, köztük az alma és a cipő', j.rows.every((x) => x.len === 4 && x.clues.length > 0) && ['alma', 'cipő'].every((w) => j.rows.some((x) => x.word === w)), j.rows.map((x) => x.word).join());
+  r = await bank('?filter=all&len=99&letter=%3Cb%3E'); j = await r.json();
+  check('hibás hossz/betű: nincs szűrés, nincs hiba', r.status === 200 && j.len === 0 && j.letter === '' && j.total > 8000);
   // ---- Kérdésváltozatok szerkesztése, törlése, új változat, kizárás feloldása ----
-  const mut = (body, headers = adm) => post('/api/admin/mini/bank', body, headers);
+  const mut =(body, headers = adm) => post('/api/admin/mini/bank', body, headers);
   const rowOf = async (word) => ((await (await bank(`?filter=all&q=${encodeURIComponent(word)}`)).json()).rows || []).find((x) => x.word === word);
   r = await mut({ action: 'addClue', word: 'alma', clue: 'x' }, {}); check('szóbank módosítása adminság nélkül: 401', r.status === 401);
   r = await mut({ action: 'addClue', word: 'hosszúszó', clue: 'x' }); check('hibás szó: 400', r.status === 400);

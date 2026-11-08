@@ -199,3 +199,45 @@ test('deleteVariant: egy változat törlése; az utolsó törlésekor a szó kik
   assert.deepEqual(deleteVariant(bank, 'alma', 'nincs'), { error: 'not-found' });
   assert.deepEqual(deleteVariant(bank, 'nincs', 'a1'), { error: 'not-found' });
 });
+
+test('queryRows: hossz és kezdőbetű szerinti szűrés, a gombokhoz tartozó darabszámokkal', () => {
+  const { rows } = fixture();
+  const q = (o) => queryRows(rows, { filter: 'all', ...o });
+  const words = (o) => q(o).rows.map((r) => r.word).sort();
+  assert.deepEqual(words({ len: 4 }), ['alma', 'cipő']);
+  assert.deepEqual(words({ len: 2 }), ['kő', 'ló']);
+  assert.deepEqual(words({ letter: 'a' }), ['ablak', 'alma', 'asztal']);
+  assert.deepEqual(words({ letter: 'a', len: 5 }), ['ablak']);
+  assert.equal(q({ len: 3 }).total, 0, 'nincs 3 betűs szó');
+  // Érvénytelen érték nem szűr (a 6 betűs "asztal" nem választható hossz).
+  assert.equal(q({ len: 6 }).total, 7);
+  assert.equal(q({ len: 'x' }).total, 7);
+  assert.equal(q({ letter: '1' }).total, 7);
+  assert.equal(q({ letter: '' }).letter, '');
+
+  // lenCounts: a kezdőbetűt figyelembe veszi, a hosszt nem.
+  assert.deepEqual(q({}).lenCounts, { 2: 2, 4: 2, 5: 2, 6: 1 });
+  assert.deepEqual(q({ letter: 'a' }).lenCounts, { 4: 1, 5: 1, 6: 1 });
+  assert.deepEqual(q({ letter: 'a', len: 5 }).lenCounts, { 4: 1, 5: 1, 6: 1 }, 'a kiválasztott hossz nem szűkíti a saját gombsorát');
+  // letters: a hosszt figyelembe veszi, a kezdőbetűt nem.
+  assert.deepEqual(q({}).letters, [['a', 3], ['c', 1], ['k', 1], ['l', 1], ['z', 1]]);
+  assert.deepEqual(q({ len: 2 }).letters, [['k', 1], ['l', 1]]);
+  assert.deepEqual(q({ len: 2, letter: 'k' }).letters, [['k', 1], ['l', 1]], 'a kiválasztott betű nem szűkíti a saját sávját');
+  // A keresés és a szűrő a darabszámokat is szűkíti.
+  assert.deepEqual(q({ q: 'alm' }).letters, [['a', 1]]);
+  assert.deepEqual(queryRows(rows, { filter: 'clues' }).lenCounts, { 2: 1, 4: 2 });
+  assert.equal(q({ len: 4, page: 1 }).len, 4);
+});
+
+test('queryRows: az ékezetes kezdőbetű az alapbetű alatt van (Á→A, Ő→O), lapozással együtt működik', () => {
+  const rows = buildRows({ dictWords: ['állat', 'alma', 'ősz', 'olló', 'ökör', 'érme', 'egér'] });
+  const words = (o) => queryRows(rows, { filter: 'all', ...o }).rows.map((r) => r.word);
+  assert.deepEqual(words({ letter: 'a' }), ['állat', 'alma']);
+  assert.deepEqual(words({ letter: 'á' }), ['állat', 'alma'], 'az ékezetes betű is az alapbetűt jelenti');
+  assert.deepEqual(words({ letter: 'o' }).sort(), ['olló', 'ökör', 'ősz'].sort());
+  assert.deepEqual(queryRows(rows, { filter: 'all' }).letters, [['a', 2], ['e', 2], ['o', 3]]);
+  const p = queryRows(rows, { filter: 'all', letter: 'o', pageSize: 2, page: 2 });
+  assert.equal(p.rows.length, 1);
+  assert.equal(p.total, 3);
+  assert.equal(p.pages, 2);
+});

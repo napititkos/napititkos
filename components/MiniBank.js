@@ -16,6 +16,7 @@ const FILTERS = [
   ['excluded', 'Kizárt'],
   ['all', 'Mind'],
 ];
+const LENGTHS = [1, 2, 3, 4, 5];
 const SORTS = [
   ['word', 'Ábécé'],
   ['len', 'Hossz'],
@@ -33,6 +34,8 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   const [debounced, setDebounced] = useState('');
   const [filter, setFilter] = useState('clues');
   const [sort, setSort] = useState('word');
+  const [len, setLen] = useState(0); // 0 = bármilyen hosszú
+  const [letter, setLetter] = useState(''); // '' = bármelyik kezdőbetű
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
@@ -52,18 +55,20 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   // Új keresésnél, szűrőnél vagy rendezésnél az első oldalról indulunk.
   useEffect(() => {
     setPage(1);
-  }, [debounced, filter, sort]);
+  }, [debounced, filter, sort, len, letter]);
 
   // Más listanézetnél a lenyitott sorok és a félbehagyott szerkesztés nem marad meg.
   useEffect(() => {
     setOpen(new Set());
     setEdit(null);
-  }, [debounced, filter, sort, page]);
+  }, [debounced, filter, sort, len, letter, page]);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     const qs = new URLSearchParams({ q: debounced, filter, sort, page: String(page) });
+    if (len) qs.set('len', String(len));
+    if (letter) qs.set('letter', letter);
     fetch(`/api/admin/mini/bank?${qs}`, { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) throw new Error(String(res.status));
@@ -79,7 +84,7 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
     return () => {
       alive = false;
     };
-  }, [debounced, filter, sort, page, refreshKey, reload]);
+  }, [debounced, filter, sort, len, letter, page, refreshKey, reload]);
 
   // Egy módosítás elküldése; siker után a lista és a fenti összesítők frissülnek (a lenyitott
   // sorok nyitva maradnak).
@@ -134,6 +139,8 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   const from = data && data.total ? (data.page - 1) * size + 1 : 0;
   const to = data ? Math.min(data.total, data.page * size) : 0;
   const needle = debounced.toLowerCase();
+  // A betűsávban a kiválasztott betű akkor is megmarad (hogy le lehessen venni), ha a másik szűrő mellett nincs szó.
+  const letterList = data ? (letter && !data.letters.some(([ch]) => ch === letter) ? [...data.letters, [letter, 0]].sort((a, b) => a[0].localeCompare(b[0], 'hu')) : data.letters) : [];
 
   const editor = (word, id) => (
     <div className="mini-bank-edit">
@@ -196,6 +203,33 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
         {FILTERS.map(([v, t]) => (
           <button key={v} type="button" className={filter === v ? 'primary small' : 'ghost small'} aria-pressed={filter === v} onClick={() => setFilter(v)}>
             {t}
+          </button>
+        ))}
+      </div>
+
+      <div className="mini-bank-facet" role="group" aria-label="Szűrés hossz szerint">
+        <span className="mini-bank-facet-label">Hossz</span>
+        <button type="button" className={!len ? 'primary small' : 'ghost small'} aria-pressed={!len} onClick={() => setLen(0)}>
+          Mind
+        </button>
+        {LENGTHS.map((n) => {
+          const c = data?.lenCounts?.[n] || 0;
+          return (
+            <button key={n} type="button" className={len === n ? 'primary small' : 'ghost small'} aria-pressed={len === n} disabled={!data || (c === 0 && len !== n)} onClick={() => setLen(len === n ? 0 : n)}>
+              {n} betű{data ? ` (${c})` : ''}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mini-bank-facet" role="group" aria-label="Ugrás kezdőbetű szerint">
+        <span className="mini-bank-facet-label">Kezdőbetű</span>
+        <button type="button" className={!letter ? 'primary small' : 'ghost small'} aria-pressed={!letter} onClick={() => setLetter('')}>
+          Mind
+        </button>
+        {letterList.map(([ch, c]) => (
+          <button key={ch} type="button" className={`mini-bank-letter ${letter === ch ? 'primary small' : 'ghost small'}`} aria-pressed={letter === ch} title={`${c} szó`} onClick={() => setLetter(letter === ch ? '' : ch)}>
+            {ch.toUpperCase()}
           </button>
         ))}
       </div>

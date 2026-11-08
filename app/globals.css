@@ -1432,6 +1432,10 @@ button.mini-cluebar-nav{ border: none; background: transparent; color: var(--min
 .mini-bank-controls{ display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px; }
 .mini-bank-controls select{ font-family: inherit; font-size: 15px; padding: 9px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--card); color: var(--ink); }
 .mini-bank-filters{ display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.mini-bank-facet{ display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.mini-bank-facet-label{ font-size: 12px; font-weight: 700; color: var(--ink-soft); min-width: 62px; text-transform: uppercase; letter-spacing: 0.04em; }
+.mini-bank-facet button:disabled{ opacity: 0.4; }
+button.mini-bank-letter{ min-width: 34px; padding-left: 8px; padding-right: 8px; justify-content: center; }
 .mini-bank-list{ margin-top: 12px; display: flex; flex-direction: column; }
 .mini-bank-clues ul{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .mini-bank-clues li{ display: flex; flex-direction: column; gap: 1px; font-size: 14px; line-height: 1.35; }

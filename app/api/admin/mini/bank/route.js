@@ -10,6 +10,7 @@ import { readJson } from '../../../../../lib/validate';
 // A szóbank és a kérdésbank áttekintése (csak olvasás): a kézzel írt kérdések, a megjelent
 // titkosírásokból származó kérdések, a kizárt szavak és az alap szótár egy listában.
 //   GET ?q=<keresés>&filter=clues|bank|titkos|noclue|excluded|all&sort=word|len|recent|used&page=1
+//       &len=1..5 (csak ilyen hosszú szavak) &letter=a (csak ilyen kezdőbetűs szavak, ékezet nélkül)
 // A szűrés, rendezés és lapozás a szerveren történik, így a 8000+ szavas lista nem megy le egyben.
 export async function GET(req) {
   if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -35,6 +36,8 @@ export async function GET(req) {
     filter: sp.get('filter') || undefined,
     sort: sp.get('sort') || undefined,
     page: Number.isInteger(page) ? page : 1,
+    len: Number.parseInt(sp.get('len') || '0', 10) || 0,
+    letter: String(sp.get('letter') || '').slice(0, 2),
   });
   return Response.json({ ...result, stats: bankStats(all, excluded) }, { headers: { 'Cache-Control': 'no-store' } });
 }
