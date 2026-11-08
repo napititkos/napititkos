@@ -104,6 +104,7 @@ test('queryRows: lapozás, a határokon belül marad', () => {
   const many = buildRows({ dictWords: Array.from({ length: 120 }, (_, i) => `w${String(i).padStart(3, '0')}`) });
   const p1 = queryRows(many, { filter: 'all' });
   assert.equal(p1.rows.length, PAGE_SIZE);
+  assert.equal(p1.pageSize, PAGE_SIZE);
   assert.equal(p1.total, 120);
   assert.equal(p1.pages, 3);
   assert.equal(p1.page, 1);

@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-// Admin: a szóbank és a kérdésbank. Egy sor egy szó: a kézzel írt kérdései (legújabb elöl), a
-// megjelent titkosírásokból származó kérdései (ezek csak olvashatók), és az állapota (alap
-// szótárban van-e, kizárt-e, hányszor szerepelt rejtvényben). A kézi kérdések szerkeszthetők és
-// törölhetők, egy szóhoz tetszőleges számú új változat vihető fel, a kizárás pedig innen is
-// feloldható. A keresés a szóban és a kérdések szövegében is keres; a szűrés, rendezés és
-// lapozás a szerveren történik.
+// Admin: a szóbank és a kérdésbank. A lista alapból csak a szavakat mutatja (egy sor egy szó,
+// rövid jelzésekkel), így gyorsan görgethető és kereshető; egy szóra kattintva lenyílik a
+// részletes nézet: a kézzel írt kérdései (legújabb elöl), a megjelent titkosírásokból származó
+// kérdései (ezek csak olvashatók), az állapota (alap szótárban van-e, hányszor szerepelt
+// rejtvényben), és a műveletek (szerkesztés, törlés, új kérdésváltozat, a kizárás feloldása).
+// A keresés a szóban és a kérdések szövegében is keres; a szűrés, rendezés és lapozás a
+// szerveren történik.
 const FILTERS = [
   ['clues', 'Van kérdése'],
   ['bank', 'Kézi kérdés'],
@@ -37,6 +38,7 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(0);
+  const [open, setOpen] = useState(() => new Set()); // a lenyitott szavak
   const [edit, setEdit] = useState(null); // { word, id (null = új változat), text }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -51,6 +53,12 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   useEffect(() => {
     setPage(1);
   }, [debounced, filter, sort]);
+
+  // Más listanézetnél a lenyitott sorok és a félbehagyott szerkesztés nem marad meg.
+  useEffect(() => {
+    setOpen(new Set());
+    setEdit(null);
+  }, [debounced, filter, sort, page]);
 
   useEffect(() => {
     let alive = true;
@@ -73,7 +81,8 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
     };
   }, [debounced, filter, sort, page, refreshKey, reload]);
 
-  // Egy módosítás elküldése; siker után a lista és a fenti összesítők frissülnek.
+  // Egy módosítás elküldése; siker után a lista és a fenti összesítők frissülnek (a lenyitott
+  // sorok nyitva maradnak).
   async function act(body, okText) {
     setBusy(true);
     setMsg(null);
@@ -110,9 +119,21 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
     act({ action: 'deleteClue', word, id }, 'A kérdésváltozat törölve.');
   }
 
+  function toggle(word) {
+    if (edit && edit.word === word) setEdit(null); // a bezárt sor szerkesztése megszűnik
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(word)) next.delete(word);
+      else next.add(word);
+      return next;
+    });
+  }
+
   const st = data?.stats;
-  const from = data && data.total ? (data.page - 1) * 50 + 1 : 0;
-  const to = data ? Math.min(data.total, data.page * 50) : 0;
+  const size = data?.pageSize || 50;
+  const from = data && data.total ? (data.page - 1) * size + 1 : 0;
+  const to = data ? Math.min(data.total, data.page * size) : 0;
+  const needle = debounced.toLowerCase();
 
   const editor = (word, id) => (
     <div className="mini-bank-edit">
@@ -150,8 +171,8 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
         </p>
       )}
       <p className="mini-muted">
-        A kézi kérdések szerkeszthetők és törölhetők, egy szóhoz több változat is felvihető. A bankban végzett módosítás a már várólistán lévő vagy megjelent rejtvényeket nem érinti. A titkosírásból származó
-        kérdések csak olvashatók.
+        Kattints egy szóra a kérdései és a műveletek megnyitásához. A kézi kérdések szerkeszthetők és törölhetők, egy szóhoz több változat is felvihető. A bankban végzett módosítás a már várólistán lévő vagy
+        megjelent rejtvényeket nem érinti. A titkosírásból származó kérdések csak olvashatók.
       </p>
 
       <div className="mini-bank-controls">
@@ -190,70 +211,101 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
         </div>
       )}
 
+      {open.size > 0 && (
+        <div style={{ marginTop: 10 }}>
+          <button type="button" className="ghost small" onClick={() => { setOpen(new Set()); setEdit(null); }}>
+            Mind bezárása ({open.size})
+          </button>
+        </div>
+      )}
+
       <div className="mini-bank-list" aria-busy={loading}>
         {data && data.rows.length === 0 && !loading && <p className="mini-muted">Nincs a keresésnek megfelelő szó.</p>}
         {(data?.rows || []).map((r) => {
+          const isOpen = open.has(r.word);
           const adding = edit && edit.word === r.word && !edit.id;
+          const panel = `mini-bank-panel-${r.word}`;
+          const titkosCount = r.clues.length - r.ownCount;
+          // Keresésnél, ha a találat a kérdés szövegében van (és nem a szóban), a zárt sor alatt
+          // látszik a találatot adó kérdés, hogy ne kelljen mindent megnyitni.
+          const hit = needle && !isOpen && !r.word.includes(needle) ? r.clues.find((c) => c.clue.toLowerCase().includes(needle)) : null;
           return (
-            <div key={r.word} className={`mini-bank-row${r.excluded ? ' excluded' : ''}`}>
-              <div className="mini-bank-word">
-                <b>{r.word.toUpperCase()}</b> <span className="mini-len">({r.len})</span>
-                <div className="mini-bank-badges">
+            <div key={r.word} className={`mini-bank-item${isOpen ? ' open' : ''}${r.excluded ? ' excluded' : ''}`}>
+              <button type="button" className="mini-bank-head" aria-expanded={isOpen} aria-controls={panel} onClick={() => toggle(r.word)}>
+                <span className="mini-bank-chev" aria-hidden="true">▸</span>
+                <span className="mini-bank-w">
+                  <b>{r.word.toUpperCase()}</b> <span className="mini-len">({r.len})</span>
+                </span>
+                <span className="mini-bank-tags">
                   {r.excluded && <span className="mini-src warn">kizárt</span>}
-                  {!r.inDict && <span className="mini-src">nincs az alap szótárban</span>}
-                  {r.used > 0 && (
-                    <span className="mini-src">
-                      {r.used}× szerepelt{r.lastWeek ? `, utoljára ${r.lastWeek}` : ''}
-                    </span>
+                  <span className="mini-bank-count">{r.clues.length === 0 ? 'nincs kérdés' : `${r.clues.length} kérdés`}</span>
+                </span>
+              </button>
+              {hit && <div className="mini-bank-hit">„{hit.clue}”</div>}
+              {isOpen && (
+                <div id={panel} className="mini-bank-panel">
+                  <div className="mini-bank-badges">
+                    {r.excluded && <span className="mini-src warn">kizárt – a generátor nem használja</span>}
+                    {!r.inDict && <span className="mini-src">nincs az alap szótárban</span>}
+                    {r.used > 0 && (
+                      <span className="mini-src">
+                        {r.used}× szerepelt{r.lastWeek ? `, utoljára ${r.lastWeek}` : ''}
+                      </span>
+                    )}
+                    {r.clues.length > 0 && (
+                      <span className="mini-src">
+                        {r.ownCount} kézi{titkosCount > 0 ? `, ${titkosCount} titkosírásból` : ''}
+                      </span>
+                    )}
+                  </div>
+                  {r.excluded && (
+                    <button type="button" className="ghost small" style={{ marginBottom: 8 }} disabled={busy} onClick={() => act({ action: 'unexclude', word: r.word }, `A(z) „${r.word.toUpperCase()}” kizárása feloldva, a generátor újra használhatja.`)}>
+                      Kizárás feloldása
+                    </button>
                   )}
-                </div>
-                {r.excluded && (
-                  <button type="button" className="ghost small" style={{ marginTop: 6 }} disabled={busy} onClick={() => act({ action: 'unexclude', word: r.word }, `A(z) „${r.word.toUpperCase()}” kizárása feloldva, a generátor újra használhatja.`)}>
-                    Kizárás feloldása
-                  </button>
-                )}
-              </div>
-              <div className="mini-bank-clues">
-                {r.clues.length === 0 && !adding && <span className="mini-muted">Nincs kérdés (csak az alap szótárban szerepel).</span>}
-                {r.clues.length > 0 && (
-                  <ul>
-                    {r.clues.map((c, i) => {
-                      const editing = edit && edit.id && edit.id === c.id;
-                      return (
-                        <li key={c.id || `t${i}`}>
-                          {editing ? (
-                            editor(r.word, c.id)
-                          ) : (
-                            <>
-                              <span>{c.clue}</span>
-                              <span className="mini-bank-meta">
-                                {c.src === 'titkosírás' ? 'titkosírásból (csak olvasható)' : `kézi, ${day(c.at)}${c.editedAt ? `, szerkesztve: ${day(c.editedAt)}` : ''}`}
-                              </span>
-                              {c.id && (
-                                <span className="mini-bank-actions">
-                                  <button type="button" className="ghost small" disabled={busy} onClick={() => setEdit({ word: r.word, id: c.id, text: c.clue })}>
-                                    Szerkesztés
-                                  </button>
-                                  <button type="button" className="ghost small danger" disabled={busy} onClick={() => removeClue(r.word, c.id)}>
-                                    Törlés
-                                  </button>
-                                </span>
+                  <div className="mini-bank-clues">
+                    {r.clues.length === 0 && !adding && <span className="mini-muted">Nincs kérdés (csak az alap szótárban szerepel).</span>}
+                    {r.clues.length > 0 && (
+                      <ul>
+                        {r.clues.map((c, i) => {
+                          const editing = edit && edit.id && edit.id === c.id;
+                          return (
+                            <li key={c.id || `t${i}`}>
+                              {editing ? (
+                                editor(r.word, c.id)
+                              ) : (
+                                <>
+                                  <span>{c.clue}</span>
+                                  <span className="mini-bank-meta">
+                                    {c.src === 'titkosírás' ? 'titkosírásból (csak olvasható)' : `kézi, ${day(c.at)}${c.editedAt ? `, szerkesztve: ${day(c.editedAt)}` : ''}`}
+                                  </span>
+                                  {c.id && (
+                                    <span className="mini-bank-actions">
+                                      <button type="button" className="ghost small" disabled={busy} onClick={() => setEdit({ word: r.word, id: c.id, text: c.clue })}>
+                                        Szerkesztés
+                                      </button>
+                                      <button type="button" className="ghost small danger" disabled={busy} onClick={() => removeClue(r.word, c.id)}>
+                                        Törlés
+                                      </button>
+                                    </span>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                {adding ? (
-                  editor(r.word, null)
-                ) : (
-                  <button type="button" className="ghost small" style={{ marginTop: 8 }} disabled={busy} onClick={() => setEdit({ word: r.word, id: null, text: '' })}>
-                    + Új kérdésváltozat
-                  </button>
-                )}
-              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    {adding ? (
+                      editor(r.word, null)
+                    ) : (
+                      <button type="button" className="ghost small" style={{ marginTop: 8 }} disabled={busy} onClick={() => setEdit({ word: r.word, id: null, text: '' })}>
+                        + Új kérdésváltozat
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

@@ -1433,17 +1433,28 @@ button.mini-cluebar-nav{ border: none; background: transparent; color: var(--min
 .mini-bank-controls select{ font-family: inherit; font-size: 15px; padding: 9px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--card); color: var(--ink); }
 .mini-bank-filters{ display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .mini-bank-list{ margin-top: 12px; display: flex; flex-direction: column; }
-.mini-bank-row{ display: grid; grid-template-columns: minmax(110px, 170px) 1fr; gap: 6px 14px; padding: 10px 0; border-top: 1px solid var(--line); }
-.mini-bank-row.excluded{ opacity: 0.75; }
-.mini-bank-word{ font-size: 15px; }
-.mini-bank-badges{ display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 4px; }
-.mini-bank-badges .mini-src{ margin-left: 0; }
 .mini-bank-clues ul{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .mini-bank-clues li{ display: flex; flex-direction: column; gap: 1px; font-size: 14px; line-height: 1.35; }
 .mini-bank-meta{ font-size: 11.5px; color: var(--ink-soft); }
 .mini-bank-pager{ display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-@media (max-width: 480px){ .mini-bank-row{ grid-template-columns: 1fr; } .mini-bank-badges{ flex-direction: row; flex-wrap: wrap; } }
 .mini-bank-clues li{ position: relative; }
 .mini-bank-actions{ display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 .mini-bank-edit{ margin-top: 4px; }
 .mini-bank-edit textarea{ width: 100%; text-transform: none; min-height: 48px; }
+
+/* Szóbank: lenyitható szósorok */
+.mini-bank-item{ border-top: 1px solid var(--line); }
+.mini-bank-item.excluded .mini-bank-head{ opacity: 0.8; }
+button.mini-bank-head{ width: 100%; justify-content: flex-start; gap: 10px; text-align: left; border: none; border-radius: 8px; background: transparent; padding: 9px 6px; font-size: 15px; font-weight: 600; color: var(--ink); white-space: normal; }
+button.mini-bank-head:hover:not(:disabled){ transform: none; background: var(--accent-soft); }
+button.mini-bank-head:active:not(:disabled){ transform: none; }
+.mini-bank-chev{ display: inline-block; width: 14px; flex: 0 0 14px; font-size: 12px; color: var(--ink-soft); transition: transform 0.12s ease; }
+.mini-bank-item.open .mini-bank-chev{ transform: rotate(90deg); }
+.mini-bank-w{ flex: 1; min-width: 0; }
+.mini-bank-tags{ display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.mini-bank-tags .mini-src{ margin-left: 0; }
+.mini-bank-count{ font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.mini-bank-hit{ margin: -2px 6px 8px 30px; font-size: 13px; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mini-bank-panel{ padding: 2px 6px 12px 30px; }
+.mini-bank-badges{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.mini-bank-badges .mini-src{ margin-left: 0; }
