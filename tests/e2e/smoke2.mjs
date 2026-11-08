@@ -1180,6 +1180,12 @@ section('Mini keresztrejtvény: piszkozatok (mentés kész kérdések nélkül, 
   r = await dr({ action: 'save', id: d2.id, rev: j.draft.rev, title: 'Generált alap', rows: gen.rows, clues: genClues }); j = await r.json();
   const rev2 = j.draft.rev;
   r = await dr({ action: 'publish', id: d2.id, rev: rev2 - 1 }); check('beemelés elavult rev-vel: 409', r.status === 409);
+  // Egy korábban kizárt szó beemeléskor feloldódik (a többi kizárt szó marad).
+  const reusedWord = gen.entries[0].word;
+  await mini({ action: 'deleteWord', word: reusedWord });
+  await mini({ action: 'deleteWord', word: 'qzqzq' });
+  const exBefore = JSON.parse(await redis.get('mini:excluded') || '[]');
+  check('kizárás előtte: a szó és egy másik kizárt szó a listán van', exBefore.includes(reusedWord) && exBefore.includes('qzqzq'), JSON.stringify(exBefore));
   r = await dr({ action: 'publish', id: d2.id, rev: rev2 }); j = await r.json();
   check('teljes tábla beemelése: 200', r.status === 200 && !!j.id, JSON.stringify(j));
   const st = await miniState();
@@ -1187,6 +1193,8 @@ section('Mini keresztrejtvény: piszkozatok (mentés kész kérdések nélkül, 
   check('a piszkozat beemelés után megszűnt', (await getDrafts(`?id=${d2.id}`)).status === 404);
   const bank = JSON.parse(await redis.get('mini:bank') || '{}');
   check('az új kérdések a bankba kerültek', gen.entries.some((e) => (bank[e.word] || []).length > 0));
+  const exAfter = JSON.parse(await redis.get('mini:excluded') || '[]');
+  check('beemelés után a használt szó már nem kizárt, a többi kizárt szó megmaradt', !exAfter.includes(reusedWord) && exAfter.includes('qzqzq') && (bank[reusedWord] || []).length > 0, JSON.stringify(exAfter));
 
   // Részleges kitöltés: a beírt betűk és a fekete négyzetek maradnak, a maradékot a generátor tölti ki
   r = await mini({ action: 'generate' }); const g2 = (await r.json()).puzzle;
