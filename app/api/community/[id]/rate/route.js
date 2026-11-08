@@ -2,12 +2,14 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../../../lib/kv';
 import { auth } from '../../../../../auth';
-import { EMOJIS, communityList, notifiedKey, ratingsKey, reactionsKey, solvedKey, summaries } from '../../../../../lib/community';
+import { communityList, notifiedKey, ratingsKey, reactionsKey, solvedKey, summaries } from '../../../../../lib/community';
 import { isLimited, tooMany } from '../../../../../lib/rateLimit';
 import { readJson } from '../../../../../lib/validate';
+import { parseReaction } from '../../../../../lib/reactions';
+import { normalizeReaction } from '../../../../../lib/emojis';
 import { pushUserNotification, shortClue } from '../../../../../lib/userNotifications';
 
-// Értékelés (stars: 1-5) és/vagy emoji-reakció (reaction: 0-9, vagy null a visszavonáshoz).
+// Értékelés (stars: 1-5) és/vagy emoji-reakció (reaction: emoji, vagy null a visszavonáshoz).
 // Csak az értékelheti, aki bejelentkezve megfejtette; fiókonként egy-egy, később módosítható.
 export async function POST(req, { params }) {
   const { id } = await params;
@@ -25,14 +27,13 @@ export async function POST(req, { params }) {
   const hasReaction = body.reaction !== undefined;
   if (!hasStars && !hasReaction) return Response.json({ error: 'invalid-body' }, { status: 400 });
   if (hasStars && !(Number.isInteger(body.stars) && body.stars >= 1 && body.stars <= 5)) return Response.json({ error: 'invalid-stars' }, { status: 400 });
-  if (hasReaction && body.reaction !== null && !(Number.isInteger(body.reaction) && body.reaction >= 0 && body.reaction < EMOJIS.length)) {
-    return Response.json({ error: 'invalid-reaction' }, { status: 400 });
-  }
+  const reaction = hasReaction ? parseReaction(body.reaction) : undefined;
+  if (hasReaction && reaction === undefined) return Response.json({ error: 'invalid-reaction' }, { status: 400 });
   const [prevStars, prevReaction] = await Promise.all([r.hget(ratingsKey(id), uid), r.hget(reactionsKey(id), uid)]);
   if (hasStars) await r.hset(ratingsKey(id), uid, String(body.stars));
   if (hasReaction) {
-    if (body.reaction === null) await r.hdel(reactionsKey(id), uid);
-    else await r.hset(reactionsKey(id), uid, String(body.reaction));
+    if (reaction === null) await r.hdel(reactionsKey(id), uid);
+    else await r.hset(reactionsKey(id), uid, reaction);
   }
   // Személyes értesítés a beküldőnek az első értékelésről, illetve az új reakcióról (a sajátjáról
   // nem, és az értékelő neve nélkül). Az értékelés módosítása nem küld újabb értesítést.
@@ -50,9 +51,9 @@ export async function POST(req, { params }) {
         ref: { type: 'community', id },
       });
     }
-    if (hasReaction && body.reaction !== null && String(body.reaction) !== prevReaction && (await notifyOnce('r'))) {
+    if (hasReaction && reaction !== null && reaction !== normalizeReaction(prevReaction) && (await notifyOnce('r'))) {
       await pushUserNotification(ownerEmail, {
-        text: `Valaki reagált a titkosírásodra („${clue}”): ${EMOJIS[body.reaction]}`,
+        text: `Valaki reagált a titkosírásodra („${clue}”): ${reaction}`,
         href: '/kozossegi',
         ref: { type: 'community', id },
       });

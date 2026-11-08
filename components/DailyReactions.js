@@ -26,10 +26,16 @@ export default function DailyReactions({ date, interactive = true, initial = nul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
+  // Ha az előre letöltött adat csak a megjelenés után érkezik meg, azt használjuk.
+  useEffect(() => {
+    if (!data && initial) setData(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
+
   // A szülő (a korábbi titkosírások listája) naprakészen tartja az előre letöltött adatot, így
   // újranyitáskor is a friss állapot látszik.
   useEffect(() => {
-    if (data && onChange) onChange({ reactions: data.reactions, mine: data.mine });
+    if (data && onChange) onChange({ counts: data.counts, mine: data.mine });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
@@ -38,7 +44,7 @@ export default function DailyReactions({ date, interactive = true, initial = nul
   function react(k) {
     if (!data) return;
     const before = data;
-    setData({ ...data, reactions: applyReaction(data.reactions, data.mine, k), mine: k });
+    setData({ ...data, counts: applyReaction(data.counts, data.mine, k), mine: k });
     setError('');
     const my = ++seq.current;
     fetch('/api/reactions', {
@@ -49,7 +55,7 @@ export default function DailyReactions({ date, interactive = true, initial = nul
       .then(async (r) => {
         const d = await r.json().catch(() => ({}));
         if (my !== seq.current) return;
-        if (r.ok && d.ok) setData({ emojis: d.emojis, reactions: d.reactions, mine: d.mine });
+        if (r.ok && d.ok) setData({ presets: d.presets, counts: d.counts, mine: d.mine });
         else {
           setData(before);
           setError(d.error === 'invalid-device' ? 'A reakcióhoz engedélyezd a böngésző helyi tárolóját.' : d.message || 'Nem sikerült elmenteni a reakciót.');
@@ -63,10 +69,10 @@ export default function DailyReactions({ date, interactive = true, initial = nul
   }
 
   if (!data) return null;
-  const any = data.reactions.some((n) => n > 0);
+  const any = Object.values(data.counts || {}).some((n) => n > 0);
   return (
     <div className="daily-reactions">
-      <ReactionBar emojis={data.emojis} reactions={data.reactions} mine={data.mine} interactive={interactive} onReact={react} />
+      <ReactionBar presets={data.presets} counts={data.counts || {}} mine={data.mine} interactive={interactive} onReact={react} />
       {!interactive && <p className="community-rate-note">{any ? 'Megfejtés után te is reagálhatsz.' : 'Még nincs reakció. Megfejtés után te is reagálhatsz.'}</p>}
       {error && (
         <p className="community-rate-note" role="alert">

@@ -1,18 +1,25 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { ACHIEVEMENTS } from '../lib/achievements';
+import { ACHIEVEMENTS, achievementProgress, statsFromProgress } from '../lib/achievements';
 import { loadProgress } from '../lib/progress';
 import Icon from './Icon';
 
 export default function AchievementsModal() {
   const [open, setOpen] = useState(false);
   const [unlocked, setUnlocked] = useState([]);
+  const [progress, setProgress] = useState({});
 
   useEffect(() => {
     function handleOpen() {
       const prog = loadProgress();
       setUnlocked(prog.unlocked || []);
+      setProgress(achievementProgress(statsFromProgress(prog)));
       setOpen(true);
+      // Bejelentkezve a közösségi megfejtések számát a szerver adja (a számlálóhoz).
+      fetch('/api/achievements/facts', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((facts) => facts && setProgress(achievementProgress(statsFromProgress(loadProgress(), facts))))
+        .catch(() => {});
     }
     window.addEventListener('open-achievements', handleOpen);
     return () => window.removeEventListener('open-achievements', handleOpen);
@@ -49,13 +56,19 @@ export default function AchievementsModal() {
                 <span style={{ fontSize: 22, opacity: done ? 1 : 0.35, filter: done ? 'none' : 'grayscale(1)' }} aria-hidden="true">
                   {a.emoji}
                 </span>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, color: done ? 'var(--ink)' : 'var(--ink-soft)' }}>
                     {a.title}
                     {!done && <span className="sr-only"> (még nincs meg)</span>}
                   </div>
                   <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{a.desc}</div>
                 </div>
+                {/* A még meg nem szerzett, számszerű trófeáknál a haladás (pl. 37/50). */}
+                {!done && progress[a.id] && (
+                  <span className="ach-progress" aria-label={`Haladás: ${Math.min(progress[a.id][0], progress[a.id][1])} / ${progress[a.id][1]}`}>
+                    {Math.min(progress[a.id][0], progress[a.id][1])}/{progress[a.id][1]}
+                  </span>
+                )}
               </div>
             );
           })}

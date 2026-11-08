@@ -76,6 +76,7 @@ export function TutorialContent() {
     const { unlocked, newly } = computeNewAchievements(
       {
         totalSolved: mainProgress.totalSolved || 0,
+        archiveSolved: (mainProgress.archiveSolved || []).length,
         streak: mainProgress.streak,
         fastestTime: mainProgress.fastestTime,
         noHintSolves: mainProgress.noHintSolves || 0,

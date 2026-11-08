@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../../lib/kv';
+import { normalizeReaction } from '../../../../lib/emojis';
 import { auth } from '../../../../auth';
 import { isLimited, tooMany } from '../../../../lib/rateLimit';
 import { userNotifications } from '../../../../lib/userNotifications';
-import { communityList, ratingsKey, reactionsKey, EMOJIS } from '../../../../lib/community';
+import { communityList, ratingsKey, reactionsKey } from '../../../../lib/community';
 
 // Adathordozhatóság (GDPR 20. cikk): a fiókhoz tartozó összes adat JSON-ban.
 export async function GET() {
@@ -31,7 +32,7 @@ export async function GET() {
   const dailyReactions = [];
   for (const k of await kv.scan('daily:reactions:*')) {
     const v = await kv.raw().hget(k, `u:${id}`);
-    if (v != null) dailyReactions.push({ date: k.slice('daily:reactions:'.length), emoji: EMOJIS[Number(v)] || null });
+    if (v != null) dailyReactions.push({ date: k.slice('daily:reactions:'.length), emoji: normalizeReaction(v) });
   }
 
   const data = {
@@ -74,6 +75,6 @@ async function myCommunityRatings(uid) {
   }
   const res = await p.exec();
   return list
-    .map((s, i) => ({ clue: s.clue, stars: res[i * 2]?.[1] ? Number(res[i * 2][1]) : null, reaction: res[i * 2 + 1]?.[1] != null ? EMOJIS[Number(res[i * 2 + 1][1])] : null }))
+    .map((s, i) => ({ clue: s.clue, stars: res[i * 2]?.[1] ? Number(res[i * 2][1]) : null, reaction: normalizeReaction(res[i * 2 + 1]?.[1]) }))
     .filter((x) => x.stars || x.reaction);
 }
