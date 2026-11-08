@@ -13,15 +13,16 @@ export async function GET() {
   const uid = session.user.id;
   const email = String(session.user.email || '').toLowerCase();
   const list = await communityList();
-  let communitySolved = false;
+  let communitySolvedCount = 0;
   if (list.length) {
     const p = kv.raw().pipeline();
     for (const s of list) p.hget(solvedKey(s.id), uid);
     const res = await p.exec();
-    communitySolved = res.some((x) => x?.[1]);
+    communitySolvedCount = res.filter((x) => x?.[1]).length;
   }
+  const communitySolved = communitySolvedCount > 0;
   const myPromoted = new Set(list.filter((s) => String(s.submitterEmail || '').toLowerCase() === email && s.promotedPuzzleId).map((s) => s.promotedPuzzleId));
   const history = (await kv.get('rotation:history')) || [];
   const bigLeagues = history.some((h) => h && (myPromoted.has(h.id) || (email && String(h.submittedByEmail || '').toLowerCase() === email)));
-  return Response.json({ communitySolved, bigLeagues }, { headers: { 'Cache-Control': 'private, no-store' } });
+  return Response.json({ communitySolved, communitySolvedCount, bigLeagues }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

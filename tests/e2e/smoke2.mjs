@@ -659,7 +659,7 @@ check('vendégként (megosztott linkről) csak előnézet: szöveg, betűszám, 
 j = await (await fetch(BASE + `/api/community/${legacyItem.id}`, { headers: { cookie: erJar.header() } })).json();
 check('az átemelt régi rejtvény tippjei is megvannak', j.puzzle.hints.definicio.text === 'Régi tipp' && j.puzzle.hints.definicio.words[0] === 0);
 r = await fetch(BASE + `/api/community/${kItem.id}`, { headers: { cookie: erJar.header() } }); j = await r.json();
-check('megnyitva: rejtvény, megoldás, tippek, reakciók', r.status === 200 && j.puzzle.answer === 'KOS JUH' && j.puzzle.hints.definicio.words[0] === 0 && j.puzzle.hints.alternativ.text === 'Másik?' && j.emojis.length === 11 && j.isOwner === false && !JSON.stringify(j).includes('@teszt.hu'));
+check('megnyitva: rejtvény, megoldás, tippek, reakciók', r.status === 200 && j.puzzle.answer === 'KOS JUH' && j.puzzle.hints.definicio.words[0] === 0 && j.puzzle.hints.alternativ.text === 'Másik?' && j.presets.length === 10 && j.isOwner === false && !JSON.stringify(j).includes('@teszt.hu'));
 j = await (await fetch(BASE + `/api/community/${kItem.id}`, { headers: { cookie: kkJar.header() } })).json();
 check('a beküldő a sajátjánál tulajdonosként jelenik meg', j.isOwner === true);
 const cPost = (path, b, jar) => post(path, b, jar ? { cookie: jar.header() } : {});
@@ -669,7 +669,7 @@ r = await cPost(`/api/community/${kItem.id}/solve`, { answer: 'rossz' }, erJar);
 r = await cPost(`/api/community/${kItem.id}/solve`, { answer: 'kos  juh ' }, erJar); check('helyes megfejtés: 200', r.status === 200);
 r = await cPost(`/api/community/${kItem.id}/rate`, { stars: 6 }, erJar); check('érvénytelen csillag: 400', r.status === 400);
 r = await cPost(`/api/community/${kItem.id}/rate`, { stars: 4, reaction: 9 }, erJar); j = await r.json();
-check('értékelés + reakció: 200, átlag 4', r.status === 200 && j.avg === 4 && j.ratingCount === 1 && j.reactions[9] === 1);
+check('értékelés + reakció (régi, sorszámos kliens is): 200, átlag 4', r.status === 200 && j.avg === 4 && j.ratingCount === 1 && j.reactions['🐏'] === 1, JSON.stringify(j));
 let kkN = await myNotifs(kkJar);
 check('a beküldő személyes értesítést kap az értékelésről és a reakcióról, név nélkül', kkN.some((n) => /4 csillagra értékelte/.test(n.text)) && kkN.some((n) => /reagált/.test(n.text) && n.text.includes('🐏')) && !kkN.some((n) => /Értékelő/.test(n.text)) && kkN.every((n) => n.href === '/kozossegi'));
 r = await cPost(`/api/community/${kItem.id}/rate`, { stars: 5 }, erJar); j = await r.json();
@@ -778,7 +778,7 @@ section('Új trófeák szerveroldali tényei, "bekerült" jelzés, Új! jelzés 
 await seedUser('liga@teszt.hu', 'Liga-Jelszo-1', { name: 'Liga Lili' });
 const ligaJar = (await credLogin('liga@teszt.hu', 'Liga-Jelszo-1')).jar;
 j = await (await fetch(BASE + '/api/achievements/facts', { headers: { cookie: ligaJar.header() } })).json();
-check('kezdetben se közösségi megfejtés, se napi titkosírásba került rejtvény', j.communitySolved === false && j.bigLeagues === false, JSON.stringify(j));
+check('kezdetben se közösségi megfejtés, se napi titkosírásba került rejtvény', j.communitySolved === false && j.communitySolvedCount === 0 && j.bigLeagues === false, JSON.stringify(j));
 r = await post('/api/submissions', { clue: 'Liga próba?', answer: 'LIGA' }, { cookie: ligaJar.header() });
 const ligaId = JSON.parse(await redis.get('submissions:list')).find((x) => x.clue === 'Liga próba?')?.id;
 j = await (await fetch(BASE + '/api/community/count')).json();
@@ -797,8 +797,13 @@ const otherSub = JSON.parse(await redis.get('submissions:list')).find((x) => x.i
 if (otherSub) {
   await post(`/api/community/${otherSub.id}/solve`, { answer: otherSub.answer }, { cookie: ligaJar.header() });
   j = await (await fetch(BASE + '/api/achievements/facts', { headers: { cookie: ligaJar.header() } })).json();
-  check('"Közösségi": a szerver szerint megfejtett egy közösségi rejtvényt', j.communitySolved === true);
+  check('"Közösségi": a szerver szerint megfejtett egy közösségi rejtvényt', j.communitySolved === true && j.communitySolvedCount === 1, JSON.stringify(j));
 }
+// A közösségi megfejtések száma (az 1, 5, 10 közösségi megfejtés trófeákhoz).
+const others = JSON.parse(await redis.get('submissions:list')).filter((x) => x.id !== ligaId).slice(0, 6);
+for (const o of others) await post(`/api/community/${o.id}/solve`, { answer: o.answer }, { cookie: ligaJar.header() });
+j = await (await fetch(BASE + '/api/achievements/facts', { headers: { cookie: ligaJar.header() } })).json();
+check('a szerver a közösségi megfejtések számát is adja', j.communitySolvedCount === others.length && others.length >= 5, JSON.stringify(j));
 j = await (await fetch(BASE + '/api/achievements/facts')).json();
 check('vendégnek üres válasz', Object.keys(j).length === 0);
 r = await fetch(BASE + '/submit'); check('a beküldés oldal címe: Közösségi rejtvény beküldése', /Közösségi rejtvény beküldése/.test(await r.text()));
@@ -818,7 +823,10 @@ r = await fetch(BASE + '/api/community/seen'); check('vendégnek: 401 (ő az esz
 const ripSub = JSON.parse(await redis.get('submissions:list'))[0];
 await post(`/api/community/${ripSub.id}/solve`, { answer: ripSub.answer }, { cookie: ujJar.header() });
 r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 10 }, { cookie: ujJar.header() }); j = await r.json();
-check('a 11. reakció (🪦) is megadható', r.status === 200 && j.reactions.length === 11 && j.reactions[10] >= 1);
+check('a 11. reakció (🪦) is megadható (régi sorszámmal)', r.status === 200 && j.reactions['🪦'] >= 1);
+r = await post(`/api/community/${ripSub.id}/rate`, { reaction: '🦄' }, { cookie: ujJar.header() }); j = await r.json();
+check('közösségi: a teljes készletből is lehet reagálni (emojival)', r.status === 200 && j.reactions['🦄'] === 1 && !j.reactions['🪦'], JSON.stringify(j.reactions));
+r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 'nem emoji' }, { cookie: ujJar.header() }); check('közösségi: nem emoji szöveg: 400', r.status === 400);
 r = await post(`/api/community/${ripSub.id}/rate`, { reaction: 11 }, { cookie: ujJar.header() }); check('a 12. már érvénytelen: 400', r.status === 400);
 
 section('Tutorial: Kezdetek szakasz');
@@ -982,39 +990,116 @@ section('Napi titkosírás: emoji-reakciók (bárki reagálhat)');
   r = await rget(`date=2099-01-01&device=${devA}`); check('meg nem jelent napra: 404', r.status === 404);
   r = await rget('date=hibas'); check('hibás dátum: 404', r.status === 404);
   r = await rget(`date=${budapestToday}&device=${devA}`); j = await r.json();
-  check('mai nap: 200, a közösségi emojik, még nincs reakció', r.status === 200 && j.emojis?.length === 11 && j.emojis[0] === '😍' && j.reactions.every((n) => n === 0) && j.mine === null, JSON.stringify(j));
+  check('mai nap: 200, az alap-emojik (10), még nincs reakció', r.status === 200 && j.presets?.length === 10 && j.presets[0] === '😍' && Object.keys(j.counts).length === 0 && j.mine === null, JSON.stringify(j));
   check('a válasz nem gyorsítótárazható', /no-store/.test(r.headers.get('cache-control') || ''));
-  r = await post('/api/reactions', { date: budapestToday, reaction: 2, device: devA }); j = await r.json();
-  check('vendég reagál (eszközazonosítóval): 200, a sajátja megjelölve', r.status === 200 && j.reactions[2] === 1 && j.mine === 2, JSON.stringify(j));
-  r = await post('/api/reactions', { date: budapestToday, reaction: 2, device: devB }); j = await r.json();
-  check('másik vendég ugyanarra: 2 darab', j.reactions[2] === 2 && j.mine === 2);
-  r = await post('/api/reactions', { date: budapestToday, reaction: 5, device: devA }); j = await r.json();
-  check('módosítás: egy eszköz egy reakció (2→5)', j.reactions[2] === 1 && j.reactions[5] === 1 && j.mine === 5, JSON.stringify(j.reactions));
+  check('az alap-emojik között nincs 😤 és 😅, a 🫪 benne van', !j.presets.includes('😤') && !j.presets.includes('😅') && j.presets.includes('🫪'));
+  r = await post('/api/reactions', { date: budapestToday, reaction: '😂', device: devA }); j = await r.json();
+  check('vendég reagál (eszközazonosítóval): 200, a sajátja megjelölve', r.status === 200 && j.counts['😂'] === 1 && j.mine === '😂', JSON.stringify(j));
+  r = await post('/api/reactions', { date: budapestToday, reaction: '😂', device: devB }); j = await r.json();
+  check('másik vendég ugyanarra: 2 darab', j.counts['😂'] === 2 && j.mine === '😂');
+  r = await post('/api/reactions', { date: budapestToday, reaction: '👏', device: devA }); j = await r.json();
+  check('módosítás: egy eszköz egy reakció (😂→👏)', j.counts['😂'] === 1 && j.counts['👏'] === 1 && j.mine === '👏', JSON.stringify(j.counts));
   r = await post('/api/reactions', { date: budapestToday, reaction: null, device: devB }); j = await r.json();
-  check('visszavonás (null)', j.reactions[2] === 0 && j.mine === null);
-  r = await post('/api/reactions', { date: budapestToday, reaction: 99, device: devA }); check('érvénytelen emoji: 400', r.status === 400);
-  r = await post('/api/reactions', { date: budapestToday, reaction: 1 }); check('vendég eszközazonosító nélkül: 400', r.status === 400);
-  r = await post('/api/reactions', { date: budapestToday, reaction: 1, device: 'nem-hex' }); check('hibás eszközazonosító: 400', r.status === 400);
-  r = await post('/api/reactions', { date: '2099-01-01', reaction: 1, device: devA }); check('jövőbeli napra nem lehet: 404', r.status === 404);
-  r = await post('/api/reactions', { date: budapestToday, reaction: 0, device: devA }, { cookie: cA.header() }); j = await r.json();
-  check('bejelentkezve a fiókhoz kötődik (az eszköztől függetlenül)', j.reactions[0] === 1 && j.reactions[5] === 1 && j.mine === 0, JSON.stringify(j.reactions));
+  check('visszavonás (null)', !j.counts['😂'] && j.mine === null);
+  r = await post('/api/reactions', { date: budapestToday, reaction: '🦄', device: devB }); j = await r.json();
+  check('a teljes készletből is lehet reagálni (🦄)', r.status === 200 && j.counts['🦄'] === 1 && j.mine === '🦄');
+  r = await post('/api/reactions', { date: budapestToday, reaction: 99, device: devA }); check('érvénytelen sorszám: 400', r.status === 400);
+  r = await post('/api/reactions', { date: budapestToday, reaction: 'abc', device: devA }); check('nem emoji szöveg: 400', r.status === 400);
+  r = await post('/api/reactions', { date: budapestToday, reaction: '🫥', device: devA }); check('a listában nem szereplő újabb emoji nem fogadható el: 400', r.status === 400);
+  r = await post('/api/reactions', { date: budapestToday, reaction: '🫠', device: devA }); j = await r.json();
+  check('a nagyon népszerű újabb emojik (képként) választhatók: 🫠', r.status === 200 && j.mine === '🫠');
+  r = await post('/api/reactions', { date: budapestToday, reaction: '👏', device: devA }); j = await r.json();
+  r = await post('/api/reactions', { date: budapestToday, reaction: '😂' }); check('vendég eszközazonosító nélkül: 400', r.status === 400);
+  r = await post('/api/reactions', { date: budapestToday, reaction: '😂', device: 'nem-hex' }); check('hibás eszközazonosító: 400', r.status === 400);
+  r = await post('/api/reactions', { date: '2099-01-01', reaction: '😂', device: devA }); check('jövőbeli napra nem lehet: 404', r.status === 404);
+  r = await post('/api/reactions', { date: budapestToday, reaction: '😍', device: devA }, { cookie: cA.header() }); j = await r.json();
+  check('bejelentkezve a fiókhoz kötődik (az eszköztől függetlenül)', j.counts['😍'] === 1 && j.counts['👏'] === 1 && j.mine === '😍', JSON.stringify(j.counts));
+  // A régi, sorszámos tárolású reakciók megmaradnak (pl. a 😤 = 8).
+  await redis.hset('daily:reactions:' + budapestToday, 'd:' + 'f'.repeat(32), '8');
+  r = await rget(`date=${budapestToday}&device=${'f'.repeat(32)}`); j = await r.json();
+  check('a régi (sorszámos) reakció, a 😤 is, megmarad és látszik', j.counts['😤'] === 1 && j.mine === '😤', JSON.stringify(j));
   const rk = await redis.hgetall('daily:reactions:' + budapestToday);
   check('tárolás: fiók "u:", vendég "d:" azonosítóval, név és IP nélkül', Object.keys(rk).every((k) => /^(u:[^@\s]+|d:[a-f0-9]{32})$/.test(k)) && Object.keys(rk).some((k) => k.startsWith('u:')) && Object.keys(rk).some((k) => k.startsWith('d:')), JSON.stringify(rk));
   r = await rget(`date=${budapestToday}&device=${devA}`); j = await r.json();
-  check('a vendég a saját (eszközhöz kötött) reakcióját látja', j.mine === 5);
-  check('a 😅 helyén a 🫪 (képként jelenik meg)', j.emojis[7] === '🫪' && !j.emojis.includes('😅'));
+  check('a vendég a saját (eszközhöz kötött) reakcióját látja', j.mine === '👏');
   // A korábbi titkosírások listája a reakciókat előre adja (darabszám és a saját).
   const yd = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3); return d.toISOString().slice(0, 10); })();
   const hh = JSON.parse(await redis.get('rotation:history'));
   hh.splice(hh.length - 1, 0, { id: 'arch-react', clue: 'Archív reakció teszt.', answer: 'ALMA', hints: {}, shownDate: yd });
   await redis.set('rotation:history', JSON.stringify(hh));
-  await post('/api/reactions', { date: yd, reaction: 3, device: devB });
-  await post('/api/reactions', { date: yd, reaction: 1, device: devA }, { cookie: cA.header() });
+  await post('/api/reactions', { date: yd, reaction: '🧠', device: devB });
+  await post('/api/reactions', { date: yd, reaction: '🤯', device: devA }, { cookie: cA.header() });
   r = await fetch(BASE + '/api/archive', { headers: { cookie: cA.header() } }); j = await r.json();
   const ar = (j.archive || []).find((x) => x.shownDate === yd);
-  check('archívum: az emojik és a napi reakciók előre letöltve (a sajátja is)', j.emojis?.length === 11 && ar?.reactions?.reactions?.[3] === 1 && ar.reactions.reactions[1] === 1 && ar.reactions.mine === 1, JSON.stringify(ar?.reactions));
+  check('archívum: az alap-emojik és a napi reakciók előre letöltve (a sajátja is)', j.presets?.length === 10 && ar?.reactions?.counts?.['🧠'] === 1 && ar.reactions.counts['🤯'] === 1 && ar.reactions.mine === '🤯', JSON.stringify(ar?.reactions));
   r = await fetch(BASE + '/api/community'); j = await r.json();
   check('közösségi lista: betűszám a kicsinyített nézethez, a megfejtés nélkül', (j.items || []).length > 0 && j.items.every((x) => /^\(\d+(,\d+)*\)$/.test(x.enumeration) && !('answer' in x)), JSON.stringify((j.items || []).slice(0, 2)));
+}
+
+section('Mini keresztrejtvény (admin): generálás, kérdések, bank, várólista, heti megjelenés');
+{
+  const mini = (body, headers = adm) => post('/api/admin/mini', body, headers);
+  r = await fetch(BASE + '/api/admin/mini'); check('mini admin: bejelentkezés nélkül 401', r.status === 401);
+  r = await mini({ action: 'generate' }, {}); check('mini generálás adminság nélkül: 401', r.status === 401);
+  // Titkosírásból származó kérdés: csak a már megjelent (a mai előtti), egyszavas, max. 5 betűs.
+  const hh = JSON.parse(await redis.get('rotation:history'));
+  const past = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 10); return d.toISOString().slice(0, 10); })();
+  hh.splice(0, 0, { id: 'mini-tk1', clue: 'Régi titkosírás a cipőről.', answer: 'CIPŐ', shownDate: past, hints: {} }, { id: 'mini-tk2', clue: 'Hosszú megfejtés.', answer: 'HOSSZÚSÁG', shownDate: past, hints: {} }, { id: 'mini-tk3', clue: 'Két szó.', answer: 'KÉT SZÓ', shownDate: past, hints: {} });
+  hh.push({ id: 'mini-tk4', clue: 'MAI titkosírás, nem szabad!', answer: 'MAI', shownDate: budapestToday, hints: {} });
+  await redis.set('rotation:history', JSON.stringify(hh));
+  // Az aktuális hétre már „van” megjelent rejtvény, így a beemelt rejtvény a várólistán marad.
+  const thisWeek = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
+  await redis.set('mini:published', JSON.stringify([{ id: 'eheti', rows: [], entries: [], week: thisWeek }]));
+  r = await fetch(BASE + '/api/admin/mini', { headers: adm }); j = await r.json();
+  check('mini: áttekintés (üres várólista, titkosírásból számolt szavak)', r.status === 200 && j.queue.length === 0 && j.titkosWords >= 1, JSON.stringify({ ...j, published: undefined }));
+  r = await mini({ action: 'generate' }); j = await r.json();
+  const pz = j.puzzle;
+  const flat = pz?.rows?.flat() || [];
+  check('generálás: 5x5 rács, legfeljebb 10 fekete négyzet', r.status === 200 && pz.rows.length === 5 && pz.rows.every((x) => x.length === 5) && flat.filter((x) => x === '#').length <= 10, JSON.stringify(pz?.rows));
+  const lens = pz.entries.map((e) => e.len);
+  check('generálás: legfeljebb egy egybetűs és két kétbetűs szó, nincs ismétlődés', lens.filter((x) => x === 1).length <= 1 && lens.filter((x) => x === 2).length <= 2 && new Set(pz.entries.map((e) => e.word)).size === pz.entries.length);
+  check('generálás: a szavak egyeznek a rács betűivel', pz.entries.every((e) => Array.from(e.word).every((ch, k) => pz.rows[e.row + (e.dir === 'D' ? k : 0)][e.col + (e.dir === 'A' ? k : 0)] === ch)));
+  // Beemelés: hiányzó kérdéssel nem, kitöltve igen; az új kérdések a bankba kerülnek
+  const entries = pz.entries.map((e, i) => ({ dir: e.dir, row: e.row, col: e.col, word: e.word, clue: i === 0 ? '' : `Kérdés ${e.word}` }));
+  r = await mini({ action: 'publish', rows: pz.rows, entries }); check('beemelés hiányzó kérdéssel: 400', r.status === 400);
+  entries[0].clue = `Kérdés ${entries[0].word}`;
+  const bad = JSON.parse(JSON.stringify(entries)); bad[0].word = 'xxxxx';
+  r = await mini({ action: 'publish', rows: pz.rows, entries: bad }); check('beemelés a ráccsal nem egyező szóval: 400', r.status === 400);
+  r = await mini({ action: 'publish', rows: pz.rows, entries }); j = await r.json();
+  check('beemelés kitöltve: 200', r.status === 200 && j.ok, JSON.stringify(j));
+  const bank = JSON.parse(await redis.get('mini:bank'));
+  check('az új kérdések bekerültek a bankba', entries.every((e) => bank[e.word]?.some((x) => x.clue === `Kérdés ${e.word}`)));
+  r = await fetch(BASE + '/api/admin/mini', { headers: adm }); j = await r.json();
+  check('a várólistán megjelenik', j.queue.length === 1 && j.queue[0].entries.length === entries.length);
+  // Új generálásnál a banki kérdés automatikusan kitöltve (ha a szó újra bekerül)
+  r = await mini({ action: 'generate' }); j = await r.json();
+  check('új generálás: minden szónál kérdéslista (a banki kérdésekkel)', j.puzzle.entries.every((e) => Array.isArray(e.clues)) && j.puzzle.entries.filter((e) => bank[e.word]).every((e) => e.clues.some((c) => c.src === 'kézi')));
+  // Új szó felvitele, alternatív kérdés, titkosírás-kérdés
+  r = await mini({ action: 'addWord', word: 'Kő', clue: 'Kemény ásvány' }); j = await r.json();
+  check('új szó felvitele (kisbetűsítve): 200', r.status === 200 && j.word === 'kő' && j.variants === 1);
+  r = await mini({ action: 'addWord', word: 'kő', clue: 'Nehéz, mint a ...' }); j = await r.json();
+  check('ugyanahhoz a szóhoz második kérdés: két változat', j.variants === 2);
+  r = await mini({ action: 'addWord', word: 'hosszúság', clue: 'x' }); check('5 betűnél hosszabb szó: 400', r.status === 400);
+  r = await mini({ action: 'addWord', word: 'két szó', clue: 'x' }); check('szóközös szó: 400', r.status === 400);
+  r = await mini({ action: 'addWord', word: 'abc', clue: '' }); check('kérdés nélkül: 400', r.status === 400);
+  // Szó törlése a bankból: kérdések törlődnek, a szó kizárt
+  r = await mini({ action: 'deleteWord', word: 'kő' }); check('szó törlése a bankból: 200', r.status === 200);
+  check('törlés után nincs a bankban, és kizárt', !JSON.parse(await redis.get('mini:bank'))['kő'] && JSON.parse(await redis.get('mini:excluded')).includes('kő'));
+  r = await mini({ action: 'addWord', word: 'kő', clue: 'Újra felvett' }); check('újrafelvétel feloldja a kizárást', r.status === 200 && !JSON.parse(await redis.get('mini:excluded')).includes('kő'));
+  // Heti megjelenés: ha a legutóbbi megjelent egy korábbi hétről való, az első lekéréskor a várólista eleje lesz az aktuális
+  await redis.set('mini:published', JSON.stringify([{ id: 'regi', rows: pz.rows, entries: [], week: '2020-01-06' }]));
+  r = await fetch(BASE + '/api/admin/mini', { headers: adm }); j = await r.json();
+  check('heti váltás: a várólista első eleme megjelent (hétfő 00:00-tól)', j.queue.length === 0 && j.current && j.current.week === j.week && j.current.id !== 'regi', JSON.stringify({ week: j.week, cur: j.current?.week, q: j.queue.length }));
+  check('a hét kezdete hétfő', new Date(j.week + 'T12:00:00Z').getUTCDay() === 1);
+  r = await fetch(BASE + '/api/admin/mini', { headers: adm }); j = await r.json();
+  check('ugyanazon a héten nincs újabb váltás', j.published.length === 2);
+  // Törlés a várólistáról
+  r = await mini({ action: 'generate' }); const pz2 = (await r.json()).puzzle;
+  await mini({ action: 'publish', rows: pz2.rows, entries: pz2.entries.map((e) => ({ ...e, clue: e.clues[0]?.clue || 'K' })) });
+  j = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  r = await mini({ action: 'removeQueued', id: j.queue[0].id }); j = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  check('rejtvény törlése a várólistáról', r.status === 200 && j.queue.length === 0);
+  r = await fetch(BASE + '/admin/mini'); check('/admin/mini: elérhető, noindex', r.status === 200 && /noindex/.test(r.headers.get('x-robots-tag') || ''));
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);

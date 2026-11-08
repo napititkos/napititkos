@@ -92,6 +92,11 @@ export function computeLayout(chars, width, slotWidth) {
   return { rows: below.rows, tile: below.tile, side: false };
 }
 
+// Ha egy oldalon több rejtvény is van (pl. a Kisokosban), a fókuszon kívüli Enter csak annak
+// szól, amelyikben utoljára állt a fókusz (vagy ha csak egy aktív van).
+const activeBoxes = new Set();
+let lastFocusedBoxes = null;
+
 export default function LetterBoxes({ answer, value, locked, onChange, disabled, onEnter, leftSlot }) {
   const refs = useRef([]);
   const outerRef = useRef(null);
@@ -141,8 +146,47 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
   }
 
   // A natív input-eseményhez mindig a friss értékek kellenek (a figyelőt csak egyszer kötjük be).
-  const latest = useRef({ value, locked, chars });
-  latest.current = { value, locked, chars };
+  const latest = useRef({ value, locked, chars, onEnter });
+  latest.current = { value, locked, chars, onEnter };
+
+  // Enter = Ellenőrzés akkor is, ha épp nem a betűmezőkben áll a fókusz (pl. egy tipp vagy a
+  // keverés után, vagy ha a lapra kattintott), és ha a mobil billentyűzet az Entert nem
+  // billentyűeseményként, hanem „sortörés” bevitelként küldi.
+  useEffect(() => {
+    if (disabled) return;
+    const root = outerRef.current;
+    const me = {};
+    activeBoxes.add(me);
+    const onFocusIn = () => {
+      lastFocusedBoxes = me;
+    };
+    root?.addEventListener('focusin', onFocusIn);
+    const onKey = (e) => {
+      if (e.key !== 'Enter' || e.defaultPrevented || e.isComposing) return;
+      const mine = lastFocusedBoxes === me || (activeBoxes.size === 1 && !lastFocusedBoxes) || (activeBoxes.size === 1 && !activeBoxes.has(lastFocusedBoxes));
+      if (!mine) return;
+      const t = e.target;
+      if (t && t.closest && t.closest('.letter-box')) return; // azt a mező saját kezelője intézi
+      const tag = (t?.tagName || '').toLowerCase();
+      if (['input', 'textarea', 'select', 'button', 'a'].includes(tag) || t?.isContentEditable) return;
+      if (document.querySelector('.modal-overlay')) return;
+      latest.current.onEnter && latest.current.onEnter();
+    };
+    const onBeforeInput = (e) => {
+      if (e.inputType !== 'insertLineBreak' && e.inputType !== 'insertParagraph') return;
+      e.preventDefault();
+      latest.current.onEnter && latest.current.onEnter();
+    };
+    window.addEventListener('keydown', onKey);
+    root?.addEventListener('beforeinput', onBeforeInput);
+    return () => {
+      activeBoxes.delete(me);
+      if (lastFocusedBoxes === me) lastFocusedBoxes = null;
+      window.removeEventListener('keydown', onKey);
+      root?.removeEventListener('beforeinput', onBeforeInput);
+      root?.removeEventListener('focusin', onFocusIn);
+    };
+  }, [disabled]);
 
   // Ha a mezőben már ugyanaz a betű van, amit beír (pl. az 5. helyen T volt, és újra T-t üt),
   // a React onChange nem fut le, mert az érték nem változott - így nem léptetett tovább, a kurzor
@@ -176,6 +220,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
       ref={(el) => (refs.current[idx] = el)}
       type="text"
       inputMode="text"
+      enterKeyHint="done"
       data-idx={idx}
       aria-label={`${idx + 1}. betű`}
       autoComplete="off"
@@ -229,6 +274,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
           const p = prevEditable(idx - 1);
           if (p >= 0) focusIndex(p);
         } else if (e.key === 'Enter') {
+          e.preventDefault();
           onEnter && onEnter();
         } else if (e.key === 'ArrowLeft') {
           const p = prevEditable(idx - 1);

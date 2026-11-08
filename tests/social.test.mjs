@@ -41,7 +41,7 @@ test('trófeák: elöl a Kisokos bevezetője, majd a teljes Kisokos; az Olvasott
   assert.equal(ACHIEVEMENTS[0].title, 'Kezdő');
   assert.equal(ACHIEVEMENTS[1].id, 'tutorial_done');
   assert.ok(!ACHIEVEMENTS.some((a) => a.id === 'read_help'));
-  assert.equal(ACHIEVEMENTS.length, 20);
+  assert.equal(ACHIEVEMENTS.length, 22);
 });
 
 test('trófeák: a bevezető trófeát a Kezdetek teljesítése adja, a Kisokos megnyitása már nem ad trófeát', () => {
@@ -63,4 +63,35 @@ test('rejtvény mentése: a nehézség 1-5, minden más értéknél 0 (nincs meg
   assert.equal(sanitizePuzzle({ ...base, difficulty: 3 }).difficulty, 3);
   assert.equal(sanitizePuzzle({ ...base, difficulty: '5' }).difficulty, 5);
   for (const bad of [0, 6, -1, 2.5, 'nehéz', null, undefined]) assert.equal(sanitizePuzzle({ ...base, difficulty: bad }).difficulty, 0, String(bad));
+});
+
+test('trófeák: a megfejtésszámba a korábbi titkosírások megfejtései is beleszámítanak', async () => {
+  const { computeNewAchievements, achievementProgress } = await import('../lib/achievements.js');
+  const r = computeNewAchievements({ totalSolved: 30, archiveSolved: 20 }, []);
+  for (const id of ['solved_1', 'solved_5', 'solved_10', 'solved_20', 'solved_50']) assert.ok(r.newly.includes(id), id);
+  assert.ok(!computeNewAchievements({ totalSolved: 30, archiveSolved: 19 }, []).newly.includes('solved_50'));
+  assert.deepEqual(achievementProgress({ totalSolved: 30, archiveSolved: 7 }).solved_50, [37, 50]);
+});
+
+test('trófeák: 1, 5 és 10 közösségi megfejtés', async () => {
+  const { computeNewAchievements, achievementProgress } = await import('../lib/achievements.js');
+  assert.deepEqual(computeNewAchievements({ communitySolvedCount: 4 }, []).newly.filter((x) => x.startsWith('community')), ['community_solve']);
+  assert.deepEqual(computeNewAchievements({ communitySolvedCount: 10 }, []).newly.filter((x) => x.startsWith('community')), ['community_solve', 'community_5', 'community_10']);
+  assert.deepEqual(computeNewAchievements({ communitySolved: true }, []).newly, ['community_solve']);
+  assert.deepEqual(achievementProgress({ communitySolvedCount: 3 }).community_10, [3, 10]);
+  assert.deepEqual(achievementProgress({ streak: 2, best: 4 }).streak_5, [4, 5]);
+});
+
+test('reakciók: régi sorszámos és új emojis tárolás együtt, sorrend', async () => {
+  const { normalizeReaction, tallyReactions, orderedEmojis, PRESET_EMOJIS } = await import('../lib/emojis.js');
+  assert.equal(normalizeReaction('8'), '😤');
+  assert.equal(normalizeReaction('🦄'), '🦄');
+  assert.equal(normalizeReaction('99'), null);
+  const t = tallyReactions({ 'u:1': '0', 'd:a': '😍', 'd:b': '🦄', 'd:c': '8' }, 'd:c');
+  assert.deepEqual(t.counts, { '😍': 2, '🦄': 1, '😤': 1 });
+  assert.equal(t.mine, '😤');
+  const o = orderedEmojis({ '🦄': 1, '😤': 3, '😍': 2 });
+  assert.deepEqual(o.slice(0, 10), PRESET_EMOJIS);
+  assert.deepEqual(o.slice(10), ['😤', '🦄']);
+  assert.ok(!PRESET_EMOJIS.includes('😤') && PRESET_EMOJIS.length === 10);
 });

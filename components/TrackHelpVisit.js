@@ -11,6 +11,7 @@ export default function TrackHelpVisit() {
     const { unlocked, newly } = computeNewAchievements(
       {
         totalSolved: prog.totalSolved || 0,
+        archiveSolved: (prog.archiveSolved || []).length,
         streak: prog.streak || 0,
         fastestTime: prog.fastestTime,
         submittedPuzzle: prog.submittedPuzzle || false,

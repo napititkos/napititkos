@@ -115,6 +115,9 @@ export default function HomePage() {
   const [hoursLeft, setHoursLeft] = useState('');
   // A főoldali linkdobozok jelzései: megfejtett korábbi titkosírások (x/y) és új közösségiek.
   const [archiveCount, setArchiveCount] = useState(null);
+  // A mai reakciókat már a rejtvény betöltésekor előre letöltjük, így megfejtéskor azonnal megjelenik
+  // az emojisor (nem kell a hálózatra várni).
+  const [reactionsInitial, setReactionsInitial] = useState(null);
   const [communityNew, setCommunityNew] = useState(false);
   useEffect(() => {
     if (sessionStatus === 'loading') return;
@@ -153,6 +156,18 @@ export default function HomePage() {
       })
       .catch(() => {});
   }, [session?.user]);
+  useEffect(() => {
+    if (!puzzleMeta?.date) return;
+    let alive = true;
+    const dev = deviceId();
+    fetch(`/api/reactions?date=${encodeURIComponent(puzzleMeta.date)}${dev ? `&device=${dev}` : ''}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => alive && d && setReactionsInitial(d))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [puzzleMeta?.date, sessionStatus]);
   const timerRef = useRef(null);
   const finishedRef = useRef(false);
   const [showExplain, setShowExplain] = useState(false);
@@ -447,6 +462,7 @@ export default function HomePage() {
       best: prog.best,
       lastDate: prog.lastDate,
       totalSolved: prog.totalSolved || 0,
+      archiveSolved: (prog.archiveSolved || []).length,
       noHintSolves: prog.noHintSolves || 0,
       fastestTime: prog.fastestTime ?? null,
     };
@@ -481,6 +497,7 @@ export default function HomePage() {
     const { unlocked, newly } = computeNewAchievements(
       {
         totalSolved: prog.totalSolved || 0,
+        archiveSolved: (prog.archiveSolved || []).length,
         streak: prog.streak,
         fastestTime: prog.fastestTime,
         noHintSolves: prog.noHintSolves || 0,
@@ -598,6 +615,7 @@ export default function HomePage() {
       const { unlocked, newly } = computeNewAchievements(
         {
           totalSolved: prog.totalSolved || 0,
+          archiveSolved: (prog.archiveSolved || []).length,
           streak: prog.streak,
           fastestTime: prog.fastestTime,
           noHintSolves: prog.noHintSolves || 0,
@@ -841,7 +859,7 @@ export default function HomePage() {
           {answered && !correct && <div className="feedback hint">{feedbackText(false, 0, puzzle.answer)}</div>}
 
           {/* Emoji-reakciók a mai titkosírásra, a megfejtés alatt (megfejtés vagy feladás után, bárki reagálhat). */}
-          {answered && puzzleMeta?.date && <DailyReactions date={puzzleMeta.date} interactive />}
+          {answered && puzzleMeta?.date && <DailyReactions date={puzzleMeta.date} interactive initial={reactionsInitial} />}
 
         </div>
       </div>

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../lib/kv';
 import { auth } from '../../../auth';
-import { EMOJIS } from '../../../lib/emojis';
+import { PRESET_EMOJIS, tallyReactions } from '../../../lib/emojis';
 import { dailyReactionsKey } from '../../../lib/reactions';
 
 // Összesített megfejtőszám egy korábbi titkosírásra = aznapi megfejtők + azóta az
@@ -79,14 +79,7 @@ export async function GET() {
       const res = await pl.exec();
       const me = `u:${session.user.id}`;
       dates.forEach((d, i) => {
-        const all = res[i]?.[1] || {};
-        const counts = EMOJIS.map(() => 0);
-        for (const v of Object.values(all)) {
-          const k = Number(v);
-          if (Number.isInteger(k) && k >= 0 && k < EMOJIS.length) counts[k] += 1;
-        }
-        const m = all[me] != null ? Number(all[me]) : null;
-        reacts[d] = { reactions: counts, mine: Number.isInteger(m) ? m : null };
+        reacts[d] = tallyReactions(res[i]?.[1] || {}, me);
       });
     }
   } catch (err) {
@@ -98,7 +91,7 @@ export async function GET() {
     reactions: reacts[p.shownDate] || null,
   }));
   return Response.json(
-    { archive, emojis: EMOJIS },
+    { archive, presets: PRESET_EMOJIS },
     // Bejelentkezéshez kötött tartalom: a CDN nem tárolhatja (különben egy eltárolt választ
     // bejelentkezés nélkül is kiadhatna), és a böngésző sem.
     { headers: { 'Cache-Control': 'private, no-store' } }

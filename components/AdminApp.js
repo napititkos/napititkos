@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { enumerationFor, splitAnswerWords } from '../lib/format';
 import { HL_TYPES, clueTokens } from '../lib/clue';
+import AdminMini from './AdminMini';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
@@ -187,6 +188,7 @@ export const ADMIN_SECTIONS = {
   users: { path: '/admin/felhasznalok', title: 'Felhasználók', icon: '👥', desc: 'Fiókok, jogok, tiltások' },
   notifications: { path: '/admin/ertesitesek', title: 'Értesítések', icon: '🔔', desc: 'A harang ikon alatti értesítések' },
   archive: { path: '/admin/archivum', title: 'Archivált titkosírások', icon: '📦', desc: 'A már megjelent titkosírások és az archívum tisztítása' },
+  mini: { path: '/admin/mini', title: 'Mini keresztrejtvény', icon: '🧩', desc: 'Generálás, kérdések, szóbank és a heti várólista' },
 };
 
 export default function AdminApp({ section = 'home' }) {
@@ -210,6 +212,15 @@ export default function AdminApp({ section = 'home' }) {
   const [shownDateById, setShownDateById] = useState({});
   const [currentActiveId, setCurrentActiveId] = useState(null);
   const [showArchived, setShowArchived] = useState(section === 'archive');
+  // A mini keresztrejtvény várólistájának hossza (a főoldali csempéhez).
+  const [miniQueue, setMiniQueue] = useState(0);
+  useEffect(() => {
+    if (section !== 'home' || !authed) return;
+    fetch('/api/admin/mini', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setMiniQueue(d.queue.length))
+      .catch(() => {});
+  }, [section, authed]);
   // Mentetlen módosítás a titkosírásokon: oldalváltás vagy bezárás előtt figyelmeztetünk.
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
@@ -871,7 +882,7 @@ export default function AdminApp({ section = 'home' }) {
 
       {section === 'home' && (
         <div className="admin-tiles">
-          {['puzzles', 'users', 'notifications', 'archive'].map((k) => {
+          {['puzzles', 'users', 'notifications', 'archive', 'mini'].map((k) => {
             const sec = ADMIN_SECTIONS[k];
             const count =
               k === 'puzzles'
@@ -880,7 +891,9 @@ export default function AdminApp({ section = 'home' }) {
                   ? users.length
                   : k === 'notifications'
                     ? notifications.length
-                    : archivedList(entries, shownDateById, currentActiveId).length;
+                    : k === 'archive'
+                      ? archivedList(entries, shownDateById, currentActiveId).length
+                      : miniQueue;
             return (
               <a key={k} className="card admin-tile" href={sec.path}>
                 <span className="admin-tile-icon" aria-hidden="true">{sec.icon}</span>
@@ -892,6 +905,8 @@ export default function AdminApp({ section = 'home' }) {
           })}
         </div>
       )}
+
+      {section === 'mini' && <AdminMini />}
 
       {section === 'puzzles' && (
       <div className="card">
