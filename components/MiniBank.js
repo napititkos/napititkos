@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { fold, parseNeedle } from '../lib/miniBank';
 
 // Admin: a szóbank és a kérdésbank. A lista alapból csak a szavakat mutatja (egy sor egy szó,
 // rövid jelzésekkel), így gyorsan görgethető és kereshető; egy szóra kattintva lenyílik a
@@ -18,6 +19,7 @@ const FILTERS = [
 ];
 const LENGTHS = [1, 2, 3, 4, 5];
 const SORTS = [
+  ['rel', 'Találat szerint'],
   ['word', 'Ábécé'],
   ['len', 'Hossz'],
   ['recent', 'Legutóbb felvitt'],
@@ -33,7 +35,7 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   const [q, setQ] = useState('');
   const [debounced, setDebounced] = useState('');
   const [filter, setFilter] = useState('clues');
-  const [sort, setSort] = useState('word');
+  const [sortPick, setSortPick] = useState(null); // null = automatikus
   const [len, setLen] = useState(0); // 0 = bármilyen hosszú
   const [letter, setLetter] = useState(''); // '' = bármelyik kezdőbetű
   const [page, setPage] = useState(1);
@@ -45,6 +47,10 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   const [edit, setEdit] = useState(null); // { word, id (null = új változat), text }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+
+  // Keresésnél alapból a találat jósága szerint rendez (pontos egyezés elöl), keresés nélkül ábécé szerint;
+  // a legördülő listából bármikor át lehet állítani.
+  const sort = sortPick ?? (debounced ? 'rel' : 'word');
 
   // A keresés gépelés közben nem kérdez minden betűnél.
   useEffect(() => {
@@ -138,7 +144,21 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
   const size = data?.pageSize || 50;
   const from = data && data.total ? (data.page - 1) * size + 1 : 0;
   const to = data ? Math.min(data.total, data.page * size) : 0;
-  const needle = debounced.toLowerCase();
+  const nd = parseNeedle(debounced);
+  // A keresett rész kiemelése a szóban (csak szövegkeresésnél; az ékezetes betűk is megfelelnek).
+  const marked = (word) => {
+    const w = word.toUpperCase();
+    if (nd.kind !== 'text') return w;
+    const i = fold(word).indexOf(nd.text);
+    if (i < 0 || fold(word).length !== word.length) return w;
+    return (
+      <>
+        {w.slice(0, i)}
+        <mark>{w.slice(i, i + nd.text.length)}</mark>
+        {w.slice(i + nd.text.length)}
+      </>
+    );
+  };
   // A betűsávban a kiválasztott betű akkor is megmarad (hogy le lehessen venni), ha a másik szűrő mellett nincs szó.
   const letterList = data ? (letter && !data.letters.some(([ch]) => ch === letter) ? [...data.letters, [letter, 0]].sort((a, b) => a[0].localeCompare(b[0], 'hu')) : data.letters) : [];
 
@@ -185,11 +205,14 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
       <div className="mini-bank-controls">
         <div style={{ flex: 1, minWidth: 180 }}>
           <label className="field-label" htmlFor="mini-bank-q">Keresés a szóban vagy a kérdésben</label>
-          <input id="mini-bank-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="pl. alm vagy gyümölcs" style={{ textTransform: 'none', width: '100%' }} />
+          <input id="mini-bank-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="pl. alm, gyümölcs vagy a??a" style={{ textTransform: 'none', width: '100%' }} />
+          <div className="mini-muted" style={{ fontSize: 12, marginTop: 4 }}>
+            Az ékezet nem számít (ko = kő). Minta: <b>?</b> egy betű, <b>*</b> bármennyi betű, a teljes szóra, pl. <b>a??a</b>, <b>k*ő</b>, <b>??</b>.
+          </div>
         </div>
         <div>
           <label className="field-label" htmlFor="mini-bank-sort">Rendezés</label>
-          <select id="mini-bank-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select id="mini-bank-sort" value={sort} onChange={(e) => setSortPick(e.target.value)}>
             {SORTS.map(([v, t]) => (
               <option key={v} value={v}>
                 {t}
@@ -262,13 +285,13 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
           const titkosCount = r.clues.length - r.ownCount;
           // Keresésnél, ha a találat a kérdés szövegében van (és nem a szóban), a zárt sor alatt
           // látszik a találatot adó kérdés, hogy ne kelljen mindent megnyitni.
-          const hit = needle && !isOpen && !r.word.includes(needle) ? r.clues.find((c) => c.clue.toLowerCase().includes(needle)) : null;
+          const hit = nd.kind === 'text' && !isOpen && !fold(r.word).includes(nd.text) ? r.clues.find((c) => fold(c.clue).includes(nd.text)) : null;
           return (
             <div key={r.word} className={`mini-bank-item${isOpen ? ' open' : ''}${r.excluded ? ' excluded' : ''}`}>
               <button type="button" className="mini-bank-head" aria-expanded={isOpen} aria-controls={panel} onClick={() => toggle(r.word)}>
                 <span className="mini-bank-chev" aria-hidden="true">▸</span>
                 <span className="mini-bank-w">
-                  <b>{r.word.toUpperCase()}</b> <span className="mini-len">({r.len})</span>
+                  <b>{marked(r.word)}</b> <span className="mini-len">({r.len})</span>
                 </span>
                 <span className="mini-bank-tags">
                   {r.excluded && <span className="mini-src warn">kizárt</span>}

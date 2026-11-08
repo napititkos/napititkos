@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PAGE_SIZE, bankStats, buildRows, queryRows, usageOf } from '../lib/miniBank.js';
+import { PAGE_SIZE, bankStats, buildRows, parseNeedle, queryRows, usageOf } from '../lib/miniBank.js';
 
 const fixture = () => {
   const bank = {
@@ -81,7 +81,7 @@ test('queryRows: keresés a szóban és a kérdés szövegében, kis- és nagybe
   assert.deepEqual(words('ALM'), ['alma']);
   assert.deepEqual(words('ásvány'), ['kő']);
   assert.deepEqual(words('TITKOSÍRÁS'), ['alma', 'cipő']);
-  assert.deepEqual(words('  as  '), ['asztal']);
+  assert.deepEqual(words('  asz  '), ['asztal']);
   assert.deepEqual(words('nincs-ilyen'), []);
   assert.deepEqual(words(''), words(undefined));
 });
@@ -240,4 +240,77 @@ test('queryRows: az ékezetes kezdőbetű az alapbetű alatt van (Á→A, Ő→O
   assert.equal(p.rows.length, 1);
   assert.equal(p.total, 3);
   assert.equal(p.pages, 2);
+});
+
+test('parseNeedle: üres, szöveg és minta (? egy betű, * több betű)', () => {
+  assert.equal(parseNeedle('').kind, 'none');
+  assert.equal(parseNeedle('   ').kind, 'none');
+  assert.equal(parseNeedle(undefined).kind, 'none');
+  assert.equal(parseNeedle('alm').kind, 'text');
+  assert.equal(parseNeedle('Mi ez?').kind, 'text', 'szóköz miatt szöveg, a ? írásjel');
+  assert.equal(parseNeedle('fán-terem?').kind, 'text');
+  assert.equal(parseNeedle('a??a').kind, 'pattern');
+  assert.equal(parseNeedle('?').kind, 'pattern');
+  assert.equal(parseNeedle('Á?*').kind, 'pattern');
+  assert.equal(parseNeedle('a'.repeat(30) + '?').kind, 'text', 'túl hosszú minta nem minta');
+  assert.equal(parseNeedle('K??').text, 'k??');
+  assert.equal(parseNeedle('Ő?').text, 'o?', 'ékezet nélküli alak');
+});
+
+test('queryRows: ékezetfüggetlen keresés (a szóban és a kérdésben is)', () => {
+  const { rows } = fixture();
+  const words = (q) => queryRows(rows, { q, filter: 'all' }).rows.map((r) => r.word).sort();
+  assert.ok(words('ko').includes('kő'), 'ko → kő');
+  assert.deepEqual(words('KŐ'), words('ko'), 'az ékezetes és az ékezet nélküli keresés ugyanazt adja');
+  assert.deepEqual(words('lo'), ['ló']);
+  assert.deepEqual(words('cipo'), ['cipő']);
+  assert.deepEqual(words('asvany'), ['kő'], 'a kérdés szövegében is: ásvány');
+  assert.deepEqual(words('gyumolcs'), ['alma']);
+  assert.deepEqual(words('almarol'), ['alma'], 'almáról');
+});
+
+test('queryRows: mintakeresés (? egy betű, * bármennyi), teljes szóra, ékezetfüggetlenül', () => {
+  const rows = buildRows({ dictWords: ['alma', 'anya', 'akna', 'ablak', 'ajak', 'ló', 'kő', 'kó', 'lány', 'lánya', 'a'], bank: { alma: [{ id: '1', clue: 'Mi az? Gyümölcs.', at: '2026-01-01T00:00:00Z' }] } });
+  const words = (q, extra = {}) => queryRows(rows, { q, filter: 'all', ...extra }).rows.map((r) => r.word).sort();
+  assert.deepEqual(words('a??a'), ['akna', 'alma', 'anya']);
+  assert.deepEqual(words('A??A'), ['akna', 'alma', 'anya']);
+  assert.deepEqual(words('a*a'), ['akna', 'alma', 'anya']);
+  assert.deepEqual(words('?'), ['a']);
+  assert.deepEqual(words('??'), ['kó', 'kő', 'ló']);
+  assert.deepEqual(words('k?'), ['kó', 'kő']);
+  assert.deepEqual(words('ko?'), []);
+  assert.deepEqual(words('l?'), ['ló']);
+  assert.deepEqual(words('lan*'), ['lány', 'lánya']);
+  assert.deepEqual(words('lany?'), ['lánya']);
+  assert.deepEqual(words('*ak'), ['ajak', 'ablak'].sort());
+  assert.deepEqual(words('*'), words('', {}), 'a * minden szót hoz');
+  // Mintára csak a szavakban keres, a kérdések "?" jele nem számít.
+  assert.deepEqual(words('al?'), []);
+  assert.deepEqual(words('a?a?'), ['ajak']);
+  assert.deepEqual(words('abl??'), ['ablak']);
+  // Hosszal és kezdőbetűvel együtt, és a darabszámokat is szűkíti.
+  const r = queryRows(rows, { q: 'a??a', filter: 'all', len: 4 });
+  assert.equal(r.total, 3);
+  assert.deepEqual(queryRows(rows, { q: 'a??a', filter: 'all' }).lenCounts, { 4: 3 });
+  // Speciális regex-karakterek nem mintaként értelmeződnek, nem okoznak hibát.
+  assert.deepEqual(words('a.*'), []);
+  assert.doesNotThrow(() => queryRows(rows, { q: '(((' }));
+  assert.doesNotThrow(() => queryRows(rows, { q: '[a-' }));
+});
+
+test('queryRows: találati sorrend (rel): pontos, szó eleje, szó belseje, kérdés', () => {
+  const rows = buildRows({
+    dictWords: ['alma', 'almás', 'palma', 'kalmár', 'alm', 'csalma', 'mese'],
+    bank: { mese: [{ id: '1', clue: 'Alma a fán.', at: '2026-01-01T00:00:00Z' }] },
+  });
+  const order = (q, sort = 'rel') => queryRows(rows, { q, filter: 'all', sort }).rows.map((r) => r.word);
+  // pontos (alma) > szó eleje (alm, almás: rövidebb elöl) > belseje: korábbi helyen előbb (palma 1., kalmár 2., csalma 2.) > kérdés (mese)
+  assert.deepEqual(order('alma'), ['alma', 'almás', 'palma', 'kalmár', 'csalma', 'mese']);
+  assert.deepEqual(order('alm'), ['alm', 'alma', 'almás', 'palma', 'kalmár', 'csalma', 'mese']);
+  assert.deepEqual(order('alm', 'word'), ['alm', 'alma', 'almás', 'csalma', 'kalmár', 'mese', 'palma'], 'a sima ábécé rendezés nem rangsorol');
+  assert.equal(queryRows(rows, { q: 'alm', sort: 'rel' }).sort, 'rel');
+  // Keresés nélkül a rel ábécé szerint rendez.
+  assert.deepEqual(order('', 'rel'), queryRows(rows, { filter: 'all', sort: 'word' }).rows.map((r) => r.word));
+  // Mintakeresésnél is ábécé.
+  assert.deepEqual(order('a?m*', 'rel'), ['alm', 'alma', 'almás']);
 });

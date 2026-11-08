@@ -1455,6 +1455,7 @@ button.mini-bank-head:active:not(:disabled){ transform: none; }
 .mini-bank-chev{ display: inline-block; width: 14px; flex: 0 0 14px; font-size: 12px; color: var(--ink-soft); transition: transform 0.12s ease; }
 .mini-bank-item.open .mini-bank-chev{ transform: rotate(90deg); }
 .mini-bank-w{ flex: 1; min-width: 0; }
+.mini-bank-w mark{ background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 0 1px; }
 .mini-bank-tags{ display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .mini-bank-tags .mini-src{ margin-left: 0; }
 .mini-bank-count{ font-size: 12px; font-weight: 600; color: var(--ink-soft); }

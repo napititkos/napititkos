@@ -1289,9 +1289,32 @@ section('Mini: szóbank és kérdésbank áttekintése (csak olvasás, keresés,
   check('"Van kérdése" + 4 betű: csak 4 betűs szavak, köztük az alma és a cipő', j.rows.every((x) => x.len === 4 && x.clues.length > 0) && ['alma', 'cipő'].every((w) => j.rows.some((x) => x.word === w)), j.rows.map((x) => x.word).join());
   r = await bank('?filter=all&len=99&letter=%3Cb%3E'); j = await r.json();
   check('hibás hossz/betű: nincs szűrés, nincs hiba', r.status === 200 && j.len === 0 && j.letter === '' && j.total > 8000);
+  // ---- Ékezetfüggetlen keresés, mintakeresés, találati sorrend ----
+  r = await bank('?filter=all&q=ko&sort=rel'); j = await r.json();
+  const koWords = j.rows.map((x) => x.word);
+  check('ékezetfüggetlen: a "ko" megtalálja a kő-t, keresésnél a találat szerinti sorrend: a pontos egyezés (kő) az első', koWords[0] === 'kő' && j.sort === 'rel', koWords.slice(0, 10).join());
+  r = await bank('?filter=all&q=k%C5%91&sort=rel'); j = await r.json();
+  const ko2 = j.rows.map((x) => x.word);
+  check('az ékezetes és az ékezet nélküli keresés ugyanazt adja', ko2.join() === koWords.join());
+  r = await bank('?filter=all&q=asvany'); j = await r.json();
+  check('a kérdés szövegében is ékezetfüggetlen (ásvány)', j.rows.some((x) => x.word === 'kő'));
+  r = await bank('?filter=all&q=alm&sort=rel'); j = await r.json();
+  const relWords = j.rows.map((x) => x.word);
+  const firstInner = relWords.findIndex((w) => !w.startsWith('alm'));
+  check('találati sorrend: előbb az alm- kezdetű szavak (köztük az alma), csak utánuk a szó belsejében találók', relWords.indexOf('alma') >= 0 && firstInner > relWords.indexOf('alma') && relWords.slice(0, firstInner).every((w) => w.startsWith('alm')), relWords.slice(0, 8).join());
+  r = await bank('?filter=all&q=a??a&sort=rel'); j = await r.json();
+  check('minta: a??a — csak 4 betűs, a-val kezdődő és végződő szavak (alma köztük)', j.rows.length > 5 && j.rows.every((x) => x.len === 4 && /^[aá].*[aá]$/.test(x.word)) && j.rows.some((x) => x.word === 'alma') && j.total === j.lenCounts[4], JSON.stringify([j.total, j.lenCounts]));
+  r = await bank('?filter=all&q=k*%C5%91&sort=rel&len=2'); j = await r.json();
+  check('minta: k*ő — k-val kezdődő, ő-re végződő szavak (kő köztük)', j.rows.length > 0 && j.rows.every((x) => /^k.*[oóöő]$/.test(x.word)) && j.rows.some((x) => x.word === 'kő'));
+  r = await bank('?filter=all&q=%3F%3F'); j = await r.json();
+  check('minta: ?? — pontosan 2 betűs szavak', j.rows.length > 20 && j.rows.every((x) => x.len === 2) && j.total === j.lenCounts[2]);
+  r = await bank('?filter=all&q=' + encodeURIComponent('a.*(')); j = await r.json();
+  check('regex-karakterek a keresésben: nincs hiba, sima szövegként keres', r.status === 200 && j.total === 0);
+  r = await bank('?filter=all&q=' + encodeURIComponent('*'.repeat(40))); j = await r.json();
+  check('hosszú, csupa * keresés: nincs hiba', r.status === 200);
   // ---- Kérdésváltozatok szerkesztése, törlése, új változat, kizárás feloldása ----
   const mut =(body, headers = adm) => post('/api/admin/mini/bank', body, headers);
-  const rowOf = async (word) => ((await (await bank(`?filter=all&q=${encodeURIComponent(word)}`)).json()).rows || []).find((x) => x.word === word);
+  const rowOf = async (word) => ((await (await bank(`?filter=all&sort=rel&q=${encodeURIComponent(word)}`)).json()).rows || []).find((x) => x.word === word);
   r = await mut({ action: 'addClue', word: 'alma', clue: 'x' }, {}); check('szóbank módosítása adminság nélkül: 401', r.status === 401);
   r = await mut({ action: 'addClue', word: 'hosszúszó', clue: 'x' }); check('hibás szó: 400', r.status === 400);
   r = await mut({ action: 'nincs', word: 'alma' }); check('ismeretlen művelet: 400', r.status === 400);
