@@ -1329,6 +1329,7 @@ button.reaction-btn.reaction-more span{ display: block; height: 1em; width: 1.15
 input.emoji-picker-search{ flex: 1; text-transform: none; }
 button.emoji-picker-close{ width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-size: 22px; line-height: 1; flex-shrink: 0; }
 .emoji-picker-body{ overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.emoji-picker-group{ content-visibility: auto; contain-intrinsic-size: auto 400px; }
 .emoji-picker-group h3{ font-size: 13px; color: var(--ink-soft); margin: 10px 0 6px; font-weight: 800; }
 .emoji-picker-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px; }
 button.emoji-picker-item{
@@ -1360,3 +1361,43 @@ button.emoji-picker-item .emoji-img{ width: 1.05em; height: 1.05em; margin: 0; }
 .mini-queue{ display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .mini-queue-item{ display: flex; gap: 12px; align-items: center; border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; }
 .mini-queue-info{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13.5px; flex: 1; justify-content: space-between; }
+
+/* Mini keresztrejtvény játékfelület: halvány pasztell rózsaszín négyzetek, sötétlila fekete
+   négyzetek (az oldal színpalettájából). Az aktív szó lilásan, az aktív négyzet erősebben kiemelve. */
+:root{
+  --mini-sq: #F4E7F1; --mini-black: #664C7C; --mini-word: #E3D2EE; --mini-active: #C9A6DC; --mini-ink: #1F1A2B; --mini-border: #D9C3D6;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --mini-sq: #3A2A39; --mini-black: #2A1D3B; --mini-word: #4A3A5E; --mini-active: #7A5C96; --mini-ink: #F0F0FC; --mini-border: #554058; }
+}
+.mini-player{ display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin: 0 auto; }
+.mini-player-top{ display: flex; justify-content: space-between; align-items: center; }
+.mini-cluebar{ display: flex; align-items: stretch; gap: 6px; background: var(--mini-word); color: var(--mini-ink); border-radius: 12px; min-height: 52px; }
+.mini-cluebar-text{ flex: 1; display: flex; align-items: center; gap: 6px; font-size: 15px; padding: 6px 2px; line-height: 1.3; }
+button.mini-cluebar-nav{ border: none; background: transparent; color: var(--mini-ink); font-size: 26px; padding: 0 12px; border-radius: 12px; }
+.mini-board-wrap{ position: relative; }
+.mini-board{ position: relative; display: grid; gap: 0; border: 3px solid var(--mini-black); border-radius: 6px; overflow: hidden; touch-action: manipulation; }
+.mini-board-row{ display: grid; grid-template-columns: repeat(5, 1fr); }
+.mini-sq{
+  position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  background: var(--mini-sq); color: var(--mini-ink); border: 1px solid var(--mini-border);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+}
+.mini-sq.black{ background: var(--mini-black); cursor: default; }
+.mini-sq.word{ background: var(--mini-word); }
+.mini-sq.active{ background: var(--mini-active); }
+.mini-sq.solved{ background: var(--mini-sq); }
+.mini-sq-num{ position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 700; line-height: 1; opacity: 0.8; }
+.mini-sq-ch{ font-size: clamp(22px, 7vw, 32px); font-weight: 800; text-transform: uppercase; }
+.mini-sq.wrong::after{ content: ''; position: absolute; inset: 0; background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--bad, #c0392b) calc(50% - 1.5px), var(--bad, #c0392b) calc(50% + 1.5px), transparent calc(50% + 1.5px)); opacity: 0.8; }
+/* A billentyűzetet előhozó mező láthatatlan, de fókuszálható (nincs kurzor, nincs kijelölés). */
+.mini-hidden-input{ position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; caret-color: transparent; font-size: 16px; }
+.mini-cluelists{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 480px){ .mini-cluelists{ grid-template-columns: 1fr; } }
+.mini-cluelist h3{ font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent-text); margin: 4px 0 6px; }
+.mini-cluelist ol{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.mini-cluelist li{ padding: 5px 8px; border-radius: 8px; font-size: 14px; cursor: pointer; border-left: 4px solid transparent; -webkit-user-select: none; user-select: none; }
+.mini-cluelist li.active{ background: var(--mini-word); border-left-color: var(--mini-active); }
+.mini-cluelist li.done{ color: var(--ink-soft); }
+.mini-cluelist li b{ margin-right: 4px; }
+.mini-try-overlay .modal-card{ max-width: 460px; width: 94vw; }

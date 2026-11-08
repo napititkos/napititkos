@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import MiniPlayer from './MiniPlayer';
 
 // Admin: mini keresztrejtvény (5x5). Új rács generálása előnézettel, a szavakhoz kérdések
 // (a bankban már meglévő kérdés automatikusan kitöltve, az alternatívák között lapozni lehet),
@@ -54,6 +55,7 @@ export default function AdminMini() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [newWord, setNewWord] = useState({ word: '', clue: '' });
+  const [trying, setTrying] = useState(null); // kipróbálás: { rows, entries }
 
   async function load() {
     const res = await fetch('/api/admin/mini', { cache: 'no-store' });
@@ -188,6 +190,9 @@ export default function AdminMini() {
               <button className="primary" onClick={publish} disabled={!allFilled || busy}>
                 Beemelés a várólistára
               </button>
+              <button className="ghost" onClick={() => setTrying({ rows: puzzle.rows, entries: puzzle.entries.map((e) => ({ ...e, clue: e.clue || '(még nincs kérdés)' })) })}>
+                Kipróbálom
+              </button>
               {!allFilled && <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>A beemeléshez minden szóhoz írj kérdést.</span>}
             </div>
           </>
@@ -220,14 +225,33 @@ export default function AdminMini() {
               <MiniGrid rows={q.rows} small />
               <div className="mini-queue-info">
                 <b>{i + 1}.</b> {q.entries.map((e) => e.word.toUpperCase()).join(', ')}
-                <button className="ghost small danger" onClick={() => removeQueued(q.id)}>
-                  Törlés
-                </button>
+                <span style={{ display: 'flex', gap: 6 }}>
+                  <button className="ghost small" onClick={() => setTrying({ rows: q.rows, entries: q.entries })}>
+                    Kipróbálom
+                  </button>
+                  <button className="ghost small danger" onClick={() => removeQueued(q.id)}>
+                    Törlés
+                  </button>
+                </span>
               </div>
             </div>
           ))}
         </div>
       </div>
+      {/* Kipróbálás: a rejtvény úgy, ahogy a játékosok látni fogják. */}
+      {trying && (
+        <div className="modal-overlay mini-try-overlay" onClick={() => setTrying(null)}>
+          <div className="modal-card" role="dialog" aria-label="Mini keresztrejtvény kipróbálása" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <b>Kipróbálás</b>
+              <button className="ghost small" onClick={() => setTrying(null)}>
+                Bezárás
+              </button>
+            </div>
+            <MiniPlayer rows={trying.rows} entries={trying.entries} />
+          </div>
+        </div>
+      )}
     </>
   );
 }
