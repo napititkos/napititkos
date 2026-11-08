@@ -4,11 +4,12 @@ export const maxDuration = 30;
 import { kv } from '../../../../lib/kv';
 import { isAdminRequest } from '../../../../lib/adminAuth';
 import { readJson } from '../../../../lib/validate';
-import { generateMini } from '../../../../lib/miniGen';
-import { MINI_KEYS, cluesFor, loadBank, miniStart, normWord, rotateMini, titkosClues, validatePuzzle, weekStart } from '../../../../lib/mini';
+import { completeMini, generateMini } from '../../../../lib/miniGen';
+import { sanitizeDraftInput } from '../../../../lib/miniDraft';
+import { MINI_KEYS, cluesFor, enqueuePuzzle, loadBank, miniStart, newMiniId, normWord, rotateMini, titkosClues, validatePuzzle, weekStart } from '../../../../lib/mini';
 
 const unauthorized = () => Response.json({ error: 'unauthorized' }, { status: 401 });
-const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const newId = newMiniId;
 
 // GET: a várólista, a legutóbb megjelentek, az aktuális hét és a bank mérete.
 export async function GET(req) {
@@ -58,23 +59,29 @@ export async function POST(req) {
     return Response.json({ puzzle: { rows: got.rows, entries, blacks: got.blacks } });
   }
 
+  // A részben kitöltött tábla maradékának generálása (a fekete négyzetek és a beírt betűk adottak).
+  if (action === 'complete') {
+    const clean = sanitizeDraftInput({ rows: body.rows });
+    if (typeof clean === 'string') return Response.json({ error: 'invalid', message: clean }, { status: 400 });
+    const [bank, titkos, excluded] = await Promise.all([loadBank(), titkosClues(), kv.get(MINI_KEYS.excluded)]);
+    const bankWords = [...new Set([...Object.keys(bank), ...Object.keys(titkos)])];
+    const got = completeMini({ rows: clean.rows, bankWords, excluded: excluded || [], seconds: 8 });
+    if (got.error === 'nothing-to-fill') return Response.json({ error: got.error, message: 'Nincs üres négyzet: a tábla már teljesen ki van töltve.' }, { status: 400 });
+    if (got.error === 'duplicate') return Response.json({ error: got.error, message: 'Egy szó kétszer szerepel a beírt szavak között.' }, { status: 400 });
+    if (got.error) {
+      return Response.json(
+        { error: got.error, message: 'A beírt betűkhöz és a fekete négyzetekhez nem találtam illő kitöltést. Próbáld újra (más szavak jöhetnek), vagy változtass a betűkön.' },
+        { status: 422 }
+      );
+    }
+    const entries = got.entries.map((e) => ({ ...e, clues: cluesFor(e.word, bank, titkos) }));
+    return Response.json({ puzzle: { rows: got.rows, entries } });
+  }
+
   if (action === 'publish') {
     const v = validatePuzzle(body);
     if (typeof v === 'string') return Response.json({ error: 'invalid', message: v }, { status: 400 });
-    const result = await kv.withLock('mini-bank', async () => {
-      const bank = await loadBank();
-      const titkos = await titkosClues();
-      for (const e of v.entries) {
-        const known = cluesFor(e.word, bank, titkos).some((c) => c.clue === e.clue);
-        if (!known) (bank[e.word] = bank[e.word] || []).push({ id: newId(), clue: e.clue, at: new Date().toISOString() });
-      }
-      await kv.set(MINI_KEYS.bank, bank);
-      const queue = (await kv.get(MINI_KEYS.queue)) || [];
-      const item = { id: newId(), rows: v.rows, entries: v.entries, createdAt: new Date().toISOString() };
-      queue.push(item);
-      await kv.set(MINI_KEYS.queue, queue);
-      return item;
-    });
+    const result = await enqueuePuzzle(v);
     if (!result) return Response.json({ error: 'busy' }, { status: 503 });
     return Response.json({ ok: true, id: result.value.id });
   }

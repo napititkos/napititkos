@@ -1,28 +1,13 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
+import MiniEditor from './MiniEditor';
+import { N, numbering } from '../lib/miniGrid';
 
-// Admin: mini keresztrejtvény (5x5). Új rács generálása előnézettel, a szavakhoz kérdések
-// (a bankban már meglévő kérdés automatikusan kitöltve, az alternatívák között lapozni lehet),
-// szó törlése a bankból (többé nem generálódik), beemelés a várólistára (csak ha minden kérdés
-// ki van töltve), új szó felvitele kérdéssel, és a várólista. Hetente, vasárnap éjfélkor (hétfő
-// 00:00) a várólista első eleme jelenik meg.
-const DIR = { A: 'Vízszintes', D: 'Függőleges' };
-
-// Hagyományos számozás: minden négyzet, ahol vízszintes vagy függőleges szó kezdődik, sorszámot kap.
-function numbering(rows) {
-  const n = rows.length;
-  const black = (r, c) => r < 0 || c < 0 || r >= n || c >= n || rows[r][c] === '#';
-  const nums = {};
-  let k = 0;
-  for (let r = 0; r < n; r++)
-    for (let c = 0; c < n; c++) {
-      if (black(r, c)) continue;
-      if (black(r, c - 1) || black(r - 1, c)) nums[`${r},${c}`] = ++k;
-    }
-  return nums;
-}
-
+// Admin: mini keresztrejtvény (5x5). A táblák piszkozatként elmenthetők (akkor is, ha még nincs
+// minden kérdés kész), bármelyik admin folytathatja őket, és kézzel vagy generálással is
+// készülhetnek. A kész tábla a várólistára kerül; hetente, vasárnap éjfélkor (hétfő 00:00) a
+// várólista első eleme jelenik meg. Itt van még az új szó felvitele a kérdésbankba.
 function MiniGrid({ rows, small = false }) {
   const nums = numbering(rows);
   return (
@@ -34,7 +19,7 @@ function MiniGrid({ rows, small = false }) {
           ) : (
             <span key={`${r}-${c}`} className="mini-cell">
               {nums[`${r},${c}`] && <span className="mini-num">{nums[`${r},${c}`]}</span>}
-              <span className="mini-ch">{ch.toUpperCase()}</span>
+              <span className="mini-ch">{(ch || '').toUpperCase()}</span>
             </span>
           )
         )
@@ -49,53 +34,48 @@ async function api(body) {
   return { ok: res.ok, data };
 }
 
+function when(iso) {
+  const d = new Date(iso || '');
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('hu-HU', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
 export default function AdminMini() {
   const [state, setState] = useState(null);
-  const [puzzle, setPuzzle] = useState(null); // { rows, entries: [{ ..., clues, clue, alt }] }
-  const [busy, setBusy] = useState(false);
+  const [drafts, setDrafts] = useState(null);
+  const [editing, setEditing] = useState(null); // { key, initial }
   const [msg, setMsg] = useState(null);
   const [newWord, setNewWord] = useState({ word: '', clue: '' });
-  const [trying, setTrying] = useState(null); // kipróbálás: { rows, entries }
+  const [trying, setTrying] = useState(null); // a várólistáról kipróbált rejtvény
 
   async function load() {
-    const res = await fetch('/api/admin/mini', { cache: 'no-store' });
-    if (res.ok) setState(await res.json());
+    const [a, b] = await Promise.all([fetch('/api/admin/mini', { cache: 'no-store' }), fetch('/api/admin/mini/drafts', { cache: 'no-store' })]);
+    if (a.ok) setState(await a.json());
+    if (b.ok) setDrafts((await b.json()).drafts);
   }
   useEffect(() => {
     load();
   }, []);
 
-  async function generate() {
-    setBusy(true);
+  const openNew = (extra = {}) =>
+    setEditing({ key: `new-${Date.now()}`, initial: { title: '', rows: Array.from({ length: N }, () => Array(N).fill('')), clues: {}, ...extra } });
+
+  async function openDraft(id) {
     setMsg(null);
-    const { ok, data } = await api({ action: 'generate' });
-    setBusy(false);
-    if (!ok) return setMsg({ ok: false, text: data.message || 'Nem sikerült generálni.' });
-    setPuzzle({
-      ...data.puzzle,
-      entries: data.puzzle.entries.map((e) => ({ ...e, alt: 0, clue: e.clues[0]?.clue || '' })),
-    });
+    const res = await fetch(`/api/admin/mini/drafts?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+    if (!res.ok) {
+      setMsg({ ok: false, text: 'Ez a piszkozat már nem létezik.' });
+      return load();
+    }
+    const { draft } = await res.json();
+    setEditing({ key: `${draft.id}-${draft.rev}-${Date.now()}`, initial: draft });
   }
 
-  const nums = useMemo(() => (puzzle ? numbering(puzzle.rows) : {}), [puzzle]);
-  const allFilled = !!puzzle && puzzle.entries.every((e) => e.clue.trim());
-  const setEntry = (i, patch) => setPuzzle((p) => ({ ...p, entries: p.entries.map((e, k) => (k === i ? { ...e, ...patch } : e)) }));
-
-  async function publish() {
-    if (!allFilled) return;
-    setBusy(true);
-    const { ok, data } = await api({ action: 'publish', rows: puzzle.rows, entries: puzzle.entries.map(({ dir, row, col, word, clue }) => ({ dir, row, col, word, clue })) });
-    setBusy(false);
-    if (!ok) return setMsg({ ok: false, text: data.message || 'Nem sikerült beemelni.' });
-    setMsg({ ok: true, text: 'Beemelve a várólistára. Az új vagy átírt kérdések bekerültek a bankba.' });
-    setPuzzle(null);
-    load();
-  }
-
-  async function deleteWord(word) {
-    if (!confirm(`Biztosan törlöd a(z) „${word.toUpperCase()}” szót a bankból? A kérdései törlődnek, és a generátor többé nem használja.`)) return;
-    const { ok } = await api({ action: 'deleteWord', word });
-    setMsg(ok ? { ok: true, text: `A(z) „${word.toUpperCase()}” törölve. Generálj új rácsot, hogy kikerüljön ebből is.` } : { ok: false, text: 'Nem sikerült törölni.' });
+  async function deleteDraft(d) {
+    if (!confirm(`Biztosan törlöd a(z) „${d.title || 'Névtelen tábla'}” piszkozatot? Ezt nem lehet visszavonni.`)) return;
+    const res = await fetch('/api/admin/mini/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id: d.id, rev: d.rev }) });
+    if (res.status === 409) setMsg({ ok: false, text: `Közben ${(await res.json().catch(() => ({}))).draft?.updatedBy?.name || 'valaki'} módosította, ezért nem töröltem. Nézd meg, és töröld újra, ha biztos vagy benne.` });
+    else if (!res.ok && res.status !== 404) setMsg({ ok: false, text: 'Nem sikerült törölni.' });
+    else setMsg({ ok: true, text: 'A piszkozat törölve.' });
     load();
   }
 
@@ -121,7 +101,7 @@ export default function AdminMini() {
           <p style={{ color: 'var(--ink-soft)' }}>Betöltés…</p>
         ) : (
           <p style={{ fontSize: 14, color: 'var(--ink-soft)', marginBottom: 0 }}>
-            Várólista: <b>{state.queue.length}</b> rejtvény · Bank: <b>{state.bankWords}</b> szó kézi kérdéssel, <b>{state.titkosWords}</b> szó
+            Piszkozat: <b>{drafts ? drafts.length : '…'}</b> · Várólista: <b>{state.queue.length}</b> rejtvény · Bank: <b>{state.bankWords}</b> szó kézi kérdéssel, <b>{state.titkosWords}</b> szó
             titkosírásból · Kizárt szavak: <b>{state.excluded}</b>
             <br />
             {state.start ? (
@@ -136,68 +116,69 @@ export default function AdminMini() {
         )}
       </div>
 
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <b>Új rejtvény</b>
-          <button className="primary" onClick={generate} disabled={busy}>
-            {busy ? 'Generálás…' : puzzle ? 'Generálj újat' : 'Rejtvény generálása'}
-          </button>
+      {msg && !editing && (
+        <div className={`feedback ${msg.ok ? 'good' : 'hint'}`} style={{ marginLeft: 0 }} role="status">
+          {msg.text}
         </div>
-        {msg && (
-          <div className={`feedback ${msg.ok ? 'good' : 'hint'}`} style={{ marginLeft: 0, marginTop: 12 }} role="status">
-            {msg.text}
+      )}
+
+      {editing ? (
+        <MiniEditor
+          key={editing.key}
+          initial={editing.initial}
+          onChanged={load}
+          onClose={(reason) => {
+            setEditing(null);
+            if (reason === 'published') setMsg({ ok: true, text: 'Beemelve a várólistára. Az új vagy átírt kérdések bekerültek a bankba.' });
+            load();
+          }}
+        />
+      ) : (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <b>Piszkozatok{drafts ? ` (${drafts.length})` : ''}</b>
+            <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="primary" onClick={() => openNew()}>
+                Új üres tábla
+              </button>
+              <button className="ghost" onClick={() => openNew({ autoTemplate: true })}>
+                Véletlen mintával
+              </button>
+              <button className="ghost" onClick={() => openNew({ autoGenerate: true })}>
+                Generált tábla
+              </button>
+            </span>
           </div>
-        )}
-        {puzzle && (
-          <>
-            <div className="mini-preview">
-              <MiniGrid rows={puzzle.rows} />
-            </div>
-            {['A', 'D'].map((d) => (
-              <div key={d} className="mini-clues">
-                <h3>{DIR[d]}</h3>
-                {puzzle.entries.map((e, i) =>
-                  e.dir !== d ? null : (
-                    <div key={i} className="mini-clue-row">
-                      <label className="field-label" htmlFor={`mini-clue-${i}`}>
-                        <b>{nums[`${e.row},${e.col}`]}.</b> {e.word.toUpperCase()} <span className="mini-len">({e.len})</span>
-                        {e.clues[e.alt]?.src === 'titkosírás' && e.clue === e.clues[e.alt]?.clue && <span className="mini-src">titkosírásból</span>}
-                      </label>
-                      <textarea id={`mini-clue-${i}`} value={e.clue} rows={2} onChange={(ev) => setEntry(i, { clue: ev.target.value })} placeholder="Írd ide a kérdést…" />
-                      <div className="mini-clue-actions">
-                        <button
-                          type="button"
-                          className="ghost small"
-                          disabled={e.clues.length < 2}
-                          title={e.clues.length < 2 ? 'Nincs másik kérdés ehhez a szóhoz' : `${e.alt + 1}/${e.clues.length}`}
-                          onClick={() => {
-                            const alt = (e.alt + 1) % e.clues.length;
-                            setEntry(i, { alt, clue: e.clues[alt].clue });
-                          }}
-                        >
-                          Alternatív kérdés{e.clues.length > 1 ? ` (${e.alt + 1}/${e.clues.length})` : ''}
-                        </button>
-                        <button type="button" className="ghost small danger" onClick={() => deleteWord(e.word)}>
-                          Szó törlése a bankból
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
+          <p className="mini-muted" style={{ marginTop: 8 }}>
+            A táblát bármikor elmentheted, akkor is, ha még nincs minden szó és kérdés kész. A piszkozatot bármelyik admin megnyithatja és folytathatja.
+          </p>
+          {drafts && drafts.length === 0 && <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még nincs piszkozat.</p>}
+          <div className="mini-queue">
+            {(drafts || []).map((d) => (
+              <div key={d.id} className="mini-queue-item">
+                <MiniGrid rows={d.rows} small />
+                <div className="mini-queue-info">
+                  <span>
+                    <b>{d.title || 'Névtelen tábla'}</b>
+                    <br />
+                    <span className="mini-muted">
+                      {d.progress.complete}/{d.progress.total} szó kész · {d.progress.clued} kérdés · {d.updatedBy?.name || 'valaki'}, {when(d.updatedAt)}
+                    </span>
+                  </span>
+                  <span style={{ display: 'flex', gap: 6 }}>
+                    <button className="primary small" onClick={() => openDraft(d.id)}>
+                      Megnyitás
+                    </button>
+                    <button className="ghost small danger" onClick={() => deleteDraft(d)}>
+                      Törlés
+                    </button>
+                  </span>
+                </div>
               </div>
             ))}
-            <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button className="primary" onClick={publish} disabled={!allFilled || busy}>
-                Beemelés a várólistára
-              </button>
-              <button className="ghost" onClick={() => setTrying({ rows: puzzle.rows, entries: puzzle.entries.map((e) => ({ ...e, clue: e.clue || '(még nincs kérdés)' })) })}>
-                Kipróbálom
-              </button>
-              {!allFilled && <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>A beemeléshez minden szóhoz írj kérdést.</span>}
-            </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <b>Új szó felvitele</b>
@@ -224,7 +205,9 @@ export default function AdminMini() {
             <div key={q.id} className="mini-queue-item">
               <MiniGrid rows={q.rows} small />
               <div className="mini-queue-info">
-                <b>{i + 1}.</b> {q.entries.map((e) => e.word.toUpperCase()).join(', ')}
+                <span>
+                  <b>{i + 1}.</b> {q.entries.map((e) => e.word.toUpperCase()).join(', ')}
+                </span>
                 <span style={{ display: 'flex', gap: 6 }}>
                   <button className="ghost small" onClick={() => setTrying({ rows: q.rows, entries: q.entries })}>
                     Kipróbálom

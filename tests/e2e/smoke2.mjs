@@ -1102,6 +1102,116 @@ section('Mini keresztrejtvény (admin): generálás, kérdések, bank, várólis
   r = await fetch(BASE + '/admin/mini'); check('/admin/mini: elérhető, noindex', r.status === 200 && /noindex/.test(r.headers.get('x-robots-tag') || ''));
 }
 
+section('Mini keresztrejtvény: piszkozatok (mentés kész kérdések nélkül, közös szerkesztés, kézi tábla)');
+{
+  const dr = (body, headers = adm) => post('/api/admin/mini/drafts', body, headers);
+  const mini = (body, headers = adm) => post('/api/admin/mini', body, headers);
+  const getDrafts = async (q = '') => fetch(BASE + `/api/admin/mini/drafts${q}`, { headers: adm });
+  const emptyRows = () => Array.from({ length: 5 }, () => Array(5).fill(''));
+  const miniState = async () => (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+
+  r = await fetch(BASE + '/api/admin/mini/drafts'); check('piszkozatok: bejelentkezés nélkül 401', r.status === 401);
+  r = await dr({ action: 'save', rows: emptyRows() }, {}); check('piszkozat mentése adminság nélkül: 401', r.status === 401);
+
+  // Kézzel készített, hiányos tábla: csak néhány betű, egy kérdés - mentés generálás nélkül.
+  const rows1 = emptyRows();
+  rows1[0] = ['a', 'l', 'm', 'a', '#'];
+  rows1[1][0] = 'l';
+  const clues1 = { 'A:0:0': { clue: 'Gyümölcs.', word: 'alma' }, 'D:0:0': { clue: 'Nem teljes szóhoz írt kérdés', word: '' } };
+  r = await dr({ action: 'save', title: '  Kézi   tábla ', rows: rows1, clues: clues1 }); j = await r.json();
+  const d1 = j.draft;
+  check('hiányos tábla mentése: 200, rev 1, tisztított cím, szerző', r.status === 200 && d1?.rev === 1 && d1.title === 'Kézi tábla' && !!d1.createdBy?.name && d1.updatedBy?.id === d1.createdBy?.id, JSON.stringify(j).slice(0, 200));
+  check('a mentett kérdések megmaradtak, a rács kisbetűs', d1.clues['A:0:0']?.clue === 'Gyümölcs.' && d1.rows[0][0] === 'a' && d1.rows[0][4] === '#');
+  let list = await (await getDrafts()).json();
+  const it = list.drafts.find((x) => x.id === d1.id);
+  check('a lista tartalmazza, haladással (szó/kész/kérdés)', !!it && it.progress.total > 0 && it.progress.complete >= 1 && it.progress.clued >= 1 && it.rows.length === 5 && !('clues' in it), JSON.stringify(it?.progress));
+  r = await getDrafts(`?id=${d1.id}`); j = await r.json();
+  check('egy piszkozat teljes tartalma lekérhető', r.status === 200 && j.draft.rev === 1 && j.draft.clues['A:0:0']?.word === 'alma');
+  r = await getDrafts('?id=nincs-ilyen!'); check('hibás azonosító: 404', r.status === 404);
+  r = await getDrafts('?id=abcdef123456'); check('nem létező piszkozat: 404', r.status === 404);
+
+  // Közös szerkesztés: a mentésszám (rev) véd az egymás felülírása ellen.
+  rows1[2][2] = 'x';
+  r = await dr({ action: 'save', id: d1.id, rev: 1, title: 'Kézi tábla 2', rows: rows1, clues: clues1 }); j = await r.json();
+  check('mentés a friss rev-vel: 200, rev 2', r.status === 200 && j.draft.rev === 2 && j.draft.title === 'Kézi tábla 2');
+  r = await dr({ action: 'save', id: d1.id, rev: 1, title: 'Elavult mentés', rows: rows1, clues: clues1 }); j = await r.json();
+  check('mentés elavult rev-vel: 409 és a friss változat', r.status === 409 && j.error === 'conflict' && j.draft.rev === 2 && j.draft.title === 'Kézi tábla 2');
+  j = await (await getDrafts(`?id=${d1.id}`)).json();
+  check('az elavult mentés nem írt felül semmit', j.draft.title === 'Kézi tábla 2' && j.draft.rev === 2);
+  const par = await Promise.all([1, 2, 3, 4].map((n) => dr({ action: 'save', id: d1.id, rev: 2, title: `Párhuzamos ${n}`, rows: rows1, clues: clues1 })));
+  const codes = par.map((x) => x.status).sort().join();
+  check('4 párhuzamos mentés ugyanarra a rev-re: pontosan egy sikeres, a többi 409', codes === '200,409,409,409', codes);
+
+  // Érvénytelen bemenetek
+  r = await dr({ action: 'save', rows: emptyRows().slice(0, 4) }); check('hiányos rács: 400', r.status === 400);
+  const badRows = emptyRows(); badRows[1][1] = 'ab';
+  r = await dr({ action: 'save', rows: badRows }); check('többbetűs négyzet: 400', r.status === 400);
+  badRows[1][1] = '5';
+  r = await dr({ action: 'save', rows: badRows }); check('számjegy a rácsban: 400', r.status === 400);
+  r = await dr({ action: 'save', id: 'x', rev: 1, rows: emptyRows() }); check('hibás azonosító mentéskor: 400', r.status === 400);
+  r = await dr({ action: 'save', id: d1.id, rows: emptyRows() }); check('rev nélküli frissítés: 400', r.status === 400);
+  r = await dr({ action: 'save', id: 'abcdef123456', rev: 1, rows: emptyRows() }); check('nem létező piszkozat frissítése: 404', r.status === 404);
+  r = await dr({ action: 'nincs' }); check('ismeretlen művelet: 400', r.status === 400);
+
+  // Szótár-ellenőrzés és kérdésjavaslat
+  r = await dr({ action: 'check', words: ['alma', 'Qqqqq', 'ő', 'hosszúszó', '', 'a b'] }); j = await r.json();
+  check('ellenőrzés: ismert szó true, ismeretlen false, érvénytelenek kimaradnak', r.status === 200 && j.words.alma?.known === true && j.words.qqqqq?.known === false && 'ő' in j.words && Object.keys(j.words).length === 3, JSON.stringify(j));
+  r = await dr({ action: 'template' }); j = await r.json();
+  check('véletlen minta: 5x5, csak # és üres, legfeljebb 10 fekete', r.status === 200 && j.rows.length === 5 && j.rows.every((x) => x.length === 5 && x.every((v) => v === '' || v === '#')) && j.rows.flat().filter((v) => v === '#').length <= 10);
+
+  // Beemelés: hiányos tábla nem, teljes (generált alapon, kézzel módosított) igen.
+  const before = (await miniState()).queue.length;
+  r = await dr({ action: 'publish', id: d1.id, rev: (await (await getDrafts(`?id=${d1.id}`)).json()).draft.rev }); j = await r.json();
+  check('hiányos tábla beemelése: 400 és magyarázat', r.status === 400 && /kitöltve|kérdés/.test(j.message || ''), JSON.stringify(j));
+  r = await mini({ action: 'generate' }); const gen = (await r.json()).puzzle;
+  const genClues = Object.fromEntries(gen.entries.map((e) => [`${e.dir}:${e.row}:${e.col}`, { clue: e.clues[0]?.clue || `Kérdés ${e.word}`, word: e.word }]));
+  r = await dr({ action: 'save', title: 'Generált alap', rows: gen.rows, clues: genClues }); j = await r.json();
+  const d2 = j.draft;
+  check('generált tábla mentése piszkozatként: 200', r.status === 200 && d2.rev === 1);
+  // Egy szó átírása: a kérdése elavulttá válik, amíg valaki át nem nézi.
+  const e0 = gen.entries[0];
+  const changed = gen.rows.map((x) => [...x]);
+  const lastCell = e0.dir === 'A' ? [e0.row, e0.col + e0.len - 1] : [e0.row + e0.len - 1, e0.col];
+  const orig = changed[lastCell[0]][lastCell[1]];
+  changed[lastCell[0]][lastCell[1]] = orig === 'z' ? 'y' : 'z';
+  r = await dr({ action: 'save', id: d2.id, rev: 1, title: 'Generált alap', rows: changed, clues: genClues }); j = await r.json();
+  r = await dr({ action: 'publish', id: d2.id, rev: j.draft.rev }); const staleRes = await r.json();
+  check('módosított szó elavult kérdéssel nem emelhető be: 400', r.status === 400 && /megváltozott|ismétl|szó/.test(staleRes.message || ''), JSON.stringify(staleRes));
+  r = await dr({ action: 'save', id: d2.id, rev: j.draft.rev, title: 'Generált alap', rows: gen.rows, clues: genClues }); j = await r.json();
+  const rev2 = j.draft.rev;
+  r = await dr({ action: 'publish', id: d2.id, rev: rev2 - 1 }); check('beemelés elavult rev-vel: 409', r.status === 409);
+  r = await dr({ action: 'publish', id: d2.id, rev: rev2 }); j = await r.json();
+  check('teljes tábla beemelése: 200', r.status === 200 && !!j.id, JSON.stringify(j));
+  const st = await miniState();
+  check('a várólista nőtt, a beemelt rejtvény a generált tábla', st.queue.length === before + 1 && st.queue.at(-1).rows.flat().join('') === gen.rows.flat().join(''));
+  check('a piszkozat beemelés után megszűnt', (await getDrafts(`?id=${d2.id}`)).status === 404);
+  const bank = JSON.parse(await redis.get('mini:bank') || '{}');
+  check('az új kérdések a bankba kerültek', gen.entries.some((e) => (bank[e.word] || []).length > 0));
+
+  // Részleges kitöltés: a beírt betűk és a fekete négyzetek maradnak, a maradékot a generátor tölti ki
+  r = await mini({ action: 'generate' }); const g2 = (await r.json()).puzzle;
+  const part = g2.rows.map((x, ri) => x.map((ch) => (ch === '#' || ri === 0 ? ch : '')));
+  r = await mini({ action: 'complete', rows: part }, {}); check('maradék kitöltése adminság nélkül: 401', r.status === 401);
+  r = await mini({ action: 'complete', rows: part }); j = await r.json();
+  check('maradék kitöltése: 200, a beírt sor és a fekete négyzetek változatlanok, nincs üres négyzet',
+    r.status === 200 && j.puzzle.rows.every((x, ri) => x.every((ch, ci) => (part[ri][ci] ? ch === part[ri][ci] : !!ch && ch !== '#'))), JSON.stringify(j).slice(0, 200));
+  check('maradék kitöltése: minden szóhoz van kérdésjavaslat-lista, nincs ismétlődő szó', j.puzzle.entries.every((e) => Array.isArray(e.clues)) && new Set(j.puzzle.entries.map((e) => e.word)).size === j.puzzle.entries.length);
+  r = await mini({ action: 'complete', rows: g2.rows }); j = await r.json();
+  check('teljesen kitöltött tábla: 400, nincs mit kitölteni', r.status === 400 && j.error === 'nothing-to-fill');
+  r = await mini({ action: 'complete', rows: part.slice(0, 4) }); check('hibás rács a kitöltésnél: 400', r.status === 400);
+  const impossibleRows = Array.from({ length: 5 }, () => Array(5).fill(''));
+  impossibleRows[0][0] = 'q'; impossibleRows[1][0] = 'x'; impossibleRows[2][0] = 'q';
+  r = await mini({ action: 'complete', rows: impossibleRows }); j = await r.json();
+  check('lehetetlen kitöltés: 422 és magyarázat', r.status === 422 && /nem találtam/.test(j.message || ''), JSON.stringify(j));
+
+  // Törlés
+  r = await dr({ action: 'delete', id: d1.id, rev: 1 }); check('törlés elavult rev-vel: 409', r.status === 409);
+  const cur = (await (await getDrafts(`?id=${d1.id}`)).json()).draft;
+  r = await dr({ action: 'delete', id: d1.id, rev: cur.rev }); check('törlés friss rev-vel: 200', r.status === 200);
+  r = await dr({ action: 'delete', id: d1.id, rev: cur.rev }); check('már törölt piszkozat törlése: 404', r.status === 404);
+  await redis.del('mini:drafts');
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
