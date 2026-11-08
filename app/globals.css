@@ -64,6 +64,9 @@
    (:focus-visible) ettől megmarad. */
 html{ -webkit-tap-highlight-color: transparent; }
 html,body{margin:0;padding:0; overflow-x: hidden;}
+/* A teljes vászon (görgetés túlhúzásakor, lassú betöltéskor is) a mód szerinti háttér. */
+:root{ color-scheme: light dark; }
+html{ background: var(--paper); }
 body{
   background:var(--paper);
   color:var(--ink);
@@ -1308,3 +1311,52 @@ a.intro-kisokos{
   box-shadow: 0 4px 14px rgba(148, 80, 127, 0.35); transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 a.intro-kisokos:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(148, 80, 127, 0.45); }
+
+/* Trófeák: a még meg nem szerzett, számszerű trófeák haladása. */
+.ach-progress{ flex-shrink: 0; font-size: 12.5px; font-weight: 800; color: var(--accent-text); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; }
+
+/* A teljes emojikészletet előhozó + gomb: keret nélkül, halvány körben, így látszik, hogy más,
+   mint a reakciógombok (de ugyanakkora, és ugyanúgy a sor része). */
+button.reaction-btn.reaction-more{
+  border-color: transparent; background: var(--accent2-soft); color: var(--accent-text); font-weight: 800;
+}
+/* Ugyanakkora doboz, mint az emojiké (17 px magas sor), a + jel kicsit nagyobb és vastagabb. */
+button.reaction-btn.reaction-more span{ display: block; height: 1em; width: 1.15em; line-height: 1; font-size: 1em; transform: scale(1.35); }
+
+/* Emojiválasztó (a + gombról): kereső felül, alatta görgethető lista csoportonként. */
+.emoji-picker{ display: flex; flex-direction: column; max-height: min(78vh, 620px); padding: 14px; width: min(520px, 94vw); }
+.emoji-picker-head{ display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+input.emoji-picker-search{ flex: 1; text-transform: none; }
+button.emoji-picker-close{ width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-size: 22px; line-height: 1; flex-shrink: 0; }
+.emoji-picker-body{ overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.emoji-picker-group h3{ font-size: 13px; color: var(--ink-soft); margin: 10px 0 6px; font-weight: 800; }
+.emoji-picker-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px; }
+button.emoji-picker-item{
+  height: 40px; padding: 0; border: 2px solid transparent; border-radius: 10px; background: transparent;
+  font-size: 22px; line-height: 1; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+button.emoji-picker-item .emoji-img{ width: 1.05em; height: 1.05em; margin: 0; }
+@media (hover: hover) and (pointer: fine){ button.emoji-picker-item:hover{ background: var(--accent-soft); border-color: var(--btn-primary); transform: scale(1.12); } }
+
+/* Admin: mini keresztrejtvény. */
+.mini-preview{ display: flex; justify-content: center; margin: 14px 0 6px; }
+.mini-grid{ display: grid; grid-template-columns: repeat(5, 46px); grid-auto-rows: 46px; gap: 2px; background: var(--line); border: 2px solid var(--line); border-radius: 8px; overflow: hidden; }
+.mini-grid.small{ grid-template-columns: repeat(5, 18px); grid-auto-rows: 18px; gap: 1px; border-width: 1px; border-radius: 4px; flex-shrink: 0; }
+.mini-cell{ position: relative; display: flex; align-items: center; justify-content: center; background: var(--card); color: var(--ink); }
+.mini-cell.black{ background: #1F1A2B; }
+@media (prefers-color-scheme: dark){ .mini-cell.black{ background: #050308; } }
+.mini-num{ position: absolute; top: 2px; left: 3px; font-size: 10px; font-weight: 700; color: var(--ink-soft); line-height: 1; }
+.mini-ch{ font-weight: 800; font-size: 20px; }
+.mini-grid.small .mini-num{ display: none; }
+.mini-grid.small .mini-ch{ font-size: 10px; }
+.mini-clues h3{ font-size: 14px; margin: 14px 0 6px; color: var(--accent-text); }
+.mini-clue-row{ margin-bottom: 10px; }
+.mini-clue-row textarea{ width: 100%; text-transform: none; min-height: 48px; }
+.mini-len{ color: var(--ink-soft); font-weight: 600; }
+.mini-src{ margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--accent-text); background: var(--accent-soft); border-radius: 999px; padding: 1px 8px; }
+.mini-clue-actions{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.mini-add{ display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
+.mini-add input{ text-transform: none; }
+.mini-queue{ display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.mini-queue-item{ display: flex; gap: 12px; align-items: center; border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.mini-queue-info{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13.5px; flex: 1; justify-content: space-between; }

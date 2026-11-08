@@ -16,7 +16,7 @@ const HU_MONTHS = [
 export default function ArchivePage() {
   const { status } = useSession();
   const [items, setItems] = useState(null);
-  const [emojis, setEmojis] = useState(null);
+  const [presets, setPresets] = useState(null);
   const [error, setError] = useState(null);
   const [unverified, setUnverified] = useState(false);
   const [history, setHistory] = useState({});
@@ -46,7 +46,7 @@ export default function ArchivePage() {
       .then((data) => {
         if (data.error === 'unverified') setUnverified(true);
         else {
-          setEmojis(data.emojis || null);
+          setPresets(data.presets || null);
           setItems(data.archive || []);
         }
       })
@@ -60,9 +60,13 @@ export default function ArchivePage() {
   function handleSolved(id, date) {
     const prog = loadProgress();
     if (!prog.archiveSolved) prog.archiveSolved = [];
-    if (!prog.archiveSolved.includes(id)) {
+    // Az aznap már megfejtett titkosírás újrajátszása nem számít új megfejtésnek.
+    const solvedOnDay = !!prog.history?.[date]?.correct;
+    if (!prog.archiveSolved.includes(id) && !solvedOnDay) {
       prog.archiveSolved.push(id);
       saveProgress(prog);
+      // A megfejtésszám-trófeákba a korábbi titkosírások megfejtései is beleszámítanak.
+      window.dispatchEvent(new Event('achievements-recheck'));
       // Utólagos megfejtés beszámítása az összesített megfejtőszámba (rejtvényenként egyszer).
       fetch('/api/archive/solve', {
         method: 'POST',
@@ -268,7 +272,7 @@ export default function ArchivePage() {
                                             onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />
                                           {/* Kinagyítva látszanak a reakciók; reagálni megfejtés után lehet. */}
-                                          <DailyReactions date={it.shownDate} interactive={solved} initial={emojis && it.reactions ? { emojis, ...it.reactions } : null}
+                                          <DailyReactions date={it.shownDate} interactive={solved} initial={presets && it.reactions ? { presets, ...it.reactions } : null}
                                             onChange={(r) => setItems((prev) => prev.map((x) => (x.shownDate === it.shownDate ? { ...x, reactions: r } : x)))}
                                           />
                                         </div>

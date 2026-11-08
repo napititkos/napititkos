@@ -2,9 +2,10 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../../lib/kv';
 import { auth } from '../../../../auth';
-import { EMOJIS, communityList, deleteCommunityData, deleteCommunityNotifications, ratingsKey, reactionsKey, solvedKey, summaries, toPlayable } from '../../../../lib/community';
+import { PRESET_EMOJIS, communityList, deleteCommunityData, deleteCommunityNotifications, ratingsKey, reactionsKey, solvedKey, summaries, toPlayable } from '../../../../lib/community';
 import { isAdminRequest } from '../../../../lib/adminAuth';
 import { enumerationFor } from '../../../../lib/format';
+import { normalizeReaction } from '../../../../lib/emojis';
 import { isLimited, tooMany } from '../../../../lib/rateLimit';
 import { readJson } from '../../../../lib/validate';
 
@@ -40,7 +41,7 @@ export async function GET(req, { params }) {
   if (uid) {
     const r = kv.raw();
     const [solved, stars, reaction] = await Promise.all([r.hget(solvedKey(id), uid), r.hget(ratingsKey(id), uid), r.hget(reactionsKey(id), uid)]);
-    mine = { solved: !!solved, stars: stars ? Number(stars) : null, reaction: reaction != null ? Number(reaction) : null };
+    mine = { solved: !!solved, stars: stars ? Number(stars) : null, reaction: normalizeReaction(reaction) };
   }
   const sum = (await summaries([id]))[id];
   return Response.json(
@@ -49,7 +50,7 @@ export async function GET(req, { params }) {
       avg: sum.avg,
       ratingCount: sum.ratingCount,
       reactions: sum.reactions,
-      emojis: EMOJIS,
+      presets: PRESET_EMOJIS,
       mine,
       canRate: !!(uid && session.user.verified),
       isOwner: String(s.submitterEmail || '').toLowerCase() === String(session.user.email || '').toLowerCase(),

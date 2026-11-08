@@ -28,7 +28,7 @@ export async function GET() {
       createdAt: s.createdAt,
       avg: sums[s.id]?.avg ?? null,
       ratingCount: sums[s.id]?.ratingCount || 0,
-      reactionCount: (sums[s.id]?.reactions || []).reduce((a, b) => a + b, 0),
+      reactionCount: Object.values(sums[s.id]?.reactions || {}).reduce((a, b) => a + b, 0),
       promoted: !!s.promotedAt,
       shownDate: s.promotedPuzzleId ? shownDateById[s.promotedPuzzleId] || null : null,
     }))

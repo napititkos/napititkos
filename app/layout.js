@@ -22,6 +22,16 @@ const fredoka = localFont({ src: './fonts/fredoka.woff2', weight: '300 700', dis
 const baloo = localFont({ src: './fonts/baloo2.woff2', weight: '400 800', display: 'swap', variable: '--font-baloo' });
 const nunito = localFont({ src: './fonts/nunito.woff2', weight: '200 1000', display: 'swap', variable: '--font-nunito' });
 
+// A böngésző (és a telepített alkalmazás) mindkét színsémát ismerje: így a háttér, a görgetősáv és
+// az űrlapelemek már a stíluslap betöltése előtt is a beállított (világos/sötét) módhoz igazodnak.
+export const viewport = {
+  colorScheme: 'light dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F0F0FC' },
+    { media: '(prefers-color-scheme: dark)', color: '#16121E' },
+  ],
+};
+
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
   title: 'Titkosírás - napi kriptikus rejtvény',
@@ -45,6 +55,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="hu" suppressHydrationWarning className={`${fredoka.variable} ${baloo.variable} ${nunito.variable}`}>
       <head>
+        {/* A háttér színe már a stíluslap előtt (pl. lassú vagy megszakadt kapcsolatnál) a
+            beállított módnak megfelelő legyen, ne villanjon fel világosan sötét módban. */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: 'html{background:#F0F0FC;color-scheme:light dark}@media (prefers-color-scheme:dark){html{background:#16121E}}',
+          }}
+        />
         {/* Az admin gomb az első megjelenéstől a helyén legyen (ne villanjon fel oldalváltáskor). */}
         <script
           dangerouslySetInnerHTML={{

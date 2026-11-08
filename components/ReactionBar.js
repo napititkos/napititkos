@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { EMOJI_IMAGES, EMOJI_ORDER } from '../lib/emojis';
+import { orderedEmojis } from '../lib/emojis';
+import EmojiPicker from './EmojiPicker';
+import EmojiGlyph from './EmojiGlyph';
 
 // Egységes emoji-reakció sor (napi titkosírások, korábbi titkosírások, közösségi titkosírások).
 // - A keretes gombban csak az emoji van, a darabszám alatta, a kereten kívül; a 0 nem látszik.
@@ -10,17 +12,7 @@ import { EMOJI_IMAGES, EMOJI_ORDER } from '../lib/emojis';
 // - A szülő azonnal (optimistán) frissíti a számokat: az onReact szinkron hívódik, a mentés a
 //   háttérben fut.
 // - Az emoji nem jelölhető ki, nem másolható; a túl új emojik képként jelennek meg.
-export function EmojiGlyph({ e }) {
-  const src = EMOJI_IMAGES[e];
-  if (src) return <img className="emoji-img" src={src} alt="" aria-hidden="true" draggable={false} />;
-  return <span aria-hidden="true">{e}</span>;
-}
-
-// A megjelenítési sorrend: [emoji, tárolt sorszám] párok (az arcos emojik elöl).
-function order(emojis) {
-  const idx = EMOJI_ORDER.length === emojis.length ? EMOJI_ORDER : emojis.map((_, k) => k);
-  return idx.map((k) => [emojis[k], k]);
-}
+export { EmojiGlyph };
 
 // Ha az emojik több sorba törnek, egyenletesen oszlanak el (pl. 6 + 5, nem 10 + 1): a sor
 // szélességét annyira korlátozzuk, hogy soronként egyforma számú (legfeljebb eggyel eltérő) férjen el.
@@ -54,11 +46,14 @@ function useBalancedRows(deps) {
   return [ref, maxW ? { maxWidth: maxW, marginLeft: 'auto', marginRight: 'auto' } : undefined];
 }
 
-export default function ReactionBar({ emojis, reactions, mine, interactive = true, disabled = false, onReact }) {
+export default function ReactionBar({ presets, counts, mine, interactive = true, disabled = false, onReact }) {
   const [pickOpen, setPickOpen] = useState(false);
   const [intro, setIntro] = useState(false);
+  const [fullOpen, setFullOpen] = useState(false);
   const showPicker = interactive && (mine == null || pickOpen);
-  const visible = showPicker ? emojis.length : reactions.filter((n) => n > 0).length;
+  const all = orderedEmojis(counts).filter((e) => presets.includes(e) || (counts[e] || 0) > 0 || e === mine);
+  const used = all.filter((e) => (counts[e] || 0) > 0);
+  const visible = showPicker ? all.length + 1 : used.length;
   const [rowRef, rowStyle] = useBalancedRows([showPicker, visible]);
 
   useEffect(() => {
@@ -70,77 +65,97 @@ export default function ReactionBar({ emojis, reactions, mine, interactive = tru
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interactive]);
 
-  const count = (k) => (
-    <span className={`reaction-count${reactions[k] ? '' : ' zero'}`} aria-hidden="true">
-      {reactions[k]}
+  const n = (e) => counts[e] || 0;
+  const count = (e) => (
+    <span className={`reaction-count${n(e) ? '' : ' zero'}`} aria-hidden="true">
+      {n(e)}
     </span>
   );
-  const badge = (e, k) => (
-    <span key={k} className="reaction-item">
-      <span className="reaction-btn reaction-static" aria-label={`${e} reakció, ${reactions[k]} darab`} role="img">
+  const badge = (e) => (
+    <span key={e} className="reaction-item">
+      <span className="reaction-btn reaction-static" aria-label={`${e} reakció, ${n(e)} darab`} role="img">
         <EmojiGlyph e={e} />
       </span>
-      {count(k)}
+      {count(e)}
     </span>
   );
+  const choose = (e) => {
+    if (mine !== e) onReact(e);
+    setPickOpen(false);
+    setIntro(false);
+    setFullOpen(false);
+  };
 
   if (showPicker) {
     return (
-      <div ref={rowRef} style={rowStyle} className={`reaction-row reaction-stacked${pickOpen || intro ? ' reaction-row-open' : ''}`} role="group" aria-label="Reakció választása">
-        {order(emojis).map(([e, k], i) => (
-          <span key={k} className="reaction-item" style={{ '--i': i }}>
-            <button
-              type="button"
-              className={`reaction-btn${mine === k ? ' on' : ''}`}
-              aria-label={`${e} reakció, ${reactions[k]} darab`}
-              aria-pressed={mine === k}
-              disabled={disabled}
-              onClick={() => {
-                if (mine !== k) onReact(k);
-                setPickOpen(false);
-                setIntro(false);
-              }}
-            >
-              <EmojiGlyph e={e} />
-            </button>
-            {count(k)}
-          </span>
-        ))}
-      </div>
-    );
-  }
-
-  if (!reactions.some((n) => n > 0)) return null;
-  return (
-    <div ref={rowRef} style={rowStyle} className="reaction-row reaction-stacked" role="group" aria-label="Reakciók">
-      {order(emojis).map(([e, k], i) =>
-        reactions[k] > 0 ? (
-          interactive && mine === k ? (
-            <span key={k} className="reaction-item">
+      <>
+        <div ref={rowRef} style={rowStyle} className={`reaction-row reaction-stacked${pickOpen || intro ? ' reaction-row-open' : ''}`} role="group" aria-label="Reakció választása">
+          {all.map((e, i) => (
+            <span key={e} className="reaction-item" style={{ '--i': i }}>
               <button
                 type="button"
-                className="reaction-btn on mine"
-                aria-label={`A te reakciód: ${e}, összesen ${reactions[k]}. Koppints a módosításhoz.`}
-                title="A te reakciód - kattints a módosításhoz"
-                onClick={() => setPickOpen(true)}
+                className={`reaction-btn${mine === e ? ' on' : ''}`}
+                aria-label={`${e} reakció, ${n(e)} darab`}
+                aria-pressed={mine === e}
+                disabled={disabled}
+                onClick={() => choose(e)}
               >
                 <EmojiGlyph e={e} />
               </button>
-              {count(k)}
+              {count(e)}
             </span>
-          ) : (
-            badge(e, k)
-          )
-        ) : null
+          ))}
+          {/* A teljes emojikészlet: keret nélküli, eltérő kinézetű gomb a sor végén. */}
+          <span className="reaction-item" style={{ '--i': all.length }}>
+            <button
+              type="button"
+              className="reaction-btn reaction-more"
+              aria-label="További emojik"
+              title="További emojik"
+              disabled={disabled}
+              onClick={() => setFullOpen(true)}
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+            <span className="reaction-count zero" aria-hidden="true">
+              0
+            </span>
+          </span>
+        </div>
+        {fullOpen && <EmojiPicker onPick={choose} onClose={() => setFullOpen(false)} />}
+      </>
+    );
+  }
+
+  if (!used.length) return null;
+  return (
+    <div ref={rowRef} style={rowStyle} className="reaction-row reaction-stacked" role="group" aria-label="Reakciók">
+      {used.map((e) =>
+        interactive && mine === e ? (
+          <span key={e} className="reaction-item">
+            <button
+              type="button"
+              className="reaction-btn on mine"
+              aria-label={`A te reakciód: ${e}, összesen ${n(e)}. Koppints a módosításhoz.`}
+              title="A te reakciód - kattints a módosításhoz"
+              onClick={() => setPickOpen(true)}
+            >
+              <EmojiGlyph e={e} />
+            </button>
+            {count(e)}
+          </span>
+        ) : (
+          badge(e)
+        )
       )}
     </div>
   );
 }
 
 // Optimista darabszám-frissítés: a régi saját reakció -1, az új +1.
-export function applyReaction(reactions, prevMine, next) {
-  const out = [...reactions];
-  if (prevMine != null) out[prevMine] = Math.max(0, out[prevMine] - 1);
-  if (next != null) out[next] += 1;
+export function applyReaction(counts, prevMine, next) {
+  const out = { ...counts };
+  if (prevMine != null) out[prevMine] = Math.max(0, (out[prevMine] || 0) - 1);
+  if (next != null) out[next] = (out[next] || 0) + 1;
   return out;
 }

@@ -75,6 +75,7 @@ try {
       IG_USER_ID: '178',
       META_GRAPH_BASE: 'http://127.0.0.1:3199',
       SOCIAL_POLL_MS: '10',
+      MINI_START: '2020-01-06',
       NEXT_TELEMETRY_DISABLED: '1',
     }
   );

@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import PuzzlePlayer from './PuzzlePlayer';
 import Icon from './Icon';
-import { loadProgress, saveProgress } from '../lib/progress';
-import { computeNewAchievements } from '../lib/achievements';
 import { Stars } from './Stars';
 import { enumerationFor } from '../lib/format';
 import ReactionBar, { applyReaction } from './ReactionBar';
@@ -36,14 +34,8 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
     if (res?.ok) {
       setData((d) => ({ ...d, mine: { ...d.mine, solved: true } }));
       onChanged && onChanged({ solved: true });
-      // "Közösségi" trófea az első közösségi megfejtésért.
-      const prog = loadProgress();
-      const { unlocked, newly } = computeNewAchievements({ communitySolved: true }, prog.unlocked);
-      if (newly.length) {
-        prog.unlocked = unlocked;
-        saveProgress(prog);
-        window.dispatchEvent(new CustomEvent('achievements-unlocked', { detail: newly }));
-      }
+      // Közösségi trófeák (1, 5, 10 megfejtés): a szerver szerinti darabszámmal ellenőrizzük.
+      window.dispatchEvent(new Event('achievements-recheck'));
     }
   }
 
@@ -72,7 +64,7 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
   const reactSeq = useRef(0);
   function react(k) {
     const before = data;
-    setData((d) => ({ ...d, reactions: applyReaction(d.reactions, d.mine.reaction, k), mine: { ...d.mine, reaction: k } }));
+    setData((d) => ({ ...d, reactions: applyReaction(d.reactions || {}, d.mine.reaction, k), mine: { ...d.mine, reaction: k } }));
     setMsg('');
     const my = ++reactSeq.current;
     fetch(`/api/community/${encodeURIComponent(id)}/rate`, {
@@ -194,7 +186,7 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
     );
   }
 
-  const { puzzle, mine, emojis, reactions } = data;
+  const { puzzle, mine, presets, reactions } = data;
   const canRate = data.canRate && mine.solved;
 
   return (
@@ -241,7 +233,7 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
           </span>
           </div>
           {/* Reakciók: ugyanaz a sor, mint a napi titkosírásoknál (ReactionBar). */}
-          <ReactionBar emojis={emojis} reactions={reactions} mine={mine.reaction} disabled={!canRate} onReact={(k) => react(k)} />
+          <ReactionBar presets={presets || []} counts={reactions || {}} mine={mine.reaction} disabled={!canRate} onReact={(k) => react(k)} />
           {!data.canRate && <p className="community-rate-note">Az értékeléshez erősítsd meg az e-mail-címedet.</p>}
         </div>
       )}
