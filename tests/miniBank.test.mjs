@@ -130,3 +130,71 @@ test('usageOf: hányszor és melyik héten szerepelt (a várólistán lévőnek 
   assert.deepEqual(u['ló'], { count: 1, lastWeek: null });
   assert.deepEqual(usageOf(), {});
 });
+
+import { MAX_CLUE, addVariant, cleanClue, deleteVariant, editVariant } from '../lib/miniBank.js';
+
+const bankOf = () => ({
+  alma: [
+    { id: 'a1', clue: 'Gyümölcs.', at: '2026-10-01T10:00:00Z' },
+    { id: 'a2', clue: 'Fán terem.', at: '2026-10-05T10:00:00Z' },
+  ],
+  kő: [{ id: 'k1', clue: 'Kemény ásvány', at: '2026-11-01T10:00:00Z' }],
+});
+
+test('buildRows: a kézi kérdéseknek van azonosítójuk (szerkesztéshez), a titkosírásból származóknak nincs', () => {
+  const rows = buildRows({ bank: { alma: [{ id: 'a1', clue: 'Gyümölcs.', at: '2026-10-01T10:00:00Z', editedAt: '2026-10-02T10:00:00Z' }] }, titkos: { alma: ['Régi'] } });
+  const alma = rows.find((r) => r.word === 'alma');
+  assert.deepEqual(alma.clues.map((c) => [c.src, c.id]), [['kézi', 'a1'], ['titkosírás', null]]);
+  assert.equal(alma.clues[0].editedAt, '2026-10-02T10:00:00Z');
+});
+
+test('cleanClue: levágja a szóközöket és a hosszt', () => {
+  assert.equal(cleanClue('  Kérdés  '), 'Kérdés');
+  assert.equal(cleanClue('x'.repeat(1000)).length, MAX_CLUE);
+  assert.equal(cleanClue(undefined), '');
+  assert.equal(cleanClue(null), '');
+  assert.equal(cleanClue(42), '42');
+});
+
+test('addVariant: egy szóhoz több, különböző kérdés; az ismétlődő és az üres nem fogadható el', () => {
+  const bank = bankOf();
+  const before = JSON.stringify(bank);
+  const r = addVariant(bank, 'alma', '  Piros, zöld vagy sárga.  ', { id: 'a3', at: 'T' });
+  assert.deepEqual(r.bank.alma.map((x) => x.id), ['a1', 'a2', 'a3']);
+  assert.equal(r.bank.alma[2].clue, 'Piros, zöld vagy sárga.');
+  assert.equal(JSON.stringify(bank), before, 'a bemenet nem módosul');
+  assert.deepEqual(addVariant(bank, 'alma', 'Gyümölcs.', { id: 'x', at: 'T' }), { error: 'duplicate' });
+  assert.deepEqual(addVariant(bank, 'alma', '   ', { id: 'x', at: 'T' }), { error: 'missing-clue' });
+  const fresh = addVariant(bank, 'ló', 'Patás állat.', { id: 'l1', at: 'T' });
+  assert.deepEqual(fresh.bank['ló'], [{ id: 'l1', clue: 'Patás állat.', at: 'T' }]);
+  assert.ok(bank['ló'] === undefined);
+});
+
+test('editVariant: átírja a szöveget, a létrehozás idejét megőrzi, a szerkesztését rögzíti', () => {
+  const bank = bankOf();
+  const before = JSON.stringify(bank);
+  const r = editVariant(bank, 'alma', 'a1', ' Édes gyümölcs. ', { at: 'EDIT' });
+  const a1 = r.bank.alma.find((x) => x.id === 'a1');
+  assert.deepEqual([a1.clue, a1.at, a1.editedAt], ['Édes gyümölcs.', '2026-10-01T10:00:00Z', 'EDIT']);
+  assert.deepEqual(r.bank.alma.map((x) => x.id), ['a1', 'a2'], 'a sorrend nem változik');
+  assert.equal(JSON.stringify(bank), before, 'a bemenet nem módosul');
+  assert.equal(editVariant(bank, 'alma', 'a1', 'Gyümölcs.', { at: 'EDIT' }).bank, bank, 'változatlan szövegnél nincs módosítás');
+  assert.deepEqual(editVariant(bank, 'alma', 'a1', 'Fán terem.', { at: 'EDIT' }), { error: 'duplicate' });
+  assert.deepEqual(editVariant(bank, 'alma', 'a1', '', { at: 'EDIT' }), { error: 'missing-clue' });
+  assert.deepEqual(editVariant(bank, 'alma', 'nincs', 'x', { at: 'EDIT' }), { error: 'not-found' });
+  assert.deepEqual(editVariant(bank, 'nincs', 'a1', 'x', { at: 'EDIT' }), { error: 'not-found' });
+  assert.deepEqual(editVariant(bank, 'kő', 'a1', 'x', { at: 'EDIT' }), { error: 'not-found' }, 'más szó azonosítója nem használható');
+});
+
+test('deleteVariant: egy változat törlése; az utolsó törlésekor a szó kikerül a bankból', () => {
+  const bank = bankOf();
+  const before = JSON.stringify(bank);
+  const one = deleteVariant(bank, 'alma', 'a1');
+  assert.deepEqual(one.bank.alma.map((x) => x.id), ['a2']);
+  const last = deleteVariant(one.bank, 'alma', 'a2');
+  assert.ok(!('alma' in last.bank));
+  assert.deepEqual(Object.keys(last.bank), ['kő']);
+  assert.equal(JSON.stringify(bank), before, 'a bemenet nem módosul');
+  assert.deepEqual(deleteVariant(bank, 'alma', 'nincs'), { error: 'not-found' });
+  assert.deepEqual(deleteVariant(bank, 'nincs', 'a1'), { error: 'not-found' });
+});

@@ -1443,3 +1443,7 @@ button.mini-cluebar-nav{ border: none; background: transparent; color: var(--min
 .mini-bank-meta{ font-size: 11.5px; color: var(--ink-soft); }
 .mini-bank-pager{ display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 @media (max-width: 480px){ .mini-bank-row{ grid-template-columns: 1fr; } .mini-bank-badges{ flex-direction: row; flex-wrap: wrap; } }
+.mini-bank-clues li{ position: relative; }
+.mini-bank-actions{ display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.mini-bank-edit{ margin-top: 4px; }
+.mini-bank-edit textarea{ width: 100%; text-transform: none; min-height: 48px; }

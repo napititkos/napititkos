@@ -1236,7 +1236,7 @@ section('Mini: szóbank és kérdésbank áttekintése (csak olvasás, keresés,
     xqzvw: [{ id: 'x1', clue: 'Nem létező szó', at: '2026-09-01T10:00:00.000Z' }], // nincs az alap szótárban
   }));
   await redis.set('mini:excluded', JSON.stringify(['ló', 'qzqzq']));
-  await redis.set('mini:queue', JSON.stringify([{ id: 'q1', rows: [], entries: [{ word: 'alma' }] }]));
+  await redis.set('mini:queue', JSON.stringify([{ id: 'q1', rows: [], entries: [{ word: 'alma', clue: 'Sorban lévő kérdés' }] }]));
   await redis.set('mini:published', JSON.stringify([{ id: 'p1', week: '2026-10-26', rows: [], entries: [{ word: 'alma' }, { word: 'kő' }] }]));
 
   r = await bank(); j = await r.json();
@@ -1273,6 +1273,54 @@ section('Mini: szóbank és kérdésbank áttekintése (csak olvasás, keresés,
   check('hibás oldalszám: az 1. oldal', r.status === 200 && j.page === 1);
   r = await bank('?filter=hamis&sort=hamis&q=' + 'x'.repeat(500)); j = await r.json();
   check('hibás szűrő/rendezés/hosszú keresés: alapértelmezés, nincs hiba', r.status === 200 && j.filter === 'clues' && j.sort === 'word');
+  // ---- Kérdésváltozatok szerkesztése, törlése, új változat, kizárás feloldása ----
+  const mut = (body, headers = adm) => post('/api/admin/mini/bank', body, headers);
+  const rowOf = async (word) => ((await (await bank(`?filter=all&q=${encodeURIComponent(word)}`)).json()).rows || []).find((x) => x.word === word);
+  r = await mut({ action: 'addClue', word: 'alma', clue: 'x' }, {}); check('szóbank módosítása adminság nélkül: 401', r.status === 401);
+  r = await mut({ action: 'addClue', word: 'hosszúszó', clue: 'x' }); check('hibás szó: 400', r.status === 400);
+  r = await mut({ action: 'nincs', word: 'alma' }); check('ismeretlen művelet: 400', r.status === 400);
+  r = await mut({ action: 'editClue', word: 'alma', clue: 'x' }); check('szerkesztés azonosító nélkül: 404', r.status === 404);
+
+  // Egy szóhoz több változat
+  r = await mut({ action: 'addClue', word: 'alma', clue: '  Harmadik változat.  ' }); j = await r.json();
+  check('új változat egy meglévő szóhoz: 200, most 3 kézi változat', r.status === 200 && j.variants === 3, JSON.stringify(j));
+  let al = await rowOf('alma');
+  const own = al.clues.filter((c) => c.src === 'kézi');
+  check('a lista mutatja: 3 kézi változat azonosítóval, a legújabb elöl, szóközök levágva', own.length === 3 && own.every((c) => c.id) && own[0].clue === 'Harmadik változat.', JSON.stringify(own));
+  r = await mut({ action: 'addClue', word: 'alma', clue: 'Gyümölcs.' }); check('ismétlődő kérdés: 409', r.status === 409);
+  r = await mut({ action: 'addClue', word: 'alma', clue: '   ' }); check('üres kérdés: 400', r.status === 400);
+
+  // Szerkesztés
+  const a1 = own.find((c) => c.clue === 'Gyümölcs.');
+  r = await mut({ action: 'editClue', word: 'alma', id: a1.id, clue: 'Édes gyümölcs.' }); check('változat átírása: 200', r.status === 200);
+  al = await rowOf('alma');
+  const a1after = al.clues.find((c) => c.id === a1.id);
+  check('az átírt szöveg megjelenik, a létrehozás ideje változatlan, a szerkesztésé rögzítve', a1after.clue === 'Édes gyümölcs.' && a1after.at === a1.at && !!a1after.editedAt, JSON.stringify(a1after));
+  check('a sorrend nem változott', al.clues.filter((c) => c.src === 'kézi').map((c) => c.id).join() === own.map((c) => c.id).join());
+  r = await mut({ action: 'editClue', word: 'alma', id: a1.id, clue: 'Piros vagy zöld, fán terem.' }); check('átírás egy másik változattal egyező szövegre: 409', r.status === 409);
+  check('az elutasított átírás nem változtatott semmit', (await rowOf('alma')).clues.find((c) => c.id === a1.id).clue === 'Édes gyümölcs.');
+  r = await mut({ action: 'editClue', word: 'alma', id: 'nincs-ilyen', clue: 'x' }); check('ismeretlen azonosító: 404', r.status === 404);
+  const koId = (await rowOf('kő')).clues.find((c) => c.src === 'kézi').id;
+  r = await mut({ action: 'editClue', word: 'alma', id: koId, clue: 'Másik szó azonosítója' }); check('másik szó változatának azonosítója nem használható: 404', r.status === 404);
+  check('a várólistán lévő rejtvény kérdése nem változott a bank szerkesztésekor', JSON.parse(await redis.get('mini:queue'))[0].entries[0].clue === 'Sorban lévő kérdés');
+
+  // Törlés
+  r = await mut({ action: 'deleteClue', word: 'alma', id: a1.id }); check('változat törlése: 200', r.status === 200);
+  al = await rowOf('alma');
+  check('a törölt változat eltűnt, a többi megmaradt', !al.clues.some((c) => c.id === a1.id) && al.clues.filter((c) => c.src === 'kézi').length === 2);
+  r = await mut({ action: 'deleteClue', word: 'alma', id: a1.id }); check('már törölt változat törlése: 404', r.status === 404);
+  const xId = (await rowOf('xqzvw')).clues[0].id;
+  r = await mut({ action: 'deleteClue', word: 'xqzvw', id: xId }); check('az utolsó változat törlése: 200', r.status === 200);
+  const gone = await rowOf('xqzvw');
+  check('az utolsó változat törlése után a szónak nincs kézi kérdése, kikerült a bankból', !gone || (gone.ownCount === 0 && gone.clues.length === 0));
+  check('a mini:bank-ban sincs már az xqzvw kulcs', !('xqzvw' in JSON.parse(await redis.get('mini:bank'))));
+
+  // Kizárás feloldása
+  r = await mut({ action: 'unexclude', word: 'ló' }); check('kizárás feloldása: 200', r.status === 200);
+  check('a ló nincs többé a kizártak között, a többi kizárt szó megmaradt', !JSON.parse(await redis.get('mini:excluded')).includes('ló') && JSON.parse(await redis.get('mini:excluded')).includes('qzqzq'));
+  r = await mut({ action: 'unexclude', word: 'ló' }); check('ismételt feloldás: 200 (nincs hiba)', r.status === 200);
+  r = await mut({ action: 'addClue', word: 'qzqzq', clue: 'Új kérdés egy kizárt szóhoz' }); check('új változat egy kizárt szóhoz: 200', r.status === 200);
+  check('az új kérdés felvitele feloldja a kizárást is', !JSON.parse(await redis.get('mini:excluded')).includes('qzqzq'));
   await redis.del('mini:excluded', 'mini:queue');
 }
 

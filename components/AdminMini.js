@@ -140,7 +140,7 @@ export default function AdminMini() {
       )}
 
       {!editing && tab === 'bank' ? (
-        <MiniBank refreshKey={bankKey} />
+        <MiniBank refreshKey={bankKey} onChanged={load} />
       ) : editing ? (
         <MiniEditor
           key={editing.key}
