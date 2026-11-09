@@ -1,4 +1,5 @@
 'use client';
+import MyMinis from '../../components/MyMinis';
 import { useEffect, useState } from 'react';
 import PasswordChange from '../../components/PasswordChange';
 import { loadProgress, solvedCount } from '../../lib/progress';
@@ -88,6 +89,7 @@ export default function AccountPage() {
       </div>
       {/* Sorrend: közösségi titkosírásaim, statisztikáim, fiókadatok (név, e-mail, jelszó),
           adataim (letöltés, törlés) - mind külön dobozban. */}
+      <MyMinis />
       <div className="card">
         <div className="help-block" style={{ marginBottom: 0 }}>
           <h3>Közösségi titkosírásaim {mySubmissions ? `(${mySubmissions.length})` : ''}</h3>

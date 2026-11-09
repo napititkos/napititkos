@@ -118,6 +118,21 @@ export default function HomePage() {
   // A mai reakciókat már a rejtvény betöltésekor előre letöltjük, így megfejtéskor azonnal megjelenik
   // az emojisor (nem kell a hálózatra várni).
   const [reactionsInitial, setReactionsInitial] = useState(null);
+  // A heti mini keresztrejtvény állapota (csak élesítés után jelenik meg a gombja).
+  const [miniInfo, setMiniInfo] = useState(null);
+  useEffect(() => {
+    fetch('/api/mini/status', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.live) return;
+        let solved = false;
+        try {
+          solved = JSON.parse(localStorage.getItem('titkositas_mini_v1') || 'null')?.week === d.week;
+        } catch {}
+        setMiniInfo({ ...d, solved });
+      })
+      .catch(() => {});
+  }, []);
   const [communityNew, setCommunityNew] = useState(false);
   useEffect(() => {
     if (sessionStatus === 'loading') return;
@@ -928,15 +943,24 @@ export default function HomePage() {
               </span>
             )}
             <Icon src="/icons/Korabbi_titkosirasok.png" size={22} />
-            <b>Korábbi titkosírások</b>
-            <span>Játszd újra a régebbi napok rejtvényeit</span>
+            <b>{miniInfo?.live ? 'Korábbi rejtvények' : 'Korábbi titkosírások'}</b>
+            <span>{miniInfo?.live ? 'Titkosírások és Minik' : 'Játszd újra a régebbi napok rejtvényeit'}</span>
           </a>
           <a className="card next-link" href="/kozossegi">
             {communityNew && <span className="next-link-badge new">Új!</span>}
             <Icon src="/icons/Kozossegi.png" size={22} />
-            <b>Közösségi titkosírások</b>
-            <span>Fejtsd meg a játékosok rejtvényeit</span>
+            <b>{miniInfo?.live ? 'Közösségi rejtvények' : 'Közösségi titkosírások'}</b>
+            <span>{miniInfo?.live ? 'Közösségi titkosírások és Minik' : 'Fejtsd meg a játékosok rejtvényeit'}</span>
           </a>
+          {/* A heti mini keresztrejtvény (csak élesítés után), teljes szélességben a két doboz alatt. */}
+          {miniInfo?.live && miniInfo.week && (
+            <a className="card next-link next-link-wide" href="/mini">
+              <span className={`next-link-badge${miniInfo.solved ? '' : ' new'}`}>{miniInfo.solved ? 'Kész' : 'Új!'}</span>
+              <span className="next-link-emoji" aria-hidden="true">🧩</span>
+              <b>Heti mini keresztrejtvény</b>
+              <span>Minden hétfőn új 5×5-ös rejtvény</span>
+            </a>
+          )}
         </div>
       )}
 

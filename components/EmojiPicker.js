@@ -54,6 +54,11 @@ export default function EmojiPicker({ onPick, onClose }) {
     <div className="modal-overlay emoji-picker-overlay" onClick={onClose}>
       <div className="modal-card emoji-picker" role="dialog" aria-label="Emoji választása" onClick={(e) => e.stopPropagation()}>
         <div className="emoji-picker-head">
+          <span className="emoji-picker-searchwrap">
+          <svg className="emoji-picker-searchicon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.4" />
+            <path d="M15.5 15.5 21 21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
           <input
             ref={inputRef}
             type="search"
@@ -63,6 +68,7 @@ export default function EmojiPicker({ onPick, onClose }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+          </span>
           <button type="button" className="emoji-picker-close" aria-label="Bezárás" onClick={onClose}>
             ×
           </button>

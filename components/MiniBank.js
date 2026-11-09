@@ -130,8 +130,11 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
     act({ action: 'deleteClue', word, id }, 'A kérdésváltozat törölve.');
   }
 
+  // Lenyitáskor egyből megnyílik az új kérdésváltozat mezője (Enterrel menthető).
   function toggle(word) {
+    const opening = !open.has(word);
     if (edit && edit.word === word) setEdit(null); // a bezárt sor szerkesztése megszűnik
+    if (opening) setEdit({ word, id: null, text: '' });
     setOpen((prev) => {
       const next = new Set(prev);
       if (next.has(word)) next.delete(word);
@@ -173,8 +176,15 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
         rows={2}
         maxLength={300}
         autoFocus
-        placeholder="Írd ide a kérdést…"
+        placeholder="Írd ide a kérdést… (Enter: mentés, Shift+Enter: új sor)"
         onChange={(e) => setEdit((x) => ({ ...x, text: e.target.value }))}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+            e.preventDefault();
+            if (!busy && edit.text.trim()) saveEdit();
+          }
+          if (e.key === 'Escape') setEdit(null);
+        }}
       />
       <div className="mini-clue-actions">
         <button type="button" className="primary small" disabled={busy || !edit.text.trim()} onClick={saveEdit}>
@@ -315,9 +325,13 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
                       </span>
                     )}
                   </div>
-                  {r.excluded && (
+                  {r.excluded ? (
                     <button type="button" className="ghost small" style={{ marginBottom: 8 }} disabled={busy} onClick={() => act({ action: 'unexclude', word: r.word }, `A(z) „${r.word.toUpperCase()}” kizárása feloldva, a generátor újra használhatja.`)}>
                       Kizárás feloldása
+                    </button>
+                  ) : (
+                    <button type="button" className="ghost small danger" style={{ marginBottom: 8 }} disabled={busy} onClick={() => act({ action: 'exclude', word: r.word }, `A(z) „${r.word.toUpperCase()}” kizárva: a generátor nem használja (a kérdései megmaradnak).`)}>
+                      Kizárás
                     </button>
                   )}
                   <div className="mini-bank-clues">

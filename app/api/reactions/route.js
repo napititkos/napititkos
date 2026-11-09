@@ -6,10 +6,26 @@ import { isValidDateStr } from '../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../lib/rateLimit';
 import { readJson } from '../../../lib/validate';
 import { actorFor, dailyReactionsKey, parseReaction, reactionSummary } from '../../../lib/reactions';
+import { MINI_KEYS, miniReactionsKey } from '../../../lib/mini';
+import { CMINI_KEY, cminiReactionsKey } from '../../../lib/communityMini';
 
 // Napi titkosírás reakciói: GET ?date=YYYY-MM-DD&device=<eszközazonosító> -> darabszámok és a saját;
 // POST { date, reaction: emoji | null, device } -> beállítja vagy visszavonja a sajátot.
 // Csak már megjelent (az előzményben szereplő) napra lehet reagálni.
+// scope=mini: a heti mini keresztrejtvény reakciói (a "date" a hét kezdőnapja), csak megjelent hétre.
+async function keyFor(scope, date) {
+  if (scope === 'cmini') {
+    const list = (await kv.get(CMINI_KEY)) || [];
+    return list.some((m) => m.id === date) ? cminiReactionsKey(date) : null;
+  }
+  if (scope === 'mini') {
+    if (!isValidDateStr(date)) return null;
+    const published = (await kv.get(MINI_KEYS.published)) || [];
+    return published.some((p) => p.week === date) ? miniReactionsKey(date) : null;
+  }
+  return (await shownDate(date)) ? dailyReactionsKey(date) : null;
+}
+
 async function shownDate(date) {
   if (!isValidDateStr(date)) return false;
   const history = (await kv.get('rotation:history')) || [];
@@ -31,22 +47,24 @@ export async function GET(req) {
   if (await isLimited('reactions:get', clientIp(req), 240, 60)) return tooMany(60);
   const url = new URL(req.url);
   const date = url.searchParams.get('date') || '';
-  if (!(await shownDate(date))) return Response.json({ error: 'not-found' }, { status: 404, headers: noStore });
+  const key = await keyFor(url.searchParams.get('scope'), date);
+  if (!key) return Response.json({ error: 'not-found' }, { status: 404, headers: noStore });
   const actor = actorFor(await sessionUserId(), url.searchParams.get('device'));
-  return Response.json(await reactionSummary(date, actor), { headers: noStore });
+  return Response.json(await reactionSummary(date, actor, key), { headers: noStore });
 }
 
 export async function POST(req) {
   if (await isLimited('reactions:post', clientIp(req), 120, 3600)) return tooMany(3600);
   const body = (await readJson(req, 500)) || {};
   const date = String(body.date || '');
-  if (!(await shownDate(date))) return Response.json({ error: 'not-found' }, { status: 404, headers: noStore });
+  const key = await keyFor(body.scope, date);
+  if (!key) return Response.json({ error: 'not-found' }, { status: 404, headers: noStore });
   const reaction = parseReaction(body.reaction);
   if (reaction === undefined) return Response.json({ error: 'invalid-reaction' }, { status: 400, headers: noStore });
   const actor = actorFor(await sessionUserId(), body.device);
   if (!actor) return Response.json({ error: 'invalid-device' }, { status: 400, headers: noStore });
   const r = kv.raw();
-  if (reaction === null) await r.hdel(dailyReactionsKey(date), actor);
-  else await r.hset(dailyReactionsKey(date), actor, reaction);
-  return Response.json({ ok: true, ...(await reactionSummary(date, actor)) }, { headers: noStore });
+  if (reaction === null) await r.hdel(key, actor);
+  else await r.hset(key, actor, reaction);
+  return Response.json({ ok: true, ...(await reactionSummary(date, actor, key)) }, { headers: noStore });
 }

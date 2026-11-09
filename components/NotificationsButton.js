@@ -167,12 +167,17 @@ export default function NotificationsButton() {
                 </div>
                 <div className="notif-text">
                   {n.text}
-                  {n.href && (
-                    <>
-                      {' '}
-                      <a href={n.href} className="notif-link">Megnézem →</a>
-                    </>
-                  )}
+                  {n.href &&
+                    (n.linkText ? (
+                      <a href={n.href} className="notif-btn">
+                        {n.linkText} →
+                      </a>
+                    ) : (
+                      <>
+                        {' '}
+                        <a href={n.href} className="notif-link">Megnézem →</a>
+                      </>
+                    ))}
                 </div>
               </div>
             ))

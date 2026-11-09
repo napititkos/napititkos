@@ -7,7 +7,7 @@ import ReactionBar, { applyReaction } from './ReactionBar';
 // kinagyítva mindig látszanak, reagálni megfejtés után lehet). Bárki reagálhat; vendégként a
 // névtelen eszközazonosító alapján. Az "initial" (a korábbi titkosírások listájával együtt
 // letöltött adat) esetén nincs külön betöltés, így lenyitáskor azonnal megjelenik.
-export default function DailyReactions({ date, interactive = true, initial = null, onChange }) {
+export default function DailyReactions({ date, interactive = true, initial = null, onChange, scope = '' }) {
   const [data, setData] = useState(initial);
   const [error, setError] = useState('');
   const seq = useRef(0);
@@ -16,7 +16,7 @@ export default function DailyReactions({ date, interactive = true, initial = nul
     if (!date || initial) return;
     let alive = true;
     const dev = deviceId();
-    fetch(`/api/reactions?date=${encodeURIComponent(date)}${dev ? `&device=${dev}` : ''}`, { cache: 'no-store' })
+    fetch(`/api/reactions?date=${encodeURIComponent(date)}${scope ? `&scope=${scope}` : ''}${dev ? `&device=${dev}` : ''}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => alive && d && setData(d))
       .catch(() => {});
@@ -50,7 +50,7 @@ export default function DailyReactions({ date, interactive = true, initial = nul
     fetch('/api/reactions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date, reaction: k, device: deviceId() }),
+      body: JSON.stringify({ date, reaction: k, device: deviceId(), ...(scope ? { scope } : {}) }),
     })
       .then(async (r) => {
         const d = await r.json().catch(() => ({}));
