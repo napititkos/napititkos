@@ -1358,9 +1358,135 @@ section('Mini: szóbank és kérdésbank áttekintése (csak olvasás, keresés,
   r = await mut({ action: 'unexclude', word: 'ló' }); check('kizárás feloldása: 200', r.status === 200);
   check('a ló nincs többé a kizártak között, a többi kizárt szó megmaradt', !JSON.parse(await redis.get('mini:excluded')).includes('ló') && JSON.parse(await redis.get('mini:excluded')).includes('qzqzq'));
   r = await mut({ action: 'unexclude', word: 'ló' }); check('ismételt feloldás: 200 (nincs hiba)', r.status === 200);
+  r = await mut({ action: 'exclude', word: 'ló' }); check('kizárás a szóbankból: 200', r.status === 200);
+  check('a kizárt szó a kizártak között, a kérdései megmaradnak', JSON.parse(await redis.get('mini:excluded')).includes('ló'));
+  r = await mut({ action: 'exclude', word: 'ló' }); check('ismételt kizárás: 200 (nincs duplikáció)', r.status === 200 && JSON.parse(await redis.get('mini:excluded')).filter((w) => w === 'ló').length === 1);
+  await mut({ action: 'unexclude', word: 'ló' });
   r = await mut({ action: 'addClue', word: 'qzqzq', clue: 'Új kérdés egy kizárt szóhoz' }); check('új változat egy kizárt szóhoz: 200', r.status === 200);
   check('az új kérdés felvitele feloldja a kizárást is', !JSON.parse(await redis.get('mini:excluded')).includes('qzqzq'));
   await redis.del('mini:excluded', 'mini:queue');
+}
+
+section('Mini keresztrejtvény: élesítés utáni felhasználói rész (oldal, megfejtés, statisztika, ranglista, reakciók, értesítés, heti poszt)');
+{
+  const wk = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
+  const prevWk = (() => { const d = new Date(wk + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 7); return d.toISOString().slice(0, 10); })();
+  const rows = [['k', 'o', 's', '#', '#'], ['o', 'k', 'o', 's', '#'], ['s', 'o', 'k', '#', '#'], ['#', 's', '#', '#', '#'], ['#', '#', '#', '#', '#']];
+  const pz = { id: 'mini-elo', rows, entries: [{ dir: 'A', row: 0, col: 0, len: 3, word: 'kos', clue: 'Hím juh' }, { dir: 'A', row: 1, col: 0, len: 4, word: 'okos', clue: 'Eszes' }] };
+  // Az első megjelenés: bejelentő értesítés; utána heti értesítés.
+  await redis.set('mini:published', JSON.stringify([]));
+  await redis.set('mini:queue', JSON.stringify([{ ...pz }]));
+  const notifBefore = JSON.parse((await redis.get('notifications:list')) || '[]').length;
+  r = await fetch(BASE + '/api/mini'); j = await r.json();
+  check('élesítés után: a heti mini elérhető (rács, kérdések, statisztika)', r.status === 200 && j.live === true && j.week === wk && j.puzzle?.id === 'mini-elo' && j.stats?.count === 0, JSON.stringify(j).slice(0, 300));
+  let nl = JSON.parse(await redis.get('notifications:list'));
+  check('az első megjelenéskor a bejelentő értesítés megy ki, gombbal a minihez', nl.length === notifBefore + 1 && /^Új játékkal bővült az oldal!/.test(nl[0].text) && nl[0].href === '/mini' && !!nl[0].linkText, JSON.stringify(nl[0]));
+  j = await (await fetch(BASE + '/api/notifications')).json();
+  check('az értesítés a nyilvános listában is a gombbal', j.notifications[0].href === '/mini' && !!j.notifications[0].linkText);
+  await redis.set('mini:published', JSON.stringify([{ ...pz, id: 'mini-mult', week: prevWk }]));
+  await redis.set('mini:queue', JSON.stringify([{ ...pz }]));
+  r = await fetch(BASE + '/api/mini'); j = await r.json();
+  nl = JSON.parse(await redis.get('notifications:list'));
+  check('a következő heteken: „Új heti mini keresztrejtvény érhető el!” értesítés', nl[0].text === 'Új heti mini keresztrejtvény érhető el!' && nl[0].href === '/mini');
+  r = await fetch(BASE + '/api/mini'); nl = JSON.parse(await redis.get('notifications:list'));
+  check('ugyanazon a héten nincs újabb értesítés', nl[0].text === 'Új heti mini keresztrejtvény érhető el!' && nl[1].text !== 'Új heti mini keresztrejtvény érhető el!' || nl.filter((n) => n.text === 'Új heti mini keresztrejtvény érhető el!').length === 1);
+  j = await (await fetch(BASE + '/api/mini/status')).json(); check('állapot: él, a hét', j.live === true && j.week === wk);
+  r = await fetch(BASE + '/mini'); check('/mini oldal: 200', r.status === 200);
+  // Megfejtés és statisztika
+  const dA = 'a'.repeat(32), dB = 'b'.repeat(32);
+  const solve = (b, h = {}) => post('/api/mini/solve', b, h);
+  r = await solve({ week: prevWk, elapsed: 30000, device: dA }); check('régi hétre nem lehet: 409', r.status === 409);
+  r = await solve({ week: wk, elapsed: 500, device: dA }); check('irreálisan gyors idő: 400', r.status === 400);
+  r = await solve({ week: wk, elapsed: 30000 }); check('vendég eszközazonosító nélkül: 400', r.status === 400);
+  r = await solve({ week: wk, elapsed: 40000, device: dA, name: 'Vendég Vilma' }); j = await r.json();
+  check('vendég megfejtése: első, statisztikában', r.status === 200 && j.first === true && j.stats.count === 1 && j.stats.mine === 40000 && j.stats.avg === 40000, JSON.stringify(j));
+  r = await solve({ week: wk, elapsed: 20000, device: dA, name: 'Vendég Vilma' }); j = await r.json();
+  check('ismételt beküldés: az első idő marad', j.first === false && j.stats.mine === 40000 && j.stats.count === 1);
+  r = await solve({ week: wk, elapsed: 20000, device: dB }, { cookie: cA.header() }); j = await r.json();
+  check('bejelentkezve: a fiókhoz kötődik; átlag számolva', j.first === true && j.stats.count === 2 && j.stats.avg === 30000 && j.stats.mine === 20000, JSON.stringify(j.stats));
+  j = await (await fetch(BASE + `/api/mini?device=${dA}`)).json();
+  check('a heti mini lekérése a saját időt is adja', j.stats.mine === 40000 && j.stats.count === 2);
+  j = await (await fetch(BASE + '/api/mini/leaderboard')).json();
+  check('heti ranglista idő szerint (gyorsabb elöl), fióknévvel és vendégnévvel', j.entries.length === 2 && j.entries[0].elapsed === 20000 && j.entries[0].name === 'Kommentelő Kata' && j.entries[1].name === 'Vendég Vilma', JSON.stringify(j.entries));
+  // Reakciók a heti minire
+  r = await fetch(BASE + `/api/reactions?scope=mini&date=${wk}&device=${dA}`); j = await r.json();
+  check('mini reakciók: 200, még nincs', r.status === 200 && Object.keys(j.counts).length === 0);
+  r = await post('/api/reactions', { scope: 'mini', date: wk, reaction: '🤯', device: dA }); j = await r.json();
+  check('mini reakció mentve, külön a napi reakcióktól', r.status === 200 && j.counts['🤯'] === 1 && j.mine === '🤯' && (await redis.hget('daily:reactions:' + wk, 'd:' + dA)) !== '🤯' && (await redis.hget('mini:reactions:' + wk, 'd:' + dA)) === '🤯', JSON.stringify({ s: r.status, j }));
+  r = await post('/api/reactions', { scope: 'mini', date: '2020-01-06', reaction: '🤯', device: dA }); check('meg nem jelent hétre: 404', r.status === 404);
+  // Heti közösségi poszt (hamis Graph API)
+  const http = await import('node:http');
+  const log = [];
+  const srv = http.createServer((req, res) => { let b = ''; req.on('data', (d) => (b += d)); req.on('end', () => { const u = new URL(req.url, 'http://x'); log.push({ m: req.method, p: u.pathname, body: Object.fromEntries(new URLSearchParams(b)) }); const send = (o) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(o)); }; if (u.pathname === '/111/photos') return send({ id: 'p', post_id: '111_m' + log.length }); if (u.pathname.endsWith('/comments')) return send({ id: 'c' }); if (u.pathname === '/178/media') return send({ id: 'ctm' }); if (u.pathname === '/ctm') return send({ status_code: 'FINISHED' }); if (u.pathname === '/178/media_publish') return send({ id: 'mm' }); send({ id: 'x' }); }); });
+  await new Promise((ok) => srv.listen(3199, '127.0.0.1', ok));
+  await redis.del('social:minifb:' + wk, 'social:miniig:' + wk);
+  r = await fetch(BASE + '/api/cron/social', { headers: { authorization: 'Bearer helyi-cron-titok' } }); j = await r.json();
+  const mp = log.filter((g) => g.m === 'POST' && g.p === '/111/photos').find((g) => /mini-card/.test(g.body.url));
+  const mc = log.filter((g) => g.m === 'POST' && g.p.endsWith('/comments')).find((g) => /\/mini$/.test(g.body.message));
+  const mi = log.filter((g) => g.m === 'POST' && g.p === '/178/media').find((g) => /mini-card/.test(g.body.image_url));
+  check('heti mini poszt: Facebook (kép, „Heti mini keresztrejtvény”, link az első kommentben)', j.mini?.fb?.status === 'ok' && mp && /Heti mini keresztrejtvény/.test(mp.body.caption) && mc, JSON.stringify(j.mini));
+  check('heti mini poszt: Instagram (JPEG kép, link a profilban)', j.mini?.ig?.status === 'ok' && mi && /f=ig/.test(mi.body.image_url) && /profilban/.test(mi.body.caption));
+  const n1 = log.length;
+  r = await fetch(BASE + '/api/cron/social', { headers: { authorization: 'Bearer helyi-cron-titok' } }); j = await r.json();
+  check('a heti mini poszt hetente csak egyszer megy ki', !log.slice(n1).some((g) => g.m === 'POST' && (/mini-card/.test(g.body.url || '') || /mini-card/.test(g.body.image_url || ''))));
+  r = await fetch(BASE + '/api/social/mini-card?f=fb&t=light'); const png = Buffer.from(await r.arrayBuffer());
+  check('a mini poszt képe: PNG 1200×630', r.status === 200 && png.readUInt32BE(16) === 1200 && png.readUInt32BE(20) === 630);
+  srv.close();
+}
+
+section('Mini: Korábbi rejtvények (minik) és Közösségi rejtvények (saját minik), profil, adatok');
+{
+  const wk = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
+  const old = (() => { const d = new Date(wk + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 14); return d.toISOString().slice(0, 10); })();
+  const rows = [['k', 'o', 's', '#', '#'], ['o', 'k', 'o', 's', '#'], ['s', 'o', 'k', '#', '#'], ['#', 's', '#', '#', '#'], ['#', '#', '#', '#', '#']];
+  const slots = [['A', 0, 0, 'kos'], ['A', 1, 0, 'okos'], ['A', 2, 0, 'sok'], ['A', 3, 1, 's'], ['D', 0, 0, 'kos'], ['D', 0, 1, 'okos'], ['D', 0, 2, 'sok'], ['D', 1, 3, 's']];
+  const ent = (pfx) => slots.map(([dir, row, col, word]) => ({ dir, row, col, word, clue: `${pfx} ${word}` }));
+  const pub = JSON.parse((await redis.get('mini:published')) || '[]');
+  await redis.set('mini:published', JSON.stringify([{ id: 'mini-regi', rows, entries: ent('Régi').map((e) => ({ ...e, len: Array.from(e.word).length })), week: old }, ...pub]));
+  r = await fetch(BASE + '/api/mini/archive'); check('korábbi minik vendégként: 401', r.status === 401);
+  r = await fetch(BASE + '/api/mini/archive', { headers: { cookie: cA.header() } }); j = await r.json();
+  const regi = j.items?.find((x) => x.id === 'mini-regi');
+  check('korábbi minik: csak a mostani hét előttiek, a saját idővel', r.status === 200 && regi && regi.solvedMs === null && !j.items.some((x) => x.week === wk), JSON.stringify(j.items?.map((x) => x.week)));
+  r = await post('/api/mini/archive', { week: old, elapsed: 61000 }, { cookie: cA.header() }); check('korábbi mini megfejtése: 200', r.status === 200);
+  r = await post('/api/mini/archive', { week: wk, elapsed: 61000 }, { cookie: cA.header() }); check('a mostani hét nem korábbi: 404', r.status === 404);
+  j = await (await fetch(BASE + '/api/mini/archive', { headers: { cookie: cA.header() } })).json();
+  check('megfejtés után a lista jelzi (kitöltött előnézethez)', j.items.find((x) => x.id === 'mini-regi').solvedMs === 61000);
+  // Közösségi minik
+  const sub = (b, h = {}) => post('/api/community/minis', b, h);
+  const crow = [['k', 'e', 'r', 't', '#'], ['#', '#', '#', '#', '#'], ['#', '#', '#', '#', '#'], ['#', '#', '#', '#', '#'], ['#', '#', '#', '#', '#']];
+  const cent = (pfx) => [['A', 0, 0, 'kert'], ['D', 0, 0, 'k'], ['D', 0, 1, 'e'], ['D', 0, 2, 'r'], ['D', 0, 3, 't']].map(([dir, row, col, word]) => ({ dir, row, col, word, clue: `${pfx} ${word}` }));
+  r = await sub({ rows: crow, entries: cent('K') }); check('saját mini vendégként: 401', r.status === 401);
+  await seedUser('mini-nemerositett@teszt.hu', 'Mini-Nem-Erositett-1', { emailVerified: null });
+  const unv = (await credLogin('mini-nemerositett@teszt.hu', 'Mini-Nem-Erositett-1')).jar;
+  r = await sub({ rows: crow, entries: cent('K') }, { cookie: unv.header() }); check('megerősítetlen fiókkal: 403', r.status === 403);
+  const bad = cent('K'); bad[0].clue = '';
+  r = await sub({ rows: crow, entries: bad }, { cookie: cA.header() }); check('kérdés nélkül: 400', r.status === 400);
+  r = await sub({ rows, entries: ent('K') }, { cookie: cA.header() }); check('ismétlődő szóval: 400', r.status === 400);
+  r = await sub({ rows: crow, entries: cent('Kata') }, { cookie: cA.header() }); j = await r.json();
+  check('saját mini beküldése: 200', r.status === 200 && /^cm/.test(j.id), JSON.stringify(j));
+  const cmId = j.id;
+  j = await (await fetch(BASE + '/api/community/minis', { headers: { cookie: cA.header() } })).json();
+  const mine = j.items.find((x) => x.id === cmId);
+  check('a közösségi minik között a beküldő nevével, a saját jelzéssel', mine && mine.name === 'Kommentelő Kata' && mine.isOwner === true && mine.solvers === 0 && !('submitterEmail' in mine), JSON.stringify(mine));
+  r = await post(`/api/community/minis/${cmId}`, { action: 'solve', elapsed: 45000 }); check('megfejtés vendégként: 401', r.status === 401);
+  const ujL = (await credLogin('archiv-olvaso@teszt.hu', 'Archiv-Jelszo-1')).jar;
+  r = await post(`/api/community/minis/${cmId}`, { action: 'solve', elapsed: 45000 }, { cookie: ujL.header() }); check('megfejtés bejelentkezve: 200', r.status === 200);
+  j = await (await fetch(BASE + '/api/community/minis', { headers: { cookie: ujL.header() } })).json();
+  check('megfejtők száma és a saját idő', j.items.find((x) => x.id === cmId).solvers === 1 && j.items.find((x) => x.id === cmId).solvedMs === 45000 && j.items.find((x) => x.id === cmId).isOwner === false);
+  r = await post('/api/reactions', { scope: 'cmini', date: cmId, reaction: '🧠', device: 'c'.repeat(32) }); j = await r.json();
+  check('reakció a közösségi minire', r.status === 200 && j.counts['🧠'] === 1);
+  r = await post('/api/reactions', { scope: 'cmini', date: 'nincs-ilyen', reaction: '🧠', device: 'c'.repeat(32) }); check('nem létező minire: 404', r.status === 404);
+  r = await fetch(BASE + `/api/community/minis/${cmId}`, { method: 'DELETE', headers: { cookie: ujL.header() } }); check('más nem törölheti: 403', r.status === 403);
+  r = await post(`/api/community/minis/${cmId}`, { action: 'promote' }, { cookie: ujL.header() }); check('beemelés nem adminként: 401', r.status === 401);
+  const qBefore = JSON.parse((await redis.get('mini:queue')) || '[]').length;
+  r = await post(`/api/community/minis/${cmId}`, { action: 'promote' }, adm); check('admin beemelés: 200', r.status === 200, `(${r.status})`);
+  check('a beemelt mini a heti várólista végére került', JSON.parse(await redis.get('mini:queue')).length === qBefore + 1);
+  r = await post(`/api/community/minis/${cmId}`, { action: 'promote' }, adm); check('másodszor nem emelhető be: 409', r.status === 409);
+  j = await (await fetch(BASE + '/api/account/export', { headers: { cookie: cA.header() } })).json();
+  check('adatletöltés: a mini megfejtések és a saját közösségi minik', j.miniSolves?.some((x) => x.week === old && x.ms === 61000) && j.communityMinis?.some((x) => x.id === cmId), JSON.stringify({ s: j.miniSolves, m: j.communityMinis?.length }));
+  r = await fetch(BASE + `/api/community/minis/${cmId}`, { method: 'DELETE', headers: { cookie: cA.header() } }); check('a beküldő törölheti: 200', r.status === 200);
+  check('törléskor a megfejtései és reakciói is törlődnek', (await redis.hlen(`community:minisolved:${cmId}`)) === 0 && (await redis.hlen(`community:minireactions:${cmId}`)) === 0);
+  r = await fetch(BASE + '/kozossegi/sajat-mini'); check('/kozossegi/sajat-mini: 200', r.status === 200);
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);

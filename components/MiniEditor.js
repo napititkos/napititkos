@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
 import { HU, N, gridWarnings, numbering } from '../lib/miniGrid';
 import { assemble } from '../lib/miniDraft';
+import { afterType, arrowStep, backspaceStep, clickCell, jumpWord, navModel } from '../lib/miniNav';
 
 // Mini keresztrejtvény szerkesztő (admin). Egy tábla elmenthető akkor is, ha még nincs kész:
 // a mentés piszkozatot készít, amit bármelyik admin megnyithat és folytathat. A tábla kézzel is
@@ -81,17 +82,14 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
     touch();
   }
 
-  function step(r, c, delta) {
-    const dr = dir === 'D' ? delta : 0;
-    const dc = dir === 'A' ? delta : 0;
-    let rr = r + dr;
-    let cc = c + dc;
-    while (rr >= 0 && cc >= 0 && rr < N && cc < N && rows[rr][cc] === '#') {
-      rr += dr;
-      cc += dc;
-    }
-    return rr >= 0 && cc >= 0 && rr < N && cc < N ? [rr, cc] : null;
-  }
+  // A navigáció ugyanaz, mint a játékfelületen (lib/miniNav.js): kattintás az aktív négyzetre
+  // irányt vált, gépelés után a szó következő üres négyzete jön, Backspace üres négyzeten
+  // visszalép, a szóiránnyal ellentétes nyíl először irányt vált, Tab a következő szóra ugrik.
+  const goTo = useCallback((nc) => {
+    setDir(nc.dir);
+    setSel({ r: nc.r, c: nc.c });
+    cellRefs.current[nc.r * N + nc.c]?.focus({ preventScroll: true });
+  }, []);
 
   function typeChar(r, c, ch) {
     const low = ch.toLowerCase();
@@ -100,48 +98,48 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
       return;
     }
     if (!HU.has(low)) return;
+    const next = rows.map((row, i) => (i === r ? row.map((v, j) => (j === c ? low : v)) : row));
     put(r, c, low);
-    const next = step(r, c, 1);
-    if (next) focusCell(next[0], next[1]);
+    const nm = navModel(next);
+    const cur = { r, c, dir: nm.at[`${r},${c}`]?.[dir] ? dir : dir === 'A' ? 'D' : 'A' };
+    goTo(afterType(nm, next, cur));
   }
 
   function backspace(r, c) {
-    if (rows[r][c]) {
-      put(r, c, '');
-      return;
-    }
-    const prev = step(r, c, -1);
-    if (prev) {
-      if (rows[prev[0]][prev[1]] && rows[prev[0]][prev[1]] !== '#') put(prev[0], prev[1], '');
-      focusCell(prev[0], prev[1]);
-    }
+    const nm = navModel(rows);
+    const cur = { r, c, dir: nm.at[`${r},${c}`]?.[dir] ? dir : dir === 'A' ? 'D' : 'A' };
+    const { clear, cur: nc } = backspaceStep(nm, rows, cur);
+    if (clear) put(clear[0], clear[1], '');
+    goTo(nc);
   }
 
   function onKeyDown(e, r, c) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const k = e.key;
-    const move = (dr, dc) => {
+    const nm = navModel(rows);
+    const cur = { r, c, dir };
+    const act = (fn) => {
       e.preventDefault();
-      const rr = Math.min(N - 1, Math.max(0, r + dr));
-      const cc = Math.min(N - 1, Math.max(0, c + dc));
-      if (dr) setDir('D');
-      if (dc) setDir('A');
-      focusCell(rr, cc);
+      fn();
     };
-    if (k === 'ArrowLeft') move(0, -1);
-    else if (k === 'ArrowRight') move(0, 1);
-    else if (k === 'ArrowUp') move(-1, 0);
-    else if (k === 'ArrowDown') move(1, 0);
-    else if (k === 'Backspace' || k === 'Delete') {
+    // Fekete négyzeten a nyilak egyszerűen léptetnek (ott nincs szó).
+    const plainMove = (dr, dc) => goTo({ r: Math.min(N - 1, Math.max(0, r + dr)), c: Math.min(N - 1, Math.max(0, c + dc)), dir: dr ? 'D' : 'A' });
+    const move = (dr, dc) => (rows[r][c] === '#' ? plainMove(dr, dc) : goTo(arrowStep(nm, cur, dr, dc)));
+    if (k === 'ArrowLeft') act(() => move(0, -1));
+    else if (k === 'ArrowRight') act(() => move(0, 1));
+    else if (k === 'ArrowUp') act(() => move(-1, 0));
+    else if (k === 'ArrowDown') act(() => move(1, 0));
+    else if (k === 'Tab' && rows[r][c] !== '#') act(() => goTo(jumpWord(nm, rows, cur, e.shiftKey ? -1 : 1)));
+    else if (k === 'Backspace' || k === 'Delete') act(() => (rows[r][c] === '#' ? put(r, c, '') : backspace(r, c)));
+    else if (k === ' ') act(() => goTo(clickCell(nm, cur, r, c)));
+    else if (k.length === 1 && (HU.has(k.toLowerCase()) || k === '#' || k === '.')) act(() => typeChar(r, c, k));
+  }
+
+  // Az aktív négyzetre újra kattintva irányváltás (mint a játékfelületen).
+  function onCellPointerDown(e, r, c) {
+    if (sel.r === r && sel.c === c && rows[r][c] !== '#') {
       e.preventDefault();
-      if (rows[r][c] === '#') put(r, c, '');
-      else backspace(r, c);
-    } else if (k === ' ') {
-      e.preventDefault();
-      setDir((d) => (d === 'A' ? 'D' : 'A'));
-    } else if (k.length === 1 && (HU.has(k.toLowerCase()) || k === '#' || k === '.')) {
-      e.preventDefault();
-      typeChar(r, c, k);
+      goTo(clickCell(navModel(rows), { r, c, dir }, r, c));
     }
   }
 
@@ -481,6 +479,7 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
                     autoCapitalize="characters"
                     spellCheck={false}
                     onFocus={() => setSel({ r, c })}
+                    onPointerDown={(e) => onCellPointerDown(e, r, c)}
                     onKeyDown={(e) => onKeyDown(e, r, c)}
                     onChange={(e) => onChange(e, r, c)}
                   />
@@ -491,7 +490,7 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
         </div>
         <div className="mini-edit-tools">
           <p className="mini-muted">
-            Kattints egy négyzetre, és írd be a betűket (a nyilak mozgatnak, a szóköz irányt vált). Fekete négyzet: <kbd>#</kbd> billentyű vagy a gomb.
+            Kattints egy négyzetre, és írd be a betűket. Ugyanarra a négyzetre újra kattintva (vagy szóközzel) irányt váltasz, a Tab a következő szóra ugrik, mint a játékban. Fekete négyzet: <kbd>#</kbd> billentyű vagy a gomb.
           </p>
           <button type="button" className="ghost small" onClick={() => put(sel.r, sel.c, selBlack ? '' : '#')}>
             {selBlack ? 'Fehér négyzet' : 'Fekete négyzet'}

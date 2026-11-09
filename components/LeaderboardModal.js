@@ -16,15 +16,28 @@ export default function LeaderboardModal() {
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState(null);
   const [myName, setMyName] = useState('');
+  // Két ranglista (a mini élesítése után): Titkosírás (mai) és Keresztrejtvény (heti, idő szerint).
+  const [tab, setTab] = useState('daily');
+  const [miniLive, setMiniLive] = useState(false);
+
+  function load(t) {
+    setEntries(null);
+    fetch(t === 'mini' ? '/api/mini/leaderboard' : '/api/leaderboard', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => setEntries(d.entries || []))
+      .catch(() => setEntries([]));
+  }
 
   useEffect(() => {
-    function handleOpen() {
+    function handleOpen(e) {
       setMyName(session?.user?.name || getIdentity().name);
-      setEntries(null);
-      fetch('/api/leaderboard')
-        .then((r) => r.json())
-        .then((d) => setEntries(d.entries || []))
-        .catch(() => setEntries([]));
+      const t = e?.detail?.tab === 'mini' ? 'mini' : 'daily';
+      setTab(t);
+      load(t);
+      fetch('/api/mini/status')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setMiniLive(!!d?.live))
+        .catch(() => {});
       setOpen(true);
     }
     window.addEventListener('open-leaderboard', handleOpen);
@@ -37,11 +50,34 @@ export default function LeaderboardModal() {
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
-          <Icon src="/icons/Ranglista.png" size={24} /> Mai ranglista
+          <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
         </h2>
+        {(miniLive || tab === 'mini') && (
+          <div className="lb-tabs" role="tablist" aria-label="Ranglista választása">
+            {[
+              ['daily', 'Titkosírás'],
+              ['mini', 'Keresztrejtvény'],
+            ].map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={tab === v}
+                className={tab === v ? 'primary small' : 'ghost small'}
+                onClick={() => {
+                  if (tab === v) return;
+                  setTab(v);
+                  load(v);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         {entries === null && <p>Betöltés...</p>}
         {entries && entries.length === 0 && (
-          <p style={{ color: 'var(--ink-soft)' }}>Ma még senki nem fejtette meg - légy te az első!</p>
+          <p style={{ color: 'var(--ink-soft)' }}>{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>
         )}
         {entries && entries.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -62,7 +98,7 @@ export default function LeaderboardModal() {
                   {i + 1}. {e.name}
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-                  {e.hintsUsed} tipp · {formatTime(e.elapsed)}
+                  {tab === 'mini' ? formatTime(e.elapsed) : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
                 </span>
               </div>
             ))}

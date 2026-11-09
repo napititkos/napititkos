@@ -783,6 +783,8 @@ button.field-help-btn[aria-expanded="true"]{ background: var(--accent2-text); co
 /* Megfejtés utáni két fél szélességű doboz (korábbi és közösségi titkosírások). */
 .next-links{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
 .next-links > *{ min-width: 0; }
+.next-links .card.next-link.next-link-wide{ grid-column: 1 / -1; }
+.next-link-emoji{ font-size: 22px; line-height: 1; }
 .next-links .card.next-link{
   margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   text-align: center; text-decoration: none; color: var(--ink); padding: 14px 10px;
@@ -1326,7 +1328,18 @@ button.reaction-btn.reaction-more span{ display: block; height: 1em; width: 1.15
 /* Emojiválasztó (a + gombról): kereső felül, alatta görgethető lista csoportonként. */
 .emoji-picker{ display: flex; flex-direction: column; max-height: min(78vh, 620px); padding: 14px; width: min(520px, 94vw); }
 .emoji-picker-head{ display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-input.emoji-picker-search{ flex: 1; text-transform: none; }
+/* Kereső az oldal stílusában: kerekített, a paletta színeivel, kereső ikonnal. */
+.emoji-picker-searchwrap{ position: relative; flex: 1; display: flex; align-items: center; }
+.emoji-picker-searchicon{ position: absolute; left: 13px; color: var(--accent-text); pointer-events: none; }
+input.emoji-picker-search{
+  flex: 1; width: 100%; text-transform: none; font: inherit; font-size: 15px; font-weight: 600;
+  padding: 10px 14px 10px 40px; border-radius: 999px; border: 2px solid var(--line);
+  background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-appearance: none; appearance: none;
+}
+input.emoji-picker-search::placeholder{ color: var(--ink-soft); font-weight: 500; }
+input.emoji-picker-search:focus{ border-color: var(--btn-primary); box-shadow: 0 0 0 3px var(--accent-soft); }
+input.emoji-picker-search::-webkit-search-cancel-button{ -webkit-appearance: none; }
 button.emoji-picker-close{ width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-size: 22px; line-height: 1; flex-shrink: 0; }
 .emoji-picker-body{ overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
 .emoji-picker-group{ content-visibility: auto; contain-intrinsic-size: auto 400px; }
@@ -1389,7 +1402,15 @@ button.mini-cluebar-nav{ border: none; background: transparent; color: var(--min
 .mini-sq.solved{ background: var(--mini-sq); }
 .mini-sq-num{ position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 700; line-height: 1; opacity: 0.8; }
 .mini-sq-ch{ font-size: clamp(22px, 7vw, 32px); font-weight: 800; text-transform: uppercase; }
-.mini-sq.wrong::after{ content: ''; position: absolute; inset: 0; background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--bad, #c0392b) calc(50% - 1.5px), var(--bad, #c0392b) calc(50% + 1.5px), transparent calc(50% + 1.5px)); opacity: 0.8; }
+/* Ellenőrzés: a jó betűk zöldes, a rosszak pirosas háttérrel (a kijelölés felett is). */
+.mini-sq.ok{ background: #CDEBD6; }
+.mini-sq.bad{ background: #F4C7C7; }
+.mini-sq.ok.active, .mini-sq.ok.word{ background: #B5E0C2; }
+.mini-sq.bad.active, .mini-sq.bad.word{ background: #EEB1B1; }
+@media (prefers-color-scheme: dark){
+  .mini-sq.ok{ background: #24533A; } .mini-sq.bad{ background: #6A2A33; }
+  .mini-sq.ok.active, .mini-sq.ok.word{ background: #2D6A49; } .mini-sq.bad.active, .mini-sq.bad.word{ background: #803440; }
+}
 /* A billentyűzetet előhozó mező láthatatlan, de fókuszálható (nincs kurzor, nincs kijelölés). */
 .mini-hidden-input{ position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; caret-color: transparent; font-size: 16px; }
 .mini-cluelists{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -1463,3 +1484,34 @@ button.mini-bank-head:active:not(:disabled){ transform: none; }
 .mini-bank-panel{ padding: 2px 6px 12px 30px; }
 .mini-bank-badges{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .mini-bank-badges .mini-src{ margin-left: 0; }
+
+/* Értesítés gombbal (pl. az új heti mini keresztrejtvényhez). */
+a.notif-btn{
+  display: inline-flex; align-items: center; margin-top: 8px; padding: 6px 14px; border-radius: 999px;
+  background: var(--btn-primary); color: #fff; font-weight: 800; font-size: 13px; text-decoration: none;
+}
+
+/* Heti mini oldal: statisztika a megfejtés után. */
+.mini-stats{ display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 12px 0 2px; }
+.mini-stats .pill{ font-size: 13px; }
+
+/* Ranglista: Titkosírás / Keresztrejtvény választó a cím alatt. */
+.lb-tabs{ display: flex; gap: 8px; margin: -4px 0 12px; }
+
+/* Mini előnézet (Korábbi és Közösségi rejtvények listái). */
+.mini-thumb{ display: grid; grid-template-columns: repeat(5, 18px); grid-auto-rows: 18px; border: 2px solid var(--mini-black); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+.mini-thumb-sq{ position: relative; display: flex; align-items: center; justify-content: center; background: var(--mini-sq); border: 1px solid var(--mini-border); color: var(--mini-ink); }
+.mini-thumb-sq.black{ background: var(--mini-black); }
+.mini-thumb-num{ position: absolute; top: 0; left: 1px; font-size: 6px; font-weight: 700; line-height: 1; opacity: 0.8; }
+.mini-thumb-ch{ font-size: 10px; font-weight: 800; }
+.mini-list{ display: flex; flex-direction: column; gap: 10px; }
+.card.mini-list-item{ margin: 0; padding: 0; overflow: hidden; }
+button.mini-list-head{ display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 14px; border: none; border-radius: 0; background: transparent; text-align: left; white-space: normal; }
+.mini-list-meta{ display: flex; flex-direction: column; gap: 2px; flex: 1; font-size: 13.5px; color: var(--ink-soft); }
+.mini-list-meta b{ color: var(--ink); font-size: 15px; }
+.mini-list-chev{ color: var(--ink-soft); }
+.mini-list-body{ padding: 4px 14px 14px; }
+.mini-list-actions{ display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+.rejtveny-tabs{ display: flex; gap: 8px; margin: 0 0 14px; }
+
+.my-mini{ display: flex; align-items: center; gap: 12px; border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; }

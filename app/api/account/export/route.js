@@ -35,6 +35,17 @@ export async function GET() {
     if (v != null) dailyReactions.push({ date: k.slice('daily:reactions:'.length), emoji: normalizeReaction(v) });
   }
 
+  // Mini keresztrejtvény: megfejtési idők hetenként, és a saját közösségi minik.
+  const miniSolves = [];
+  for (const k of await kv.scan('mini:solves:*')) {
+    const v = await kv.raw().hget(k, `u:${id}`);
+    if (v != null) miniSolves.push({ week: k.slice('mini:solves:'.length), ms: Number(v) });
+  }
+  const userEmail = String(user.email || '').toLowerCase();
+  const communityMinis = ((await kv.get('community:minis')) || [])
+    .filter((m) => String(m.submitterEmail || '').toLowerCase() === userEmail)
+    .map(({ id: mid, rows, entries, createdAt }) => ({ id: mid, rows, entries, createdAt }));
+
   const data = {
     exportedAt: new Date().toISOString(),
     account: {
@@ -51,6 +62,8 @@ export async function GET() {
     submissions,
     publishedPuzzles,
     dailyReactions,
+    miniSolves,
+    communityMinis,
     notifications: await userNotifications(user.email),
     communityRatings: await myCommunityRatings(user.id),
   };

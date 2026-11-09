@@ -84,6 +84,21 @@ export async function POST(req) {
   // A napi titkosírásokra adott reakciók (fiókhoz kötöttek; a vendég-reakciók névtelenek).
   for (const k of await kv.scan('daily:reactions:*')) await r.hdel(k, `u:${id}`);
 
+  // Mini keresztrejtvény: megfejtések, ranglistanév, reakciók, a saját közösségi minik és azok
+  // megfejtései/reakciói, valamint a mások minijein hagyott saját megfejtések és reakciók.
+  for (const pat of ['mini:solves:*', 'mini:lbnames:*', 'mini:reactions:*', 'community:minireactions:*']) {
+    for (const k of await kv.scan(pat)) await r.hdel(k, `u:${id}`);
+  }
+  for (const k of await kv.scan('community:minisolved:*')) await r.hdel(k, id);
+  {
+    const minis = (await kv.get('community:minis')) || [];
+    const mine = minis.filter((m) => String(m.submitterEmail || '').toLowerCase() === email);
+    if (mine.length) {
+      await kv.set('community:minis', minis.filter((m) => !mine.includes(m)));
+      for (const m of mine) await r.del(`community:minisolved:${m.id}`, `community:minireactions:${m.id}`);
+    }
+  }
+
   // Ranglista-bejegyzések (az utóbbi ~45 napból).
   const playerKey = `u:${id}`;
   for (const k of await kv.scan('leaderboard:z:*')) await r.zrem(k, playerKey);

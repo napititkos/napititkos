@@ -49,6 +49,7 @@ export async function GET(req) {
 //   POST { action: 'addClue',    word, clue }        új változat (egy szóhoz több is lehet); feloldja a kizárást
 //   POST { action: 'editClue',   word, id, clue }    egy kézi változat átírása
 //   POST { action: 'deleteClue', word, id }          egy kézi változat törlése
+//   POST { action: 'exclude',    word }              kizárás (a generátor nem használja; a kérdései megmaradnak)
 //   POST { action: 'unexclude',  word }              a kizárás feloldása (a generátor újra használhatja)
 const MESSAGES = {
   'missing-clue': 'Írj kérdést!',
@@ -65,6 +66,15 @@ export async function POST(req) {
   if (!word) return fail('invalid-word');
   const id = typeof body.id === 'string' ? body.id : '';
   const at = new Date().toISOString();
+
+  if (body.action === 'exclude') {
+    const res = await kv.withLock('mini-bank', async () => {
+      const ex = (await kv.get(MINI_KEYS.excluded)) || [];
+      if (!ex.includes(word)) await kv.set(MINI_KEYS.excluded, [...ex, word]);
+      return true;
+    });
+    return res ? Response.json({ ok: true }) : Response.json({ error: 'busy' }, { status: 503 });
+  }
 
   if (body.action === 'unexclude') {
     const res = await kv.withLock('mini-bank', async () => {

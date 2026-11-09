@@ -71,6 +71,23 @@ export default function PrivacyPage() {
           </p>
         </div>
         <div className="help-block">
+          <h3>Mini keresztrejtvény</h3>
+          <p>
+            A heti mini keresztrejtvény megfejtésekor eltároljuk a megfejtési idődet (bejelentkezve a
+            fiókodhoz, vendégként a névtelen eszközazonosítódhoz kötve), hogy kiszámolhassuk az
+            átlagidőt és a teljesítések számát. A heti ranglistán a fiókod neve, vendégként a
+            vendégneved jelenik meg az idővel; e-mail-cím soha. A minikre adott reakciók ugyanúgy
+            működnek, mint a titkosírásoknál. A heti adatok a következő hetektől már csak a korábbi
+            rejtvényeknél, a saját megfejtésed jelzéseként számítanak.
+          </p>
+          <p>
+            Saját mini beküldésekor a rács, a kérdések, a neved (a beküldő nevének megjelenítéséhez)
+            és az e-mail-címed (csak a jogosultság ellenőrzéséhez, nem nyilvános) tárolódik. A saját
+            minidet bármikor törölheted; fióktörléskor a minijeid, a megfejtéseid és a reakcióid is
+            törlődnek, és az adatletöltés ezeket is tartalmazza.
+          </p>
+        </div>
+        <div className="help-block">
           <h3>Közösségi titkosírások (saját rejtvény beküldése)</h3>
           <p>
             A rejtvény-beküldés bejelentkezést és megerősített e-mail-címet igényel. A beküldött

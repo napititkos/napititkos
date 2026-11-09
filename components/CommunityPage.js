@@ -5,6 +5,8 @@ import CommunityDetail from './CommunityDetail';
 import Icon from './Icon';
 import ClueLine from './ClueLine';
 import { enumerationFor } from '../lib/format';
+import CommunityMinis from './CommunityMinis';
+import RejtvenyTabs, { useMiniLive, useRejtvenyTab } from './RejtvenyTabs';
 
 const SORTS = [
   { key: 'new', label: 'Legfrissebb elöl' },
@@ -32,6 +34,9 @@ export default function CommunityPage() {
   const [error, setError] = useState(null);
   const [sort, setSort] = useState('new');
   const [openId, setOpenId] = useState(null);
+  // A mini élesítése után: „Közösségi rejtvények”, Titkosírások / Minik választóval.
+  const miniLive = useMiniLive();
+  const [kind, setKind] = useRejtvenyTab();
 
   function load() {
     fetch('/api/community', { cache: 'no-store' })
@@ -90,9 +95,14 @@ export default function CommunityPage() {
   return (
     <div className="wrap">
       <div className="page-title-row">
-        <h1 className="page-title">Közösségi titkosírások</h1>
+        <h1 className="page-title">{miniLive ? 'Közösségi rejtvények' : 'Közösségi titkosírások'}</h1>
         <a href="/" className="back-home-btn"><svg className="back-arrow" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg> Főoldal</a>
       </div>
+      {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} />}
+      {miniLive && kind === 'mini' ? (
+        <CommunityMinis />
+      ) : (
+      <>
       <a className="community-cta" href="/submit">
         <Icon src="/icons/Rejtveny_bekuldese.png" size={22} className="icon-on-accent" /> Írj te is titkosírást!
       </a>
@@ -173,6 +183,8 @@ export default function CommunityPage() {
           </div>
         );
       })}
+      </>
+      )}
     </div>
   );
 }
