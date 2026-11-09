@@ -1,4 +1,5 @@
 'use client';
+import { fmtDHM, fmtHMS, msUntilMidnight, msUntilMonday } from '../lib/budapestClock';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { getIdentity } from '../lib/identity';
@@ -19,6 +20,13 @@ export default function LeaderboardModal() {
   // Két ranglista (a mini élesítése után): Titkosírás (mai) és Keresztrejtvény (heti, idő szerint).
   const [tab, setTab] = useState('daily');
   const [miniLive, setMiniLive] = useState(false);
+  // Visszaszámláló a nullázódásig (titkosírás: éjfél, óra:perc:mp; mini: hétfő 0:00, nap/óra/perc).
+  const [tick, setTick] = useState(Date.now());
+  useEffect(() => {
+    if (!open) return;
+    const t = setInterval(() => setTick(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [open]);
 
   function load(t) {
     setEntries(null);
@@ -52,6 +60,9 @@ export default function LeaderboardModal() {
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
         </h2>
+        <p className="lb-countdown" aria-live="off">
+          {tab === 'mini' ? `Új rejtvény és új ranglista: ${fmtDHM(msUntilMonday(new Date(tick)))} múlva` : `Nullázódik: ${fmtHMS(msUntilMidnight(new Date(tick)))} múlva`}
+        </p>
         {(miniLive || tab === 'mini') && (
           <div className="lb-tabs" role="tablist" aria-label="Ranglista választása">
             {[

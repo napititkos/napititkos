@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
+import { importMiniSetsOnce } from '../../../../lib/miniImport';
 import { kv } from '../../../../lib/kv';
 import { isAdminRequest } from '../../../../lib/adminAuth';
 import { readJson } from '../../../../lib/validate';
@@ -14,6 +15,8 @@ const newId = newMiniId;
 // GET: a várólista, a legutóbb megjelentek, az aktuális hét és a bank mérete.
 export async function GET(req) {
   if (!(await isAdminRequest(req))) return unauthorized();
+  // Az automatikus készletek egyszeri beemelése a kérdésbankba (csak az első lekéréskor fut le).
+  await importMiniSetsOnce();
   await rotateMini();
   const [queue, published, bank, excluded, titkos] = await Promise.all([
     kv.get(MINI_KEYS.queue),

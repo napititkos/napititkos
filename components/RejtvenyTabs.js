@@ -33,12 +33,12 @@ export function useRejtvenyTab() {
   return [tab, choose];
 }
 
-export default function RejtvenyTabs({ tab, onChange }) {
+export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' } }) {
   return (
     <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus">
       {[
-        ['titkos', 'Titkosírások'],
-        ['mini', 'Minik'],
+        ['titkos', labels.titkos],
+        ['mini', labels.mini],
       ].map(([v, label]) => (
         <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? 'primary small' : 'ghost small'} onClick={() => onChange(v)}>
           {label}
