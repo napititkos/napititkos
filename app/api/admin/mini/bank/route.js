@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import { importMiniSetsOnce } from '../../../../../lib/miniImport';
 import { kv } from '../../../../../lib/kv';
 import { isAdminRequest } from '../../../../../lib/adminAuth';
 import { MINI_LETTERS, MINI_WORDS } from '../../../../../lib/miniData';
@@ -14,6 +15,8 @@ import { readJson } from '../../../../../lib/validate';
 // A szűrés, rendezés és lapozás a szerveren történik, így a 8000+ szavas lista nem megy le egyben.
 export async function GET(req) {
   if (!(await isAdminRequest(req))) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  // Az automatikus készletek egyszeri beemelése a kérdésbankba (csak az első lekéréskor fut le).
+  await importMiniSetsOnce();
   const sp = new URL(req.url).searchParams;
   const [bank, titkos, excludedRaw, queue, published] = await Promise.all([
     loadBank(),

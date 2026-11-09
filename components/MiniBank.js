@@ -1,4 +1,6 @@
 'use client';
+import { MINI_IMPORT_LABELS } from '../lib/miniImportData';
+const importLabel = (src) => MINI_IMPORT_LABELS[String(src).replace(/^auto:/, '')] || src;
 import { useEffect, useState } from 'react';
 import { fold, parseNeedle } from '../lib/miniBank';
 
@@ -348,7 +350,7 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
                                 <>
                                   <span>{c.clue}</span>
                                   <span className="mini-bank-meta">
-                                    {c.src === 'titkosírás' ? 'titkosírásból (csak olvasható)' : `kézi, ${day(c.at)}${c.editedAt ? `, szerkesztve: ${day(c.editedAt)}` : ''}`}
+                                    {c.src === 'titkosírás' ? 'titkosírásból (csak olvasható)' : String(c.src).startsWith('auto:') ? `automatikus: ${importLabel(c.src)}${c.editedAt ? `, szerkesztve: ${day(c.editedAt)}` : ''}` : `kézi, ${day(c.at)}${c.editedAt ? `, szerkesztve: ${day(c.editedAt)}` : ''}`}
                                   </span>
                                   {c.id && (
                                     <span className="mini-bank-actions">

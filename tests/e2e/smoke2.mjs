@@ -1073,7 +1073,7 @@ section('Mini keresztrejtvény (admin): generálás, kérdések, bank, várólis
   check('a várólistán megjelenik', j.queue.length === 1 && j.queue[0].entries.length === entries.length);
   // Új generálásnál a banki kérdés automatikusan kitöltve (ha a szó újra bekerül)
   r = await mini({ action: 'generate' }); j = await r.json();
-  check('új generálás: minden szónál kérdéslista (a banki kérdésekkel)', j.puzzle.entries.every((e) => Array.isArray(e.clues)) && j.puzzle.entries.filter((e) => bank[e.word]).every((e) => e.clues.some((c) => c.src === 'kézi')));
+  check('új generálás: minden szónál kérdéslista (a banki kérdésekkel)', j.puzzle.entries.every((e) => Array.isArray(e.clues)) && j.puzzle.entries.filter((e) => bank[e.word]).every((e) => e.clues.some((c) => c.src === 'kézi' || c.src === 'automatikus')));
   // Új szó felvitele, alternatív kérdés, titkosírás-kérdés
   r = await mini({ action: 'addWord', word: 'Kő', clue: 'Kemény ásvány' }); j = await r.json();
   check('új szó felvitele (kisbetűsítve): 200', r.status === 200 && j.word === 'kő' && j.variants === 1);
@@ -1487,6 +1487,26 @@ section('Mini: Korábbi rejtvények (minik) és Közösségi rejtvények (saját
   r = await fetch(BASE + `/api/community/minis/${cmId}`, { method: 'DELETE', headers: { cookie: cA.header() } }); check('a beküldő törölheti: 200', r.status === 200);
   check('törléskor a megfejtései és reakciói is törlődnek', (await redis.hlen(`community:minisolved:${cmId}`)) === 0 && (await redis.hlen(`community:minireactions:${cmId}`)) === 0);
   r = await fetch(BASE + '/kozossegi/sajat-mini'); check('/kozossegi/sajat-mini: 200', r.status === 200);
+}
+
+section('Mini kérdésbank: automatikus készletek egyszeri beemelése');
+{
+  check('az első admin lekéréskor lefutott (jelző)', !!(await redis.get('mini:import:v1')));
+  // (a korábbi tesztek felülírták a bankot, ezért itt tiszta lappal újra lefuttatjuk)
+  await redis.del('mini:import:v1');
+  await fetch(BASE + '/api/admin/mini', { headers: adm });
+  const bank0 = JSON.parse((await redis.get('mini:bank')) || '{}');
+  check('benne vannak a készletek: országkód, vegyjel, mértékegység, intézmény, informatika', bank0.hu?.some((v) => v.src === 'auto:orszagkod2' && /Magyarország/.test(v.clue)) && bank0.fe?.some((v) => v.clue === 'A vas vegyjele') && bank0.km?.some((v) => v.src === 'auto:mertekegyseg') && bank0.nav?.some((v) => v.src === 'auto:intezmeny') && bank0.dvd?.some((v) => v.src === 'auto:informatika'));
+  // Újrafuttatás: a jelző törlése után sem duplikál, a kézi kérdések megmaradnak.
+  bank0.fe = [...(bank0.fe || []), { id: 'kezi-fe', clue: 'Kézi kérdés a vasra', at: new Date().toISOString() }];
+  await redis.set('mini:bank', JSON.stringify(bank0));
+  await redis.del('mini:import:v1');
+  await fetch(BASE + '/api/admin/mini', { headers: adm });
+  const bank1 = JSON.parse(await redis.get('mini:bank'));
+  check('ismételt futás: nem duplikál, a kézi kérdés megmarad', bank1.fe.filter((v) => v.clue === 'A vas vegyjele').length === 1 && bank1.fe.some((v) => v.id === 'kezi-fe'));
+  r = await fetch(BASE + '/api/admin/mini/bank?q=fe&filter=all', { headers: adm }); j = await r.json();
+  const fe = (j.rows || j.items || []).find((x) => x.word === 'fe');
+  check('a szóbankban a forrás látszik (automatikus készlet)', fe && fe.clues.some((c) => c.src === 'auto:vegyjel'), JSON.stringify(fe).slice(0, 300));
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
