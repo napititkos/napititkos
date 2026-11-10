@@ -110,7 +110,7 @@ export default function LeaderboardModal() {
                   {i + 1}. {e.name}
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-                  {tab === 'mini' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.count} szó · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
+                  {tab === 'mini' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.points} pont · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
                 </span>
               </div>
             ))}

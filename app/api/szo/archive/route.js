@@ -33,7 +33,7 @@ export async function GET() {
       p = JSON.parse(res[i * 2]?.[1] || 'null');
     } catch {}
     const mine = res[i * 2 + 1]?.[1] ? String(res[i * 2 + 1][1]).split(':').map(Number) : null;
-    return { date: d, total: p?.required?.length || 0, grid: p?.grid || [], count: mine ? mine[0] : 0, elapsed: mine ? mine[1] : null };
+    return { date: d, total: p?.required?.length || 0, grid: p?.grid || [], count: mine ? mine[0] : 0, elapsed: mine ? mine[1] : null, points: mine ? mine[2] || 0 : 0 };
   });
   return Response.json({ live: true, items }, { headers: noStore });
 }

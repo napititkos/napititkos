@@ -52,7 +52,7 @@ export default function SzoArchive() {
             </span>
             <span className="mini-list-meta">
               <b>{day(it.date)}</b>
-              <span>{it.count ? `${it.count} / ${it.total} szó` : `${it.total} szó vár rád`}</span>
+              <span>{it.count ? `${it.count} / ${it.total} szó · ${it.points} pont` : `${it.total} szó vár rád`}</span>
             </span>
             <span className="mini-list-chev" aria-hidden="true">{open === it.date ? '▴' : '▾'}</span>
           </button>

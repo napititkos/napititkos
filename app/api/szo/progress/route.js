@@ -7,6 +7,7 @@ import { clientIp, isLimited, tooMany } from '../../../../lib/rateLimit';
 import { cleanName, readJson } from '../../../../lib/validate';
 import { miniLive } from '../../../../lib/mini';
 import { actorFor } from '../../../../lib/reactions';
+import { szoPointsTotal } from '../../../../lib/szoPoints';
 import { SZO_FOUND_TTL, SZO_LB_TTL, szoFoundKey, szoForDate, szoLbKey, szoLbNamesKey, szoResKey } from '../../../../lib/szo';
 
 // Haladás mentése: { date, words: [...], elapsed, device, name? }. A szerver csak a rács érvényes
@@ -35,19 +36,21 @@ export async function POST(req) {
     prev = JSON.parse((await r.hget(szoFoundKey(date), actor)) || '[]');
   } catch {}
   const words = [...new Set([...prev, ...(Array.isArray(body.words) ? body.words : [])].map(String))].filter((w) => valid.has(w));
-  const count = words.filter((w) => req0.has(w)).length;
+  const reqFound = words.filter((w) => req0.has(w));
+  const count = reqFound.length;
+  const points = szoPointsTotal(reqFound);
   const elapsed = Math.max(0, Math.min(24 * 3600 * 1000, Math.round(Number(body.elapsed) || 0)));
   await r.hset(szoFoundKey(date), actor, JSON.stringify(words));
   await r.expire(szoFoundKey(date), SZO_FOUND_TTL);
-  const old = String((await r.hget(szoResKey(date), actor)) || '0:0').split(':').map(Number);
+  const old = String((await r.hget(szoResKey(date), actor)) || '0:0:0').split(':').map(Number);
   if (count > old[0]) {
-    await r.hset(szoResKey(date), actor, `${count}:${elapsed}`);
+    await r.hset(szoResKey(date), actor, `${count}:${elapsed}:${points}`);
     if (date === today) {
-      await r.hset(szoLbKey(date), actor, JSON.stringify({ c: count, e: elapsed }));
+      await r.hset(szoLbKey(date), actor, JSON.stringify({ c: count, e: elapsed, p: points }));
       await r.hset(szoLbNamesKey(date), actor, cleanName(user?.name || body.name || ''));
       await r.expire(szoLbKey(date), SZO_LB_TTL);
       await r.expire(szoLbNamesKey(date), SZO_LB_TTL);
     }
   }
-  return Response.json({ ok: true, count, total: p.required.length, found: words });
+  return Response.json({ ok: true, count, points, total: p.required.length, found: words });
 }

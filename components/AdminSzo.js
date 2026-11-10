@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import SzoGame from './SzoGame';
+import Pager from './Pager';
 
 // Admin: napi szókereső.
 // - A mai rács: előnézet, „Kipróbálom” (pontosan úgy, ahogy a játékosok látják, de semmi nem
@@ -48,7 +49,6 @@ export default function AdminSzo() {
   useEffect(() => setPage(1), [q, filter, len, letter, sort]);
 
   async function act(action, word) {
-    if (action === 'ban' && !confirm(`Biztosan tiltod a(z) „${word.toUpperCase()}” szót? A mai rácsból is kikerül, és a jövőben sehol nem számít.`)) return;
     const r = await fetch('/api/admin/szo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, word }) });
     const d = await r.json().catch(() => ({}));
     const txt = { add: 'hozzáadva a kötelező szavakhoz (a következő naptól)', ban: 'tiltva', unban: 'tiltása feloldva (a következő naptól)' }[action];
@@ -218,16 +218,7 @@ export default function AdminSzo() {
             </li>
           ))}
         </ul>
-        {data.pages > 1 && (
-          <div className="mini-list-actions">
-            <button className="ghost small" disabled={data.page <= 1} onClick={() => setPage((p) => p - 1)}>
-              ← Előző
-            </button>
-            <button className="ghost small" disabled={data.page >= data.pages} onClick={() => setPage((p) => p + 1)}>
-              Következő →
-            </button>
-          </div>
-        )}
+        <Pager page={data.page} pages={data.pages} onPage={setPage} />
       </div>
 
       <div className="card">

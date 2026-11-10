@@ -1633,3 +1633,25 @@ button.szo-words-btn.open{ border-color: var(--btn-primary); }
 .share-msg{ font-size: 13px; font-weight: 700; color: var(--accent-text); }
 /* A lenyitott szólista görgethető, hogy a rács a közelben maradjon. */
 .szo-words-panel{ max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
+
+/* Lapozó (admin listák). */
+.pager{ margin-top: 12px; }
+.pager-row{ display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.pager-pages{ display: flex; align-items: center; gap: 3px; flex-wrap: nowrap; overflow: hidden; }
+button.pager-num{ min-width: 30px; height: 32px; padding: 0 5px; border-radius: 10px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-weight: 800; font-size: 13.5px; }
+button.pager-num.on{ background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; }
+.pager-gap{ color: var(--ink-soft); padding: 0 2px; }
+.pager-info{ text-align: center; font-size: 12.5px; margin-top: 6px; }
+@media (max-width: 480px){ .pager-label{ display: none; } .pager-row > button.ghost{ padding-left: 10px; padding-right: 10px; } }
+
+/* Szókereső: fölül az üzenet (halványodva tűnik el), alatta a szó; mindkét sor fix magasságú,
+   így semmi nem ugrál. */
+.szo-say{ display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.szo-msg-line{ height: 40px; display: flex; align-items: flex-end; justify-content: center; text-align: center; }
+.szo-msg{ font-size: 14.5px; font-weight: 800; line-height: 1.25; animation-name: szo-fade; animation-timing-function: ease-in; animation-fill-mode: forwards; }
+.szo-msg.good{ color: #1f6b3a; } .szo-msg.bad{ color: var(--bad, #c0392b); } .szo-msg.muted, .szo-msg.info{ color: var(--ink-soft); }
+@keyframes szo-fade{ 0%{ opacity: 0; transform: translateY(3px); } 8%{ opacity: 1; transform: none; } 60%{ opacity: 1; } 100%{ opacity: 0; } }
+.szo-word-line{ height: 36px; display: flex; align-items: center; justify-content: center; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: 0.08em; color: var(--ink); transition: color 0.2s ease, opacity 0.2s ease; }
+.szo-word-line.good{ color: #1f6b3a; } .szo-word-line.bonus{ color: var(--accent-text); } .szo-word-line.bad{ color: var(--bad, #c0392b); opacity: 0.75; } .szo-word-line.muted{ color: var(--ink-soft); }
+@media (prefers-color-scheme: dark){ .szo-msg.good, .szo-word-line.good{ color: #7fd6a0; } }
+@media (prefers-reduced-motion: reduce){ .szo-msg{ animation-name: none; } }
