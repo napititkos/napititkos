@@ -36,7 +36,7 @@ export default function MiniKisokos() {
   const [round, setRound] = useState(0);
   const cur = STEPS[step];
   return (
-    <div className="card mini-kisokos">
+    <div className="card mini-kisokos mini-side">
       <p className="mini-muted" style={{ marginTop: 0 }}>Próbáld ki egy gyakorló rejtvényen, hogyan működik a heti mini keresztrejtvény!</p>
       <MiniPlayer key={round} rows={ROWS} entries={ENTRIES} />
       <div className="mini-list-actions">

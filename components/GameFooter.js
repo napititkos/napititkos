@@ -1,25 +1,32 @@
 'use client';
 import Logo from './Logo';
+import Icon from './Icon';
 import { MiniIcon, SzoIcon } from './GameIcons';
+import { MiniWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
 
 // A játékok alja: a játékhoz tartozó archívum és közösségi csempe (ha van), alatta a másik két
 // játék csempéje.
 const GAMES = {
-  titkos: { href: '/titkosiras', title: 'Titkosírás', sub: 'Minden nap új!' },
-  szo: { href: '/szokereso', title: 'Napi szókereső', sub: 'Minden nap új!' },
-  mini: { href: '/mini', title: 'Mini keresztrejtvény', sub: 'Minden héten új!' },
+  titkos: { href: '/titkosiras', title: 'Titkosírás', sub: 'Minden nap új kriptikus rejtvény' },
+  szo: { href: '/szokereso', title: 'Szókereső', sub: 'Minden nap új!' },
+  mini: { href: '/mini', title: 'Heti Mini', sub: 'Hétfőnként új keresztrejtvény!' },
 };
 
-export function GameTile({ game }) {
+// Játékcsempe (a főoldalon és a játékok alján): balra a játék logója, a csempét alul-felül
+// kitöltve; mellette középen a játék neve a címbetűtípussal és színekkel (kos nélkül), alatta az alcím.
+export function GameTile({ game, isNew = false, big = false }) {
   const g = GAMES[game];
   return (
-    <a className="card game-tile" href={g.href}>
-      <span className="game-tile-icon">
-        {game === 'titkos' ? <Logo size={56} /> : game === 'szo' ? <SzoIcon size={56} /> : <MiniIcon size={56} />}
-      </span>
+    <a className={`card game-tile${big ? ' game-tile-big' : ''}`} href={g.href} aria-label={`${g.title} – ${g.sub}`}>
+      {isNew && (
+        <span className="game-tile-new" aria-hidden="true">
+          ÚJ!
+        </span>
+      )}
+      <span className="game-tile-icon">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : <MiniIcon size={null} />}</span>
       <span className="game-tile-text">
-        <b>{g.title}</b>
-        <span>{g.sub}</span>
+        <span className="game-tile-word">{game === 'titkos' ? <TitkosWordmark ring={false} /> : game === 'szo' ? <SzoWordmark ring={false} /> : <MiniWordmark ring={false} />}</span>
+        <span className="game-tile-sub">{g.sub}</span>
       </span>
     </a>
   );
@@ -32,15 +39,15 @@ export default function GameFooter({ game }) {
     <div className="game-footer">
       <div className="next-links">
         <a className="card next-link" href={`/archive${tab}`}>
+          <Icon src="/icons/Korabbi_titkosirasok.png" size={22} />
           <b>Korábbi rejtvények</b>
-          <span>{game === 'szo' ? 'A korábbi napok szókeresői' : game === 'mini' ? 'A korábbi heti minik' : 'A korábbi titkosírások'}</span>
+          <span>{game === 'szo' ? 'A korábbi napok szókeresői' : game === 'mini' ? 'A korábbi heti minik' : 'Játszd újra a régebbi napok rejtvényeit'}</span>
         </a>
-        {game !== 'szo' && (
-          <a className="card next-link" href={`/kozossegi${tab}`}>
-            <b>Közösségi rejtvények</b>
-            <span>{game === 'mini' ? 'A játékosok minijei' : 'A játékosok titkosírásai'}</span>
-          </a>
-        )}
+        <a className="card next-link" href={`/kozossegi${game === 'mini' ? '?tab=mini' : ''}`}>
+          <Icon src="/icons/Kozossegi.png" size={22} />
+          <b>Közösségi rejtvények</b>
+          <span>{game === 'mini' ? 'Fejtsd meg a játékosok minijeit' : 'Fejtsd meg a játékosok rejtvényeit'}</span>
+        </a>
       </div>
       <div className="game-tiles">
         {others.map((k) => (

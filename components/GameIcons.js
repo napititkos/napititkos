@@ -6,7 +6,7 @@ export function SzoIcon({ size = 64 }) {
   const c = (i) => [20 + (i % 3) * 30, 20 + Math.floor(i / 3) * 30];
   const path = [0, 1, 2];
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" className="game-icon">
+    <svg width={size || undefined} height={size || undefined} viewBox="0 0 100 100" aria-hidden="true" className="game-icon">
       <polyline points={path.map((i) => c(i).join(',')).join(' ')} fill="none" stroke="var(--btn-primary)" strokeWidth="9" strokeLinecap="round" opacity="0.6" />
       {L.map((ch, i) => (
         <g key={i}>

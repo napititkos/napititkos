@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 
 // Korábbi és Közösségi rejtvények: választó a fejlécben (Titkosírások / Minik), csak a mini
 // élesítése után. A kiválasztott fül az URL-ben is megmarad (?tab=mini), így a link megosztható.
+// Az új játékok élesítve vannak, ezért alapból igaz (nincs villanás); a szerver felülírhatja.
 export function useMiniLive() {
-  const [live, setLive] = useState(false);
+  const [live, setLive] = useState(true);
   useEffect(() => {
     fetch('/api/mini/status')
       .then((r) => (r.ok ? r.json() : null))
@@ -14,13 +15,17 @@ export function useMiniLive() {
   return live;
 }
 
+// ready: a fül az URL-ből már kiolvasva – addig a fülhöz tartozó tartalom nem jelenik meg, így
+// a ?tab=mini linkről érkezve sem villan fel előbb a titkosírások listája.
 export function useRejtvenyTab() {
   const [tab, setTab] = useState('titkos');
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     try {
       const t = new URLSearchParams(window.location.search).get('tab');
       if (t === 'mini' || t === 'szo') setTab(t);
     } catch {}
+    setReady(true);
   }, []);
   const choose = (t) => {
     setTab(t);
@@ -32,7 +37,7 @@ export function useRejtvenyTab() {
     } catch {}
     window.dispatchEvent(new CustomEvent('rejtveny-tab', { detail: t }));
   };
-  return [tab, choose];
+  return [tab, choose, ready];
 }
 
 export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false }) {

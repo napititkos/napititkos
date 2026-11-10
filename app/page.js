@@ -6,6 +6,9 @@ import Hub from '../components/Hub';
 // (a napi titkosírás a /titkosiras címre költözik).
 export const dynamic = 'force-dynamic';
 
+// A főoldal címsora (böngészőfül): napititkos.hu
+export const metadata = { title: { absolute: 'napititkos.hu' } };
+
 export default function HomePage() {
   return miniLive() ? <Hub /> : <DailyGame />;
 }

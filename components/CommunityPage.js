@@ -37,7 +37,7 @@ export default function CommunityPage() {
   const [openId, setOpenId] = useState(null);
   // A mini élesítése után: „Közösségi rejtvények”, Titkosírások / Minik választóval.
   const miniLive = useMiniLive();
-  const [kind, setKind] = useRejtvenyTab();
+  const [kind, setKind, tabReady] = useRejtvenyTab();
 
   function load() {
     fetch('/api/community', { cache: 'no-store' })
@@ -100,7 +100,7 @@ export default function CommunityPage() {
         <BackButton />
       </div>
       {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} />}
-      {miniLive && kind === 'mini' ? (
+      {!tabReady ? null : miniLive && kind === 'mini' ? (
         <CommunityMinis />
       ) : (
       <>
@@ -110,11 +110,7 @@ export default function CommunityPage() {
       {status === 'unauthenticated' && (
         <div className="community-guest-note">
           {sharedLink && <b>Valaki megosztott veled egy közösségi titkosírást! </b>}
-          A rejtvényeket bárki megnézheti; megfejteni, értékelni és saját titkosírást beküldeni
-          bejelentkezve tudsz.{' '}
-          <a href={`/login?callbackUrl=${encodeURIComponent('/kozossegi' + (sharedLink ? `?r=${sharedLink}` : ''))}`}>
-            Bejelentkezés / regisztráció
-          </a>
+          <a href={`/login?callbackUrl=${encodeURIComponent('/kozossegi' + (sharedLink ? `?r=${sharedLink}` : ''))}`}>Bejelentkezés / regisztráció</a>
         </div>
       )}
       <div className="community-sort">

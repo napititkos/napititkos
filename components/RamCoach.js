@@ -10,7 +10,8 @@ import { CoachTail } from './RamNote';
 //   place:  'below' | 'above' | 'side' (asztalon jobbra a cél mellé, ha elfér; különben alá) | 'bottom'
 //   blink:  CSS-szelektor, amely villog (pl. a gomb, amit meg kell nyomni)
 //   onOk:   ha nincs megadva, nincs gomb (a felhasználónak a kiemelt elemet kell használnia)
-export default function RamCoach({ target, place = 'below', children, okLabel = 'Értem', onOk, blocking = true, blink }) {
+//   scroll: false esetén nem görget a célhoz (az oldal ott marad, ahol a felhasználó hagyta)
+export default function RamCoach({ target, place = 'below', children, okLabel = 'Értem', onOk, blocking = true, blink, scroll = true }) {
   const [rect, setRect] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [size, setSize] = useState({ w: 400, h: 800 });
@@ -40,7 +41,7 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     };
     // Először azonnal (animáció nélkül) a célhoz görgetünk, hogy az üzenet ne "csússzon" utána.
     const first = target ? document.querySelector(target) : null;
-    if (first && place !== 'bottom' && place !== 'side') first.scrollIntoView({ block: 'center', behavior: 'instant' });
+    if (scroll && first && place !== 'bottom' && place !== 'side') first.scrollIntoView({ block: 'center', behavior: 'instant' });
     measure();
     const id = setInterval(measure, 400);
     const onMove = () => {
@@ -57,7 +58,7 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
       document.querySelectorAll('.coach-target').forEach((x) => x.classList.remove('coach-target'));
       if (blink) document.querySelectorAll(blink).forEach((x) => x.classList.remove('coach-blink'));
     };
-  }, [target, place, blink]);
+  }, [target, place, blink, scroll]);
 
   if (!mounted) return null;
   const { w: vw, h: vh } = size;
