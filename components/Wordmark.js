@@ -92,6 +92,7 @@ export function NapiWordmark() {
       <span className="bf-ink">TITK</span>
       <Ring />
       <span className="bf-ink">S</span>
+      <span className="bf-accent bf-tld">.HU</span>
     </div>
   );
 }

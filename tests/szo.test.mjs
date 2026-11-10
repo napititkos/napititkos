@@ -28,8 +28,8 @@ test('szókereső: minden szó útja érvényes (szomszédos, egyszer használt 
 });
 
 test('szókereső: ugyanarra a napra ugyanazt generálja; trágár és tiltott szó nincs, a hozzáadott szó kötelező', () => {
-  const a = generateSzo('2026-12-01', {});
-  const b = generateSzo('2026-12-01', {});
+  const a = generateSzo('2026-12-01', { seconds: 60 });
+  const b = generateSzo('2026-12-01', { seconds: 60 });
   assert.deepEqual(a.grid, b.grid);
   const grid = Array.from('faszkalap'); // a rácsba betett trágár szó sem jelenhet meg
   const s = solveGrid(grid, {});

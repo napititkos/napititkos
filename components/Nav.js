@@ -7,7 +7,7 @@ import Icon from './Icon';
 import Logo from './Logo';
 import { KisokosWordmark, MiniWordmark, NapiWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
 
-const BRAND_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', napi: 'Napititkos – kezdőlap', kisokos: 'Kisokos' };
+const BRAND_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', napi: 'napititkos.hu – kezdőlap', kisokos: 'Kisokos' };
 
 
 export default function Nav() {
@@ -113,7 +113,7 @@ export default function Nav() {
         </div>
         {/* A játékok oldalán a felirat a főoldalra visz, máshol (Kisokos, archívum, közösségi stb.)
             a játékhoz, amelyikhez az oldal (vagy a kiválasztott fül) tartozik. */}
-        <a href={brandHref} className={`brand-link${variant === 'titkos' ? '' : ' brand-link-flow'}${!onGame && pathname !== '/' && !pathname.startsWith('/kisokos') && !tabRead ? ' brand-pending' : ''}`} aria-label={BRAND_LABEL[variant]}>
+        <a href={brandHref} className={`brand-link${variant === 'titkos' ? '' : ' brand-link-flow'}${variant === 'napi' ? ' brand-link-napi' : ''}${!onGame && pathname !== '/' && !pathname.startsWith('/kisokos') && !tabRead ? ' brand-pending' : ''}`} aria-label={BRAND_LABEL[variant]}>
           {variant === 'titkos' ? <TitkosWordmark /> : variant === 'szo' ? <SzoWordmark /> : variant === 'mini' ? <MiniWordmark /> : variant === 'kisokos' ? <KisokosWordmark /> : <NapiWordmark />}
         </a>
         {/* Jobb oldalon adminnak az admin felület gombja (egyébként üres hely, hogy a felirat
