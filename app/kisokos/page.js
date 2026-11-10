@@ -1,4 +1,3 @@
-import BackButton from '../../components/BackButton';
 import TrackHelpVisit from '../../components/TrackHelpVisit';
 import KisokosTabs from '../../components/KisokosTabs';
 
@@ -11,10 +10,7 @@ export const metadata = {
 export default function KisokosPage() {
   return (
     <div className="wrap">
-      <div className="page-title-row">
-        <h1 className="page-title">Kisokos</h1>
-        <BackButton />
-      </div>
+      <h1 className="sr-only">Kisokos</h1>
       <TrackHelpVisit />
       <KisokosTabs />
     </div>

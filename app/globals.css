@@ -1582,13 +1582,20 @@ input.admin-szo-search{ width: 100%; margin: 10px 0; text-transform: none; }
 /* Főoldal (élesítés után): a három játék csempéje. Játékok alján: a másik két játék. */
 .hub{ display: flex; flex-direction: column; gap: 16px; margin-top: 14px; }
 .game-tiles{ display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
-a.card.game-tile{ display: flex; align-items: center; gap: 16px; margin: 0; text-decoration: none; color: var(--ink); transition: transform 0.15s ease; }
+a.card.game-tile{ display: flex; align-items: stretch; gap: 14px; margin: 0; padding: 10px 14px 10px 10px; min-height: 92px; text-decoration: none; color: var(--ink); transition: transform 0.15s ease; }
 a.card.game-tile:hover{ transform: translateY(-2px); }
-.game-tile-icon{ display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; flex-shrink: 0; }
-.game-tile-text{ display: flex; flex-direction: column; gap: 2px; }
-.game-tile-text b{ font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 20px; color: var(--accent-text); }
-.game-tile-text span{ font-size: 14px; color: var(--ink-soft); }
-.hub a.card.game-tile{ padding: 18px 20px; }
+.game-tile-icon{ display: flex; align-items: center; justify-content: center; flex-shrink: 0; aspect-ratio: 1; height: auto; align-self: stretch; }
+.game-tile-icon > *{ width: 100%; height: 100%; }
+.game-tile-icon .game-tile-logo{ display: block; }
+.game-tile-icon .game-tile-logo img{ width: 100%; height: 100%; object-fit: contain; }
+.game-tile-text{ flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; min-width: 0; }
+.game-tile-word{ display: flex; justify-content: center; font-size: 26px; }
+.game-tile-sub{ font-size: 14px; color: var(--ink-soft); font-weight: 700; }
+/* Főoldal: nagyobb, egyforma csempék; a titkosírás kosa befelé néz. */
+a.card.game-tile.game-tile-big{ min-height: 118px; padding: 12px 16px 12px 12px; }
+.game-tile-big .game-tile-word{ font-size: min(calc((100vw - 200px) / 6.4), 34px); }
+.game-tile-big .game-tile-icon .game-tile-logo img{ transform: scaleX(-1); }
+@media (prefers-color-scheme: light){ .game-tile-word .bf-accent{ color: var(--accent2-text); } }
 .game-footer{ margin-top: 6px; }
 .game-page-title{ display: block; text-align: center; margin: 4px auto 12px; }
 .szo-thumb{ display: grid; grid-template-columns: repeat(3, 18px); gap: 2px; flex-shrink: 0; }
@@ -1657,28 +1664,23 @@ button.pager-num.on{ background: var(--btn-primary); border-color: var(--btn-pri
 a.card.game-tile{ position: relative; }
 .game-tile-new{ position: absolute; top: -9px; right: 10px; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: var(--btn-primary); color: #fff; font-weight: 800; font-size: 12.5px; letter-spacing: 0.02em; box-shadow: 0 3px 8px rgba(31, 26, 43, 0.2); transform: rotate(12deg); }
 
-/* Ékezetek a Fredokából hiányzó betűkhöz: Ő (kettős ékezet az O fölött) és a kos gyűrűjén az Ó. */
-.dbl-acute{ position: relative; display: inline-block; }
-.dbl-acute::before, .dbl-acute::after{
-  content: ''; position: absolute; top: -0.2em; width: 0.1em; height: 0.24em; border-radius: 0.06em;
-  background: currentColor; transform: skewX(-28deg);
-}
-.dbl-acute::before{ left: 0.2em; }
-.dbl-acute::after{ left: 0.42em; }
-.brand-o.brand-o-acute{ position: relative; }
-.brand-o.brand-o-acute::after{
-  content: ''; position: absolute; top: -0.36em; left: 58%; width: 0.12em; height: 0.28em; border-radius: 0.06em;
-  background: var(--ink); transform: skewX(-28deg); z-index: 2;
-}
+/* Ékezetek a Fredokából hiányzó betűkhöz: a betűtípus Ó betűjének csak az ékezete látszik
+   (a betű alsó része levágva), így ugyanolyan, mint a TITKOSÍRÁS Í és Á ékezete. */
+.acc-letter{ position: relative; display: inline-block; }
+/* A kivágó ablak 0.1em-rel a betű fölött kezdődik és a nagybetű teteje előtt ér véget; benne az Ó
+   pontosan a betű helyén áll, így csak az ékezete látszik (a Fredoka mérete szerint). */
+.acc-clip{ position: absolute; left: 0; top: -0.1em; width: 100%; height: 0.24em; overflow: hidden; pointer-events: none; line-height: 1; }
+.acc-clip > span{ position: absolute; left: 0; top: 0.1em; line-height: 1; }
+.acc-letter .acc-clip.acc-l{ left: -0.15em; transform: scaleX(0.72); }
+.acc-letter .acc-clip.acc-r{ left: 0.13em; transform: scaleX(0.72); }
+/* A kos gyűrűjén (Ó): az ékezet a gyűrű fölé kerül. */
+.brand-c .brand-o{ position: relative; }
+.brand-o .acc-clip{ top: -0.37em; left: 50%; width: 0.72em; margin-left: -0.3em; z-index: 3; }
+.brand-o .acc-clip > span{ color: var(--ink); }
+/* Heti Mini: a kos a két szó között, kisebb kerettel (nem O). */
+.brand-c .brand-o.brand-o-small{ width: 0.86em; height: 0.86em; border-width: 0.07em; margin: 0 0.12em; }
 .brand.brand-heti{ gap: 0.28em; }
 
-/* Főoldali csempe: felül középen a felirat (kisebb a főcímnél), alatta a logó és a leírás. */
-a.card.hub-tile{ position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 0; padding: 20px 16px 18px; text-decoration: none; color: var(--ink); text-align: center; transition: transform 0.15s ease; }
-a.card.hub-tile:hover{ transform: translateY(-2px); }
-.hub-tile-word{ display: flex; justify-content: center; width: 100%; font-size: min(calc((100vw - 120px) / 7), 34px); }
-.hub-tile-word .brand.brand-mid{ width: auto; display: inline-grid; }
-.hub-tile-icon{ display: flex; }
-.hub-tile-sub{ font-size: 14.5px; font-weight: 700; color: var(--ink-soft); }
 
 /* A játékok gombsora egy sorban; szűk helyen előbb a trófeaszámláló, aztán a Főoldal felirat tűnik el. */
 .quick-row.game-bar{ flex-wrap: nowrap; }
@@ -1695,18 +1697,44 @@ a.card.hub-tile:hover{ transform: translateY(-2px); }
 /* Heti Mini: felül balra a hét, jobbra az időzítő; az Ellenőrzés a rács alatt középen. */
 .mini-date{ font-size: 13.5px; font-weight: 700; color: var(--ink-soft); }
 .mini-check-row{ display: flex; justify-content: center; }
-/* Asztali nézetben a kérdések a rács két oldalán, a margóban. */
+/* Asztali nézetben a kérdések a rács jobb oldalán, a margóban: a Vízszintes és alatta a
+   Függőleges (a heti mininél és a Kisokos gyakorló rejtvényénél is). */
 @media (min-width: 1100px){
-  .wrap.mini-page{ overflow: visible; }
-  .mini-page .mini-player{ position: relative; }
-  .mini-page .mini-cluelists{ display: contents; }
-  .mini-page .mini-cluelist{ position: absolute; top: 0; width: 210px; }
-  .mini-page .mini-cluelist:first-child{ right: calc(100% + 130px); }
-  .mini-page .mini-cluelist:last-child{ left: calc(100% + 130px); }
-}
-/* A főoldali csempék feliratán a lila rész világos módban sötétebb (olvashatóság). */
-@media (prefers-color-scheme: light){
-  .hub-tile-word .bf-accent, .hub-tile-word .bm-right > span{ color: var(--accent2-text); }
+  .wrap.mini-side, .wrap:has(.mini-side){ overflow: visible; }
+  .mini-side .mini-player{ position: relative; }
+  .mini-side .mini-cluelists{ position: absolute; top: 0; left: calc(100% + 120px); width: 230px; display: flex; flex-direction: column; gap: 16px; }
 }
 .quick-row.game-bar.compact-tight{ gap: 4px; }
 .quick-row.game-bar.compact-tight .quick-pill{ padding-left: 8px; padding-right: 8px; font-size: 12.5px; }
+
+/* Játékcsempék (főoldal és a játékok alja): balra a logó alul-felül kitöltve, mellette középen a
+   név (címbetűtípus, színek, kos nélkül) és alatta az alcím. A főoldalon mindhárom egyforma. */
+a.card.game-tile{ display: flex; align-items: stretch; gap: 12px; padding: 10px 14px 10px 10px; min-height: 92px; }
+a.card.game-tile.game-tile-big{ min-height: 118px; }
+.game-tile .game-tile-icon{ width: auto; height: auto; flex: 0 0 auto; aspect-ratio: 1; align-self: stretch; display: flex; align-items: center; justify-content: center; }
+.game-tile .game-tile-icon .game-icon, .game-tile .game-tile-icon .game-tile-logo{ width: 100%; height: 100%; }
+.game-tile .game-tile-icon .game-tile-logo img{ width: 100%; height: 100%; }
+.game-tile .game-tile-text{ flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; min-width: 0; }
+.game-tile .game-tile-word{ font-size: min(calc((100vw - 190px) / 7.2), 30px); }
+.game-tile-big .game-tile-word{ font-size: min(calc((100vw - 200px) / 6.6), 36px); }
+.game-tile .game-tile-word .brand{ font-size: 1em; }
+.game-tile .game-tile-sub{ font-size: 13.5px; font-weight: 700; color: var(--ink-soft); }
+.brand.brand-plain{ display: inline-flex; gap: 0; font-size: 1em; }
+.brand.brand-plain.brand-heti{ gap: 0.25em; }
+@media (prefers-color-scheme: light){ .game-tile-word .bf-accent{ color: var(--accent2-text); } }
+
+.brand.brand-plain{ gap: 0; letter-spacing: 0.03em; line-height: 1; }
+/* Szókereső: halvány doboz az üzenetek és a beírt szó helyén (látszik, hogy ott jelenik meg valami). */
+.szo-say{ background: var(--accent-soft); border-radius: 12px; padding: 4px 10px; margin: 0; }
+
+/* Kisokos: a játékválasztó és a vissza gomb egy sorban; a vissza gomb jobbra, más színnel. */
+.kisokos-tabrow{ display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.kisokos-tabrow .rejtveny-tabs{ margin: 0; }
+a.back-home-btn.kisokos-back{ margin-left: auto; padding: 6px 12px; font-size: 13px; background: var(--accent2-soft); border-color: var(--accent2); color: var(--accent2-text); }
+@media (prefers-color-scheme: dark){ a.back-home-btn.kisokos-back{ color: var(--ink); } }
+/* A csempe logója fix méretű négyzet, alul-felül kis margóval kitöltve a csempét. */
+.game-tile .game-tile-icon{ width: 72px; height: 72px; align-self: center; }
+.game-tile.game-tile-big .game-tile-icon{ width: 94px; height: 94px; }
+.game-tile .game-tile-icon svg.game-icon{ width: 100%; height: 100%; }
+a.card.game-tile{ min-height: 0; }
+.brand-link.brand-pending{ visibility: hidden; }

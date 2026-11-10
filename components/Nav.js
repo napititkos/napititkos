@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
 import Icon from './Icon';
 import Logo from './Logo';
-import { MiniWordmark, NapiWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
+import { KisokosWordmark, MiniWordmark, NapiWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
 
-const BRAND_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', napi: 'Napititkos – kezdőlap' };
+const BRAND_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', napi: 'Napititkos – kezdőlap', kisokos: 'Kisokos' };
 
 
 export default function Nav() {
@@ -30,11 +30,9 @@ export default function Nav() {
   // A fejléc logója a játék szerint: élesítés után a főoldalon NAPITITKOS, a szókeresőben
   // SZÓKERESŐ (a kos az Ó helyén), máshol TITKOSÍRÁS. Az élesítés állapotát az eszköz megjegyzi,
   // hogy oldalváltáskor ne villanjon a régi logó.
-  const [miniLive, setMiniLive] = useState(false);
+  // Az új játékok élesítve vannak: alapból igaz, így oldalváltáskor nem villan fel a régi felirat.
+  const [miniLive, setMiniLive] = useState(true);
   useEffect(() => {
-    try {
-      if (localStorage.getItem('mini-live') === '1') setMiniLive(true);
-    } catch {}
     fetch('/api/mini/status')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -48,12 +46,16 @@ export default function Nav() {
   }, []);
   // A fül (?tab=mini / ?tab=szo) az aloldalakon is meghatározza, melyik játékhoz tartozunk.
   const [tabGame, setTabGame] = useState(null);
+  // Amíg a ?tab= paramétert nem olvastuk ki, az aloldalakon a felirat helye üresen (de lefoglalva)
+  // marad, így nem villan fel egy másik játék neve.
+  const [tabRead, setTabRead] = useState(false);
   useEffect(() => {
     const read = () => {
       try {
         const t = new URLSearchParams(window.location.search).get('tab');
         setTabGame(t === 'mini' || t === 'szo' ? t : null);
       } catch {}
+      setTabRead(true);
     };
     read();
     const onTab = (e) => setTabGame(e.detail === 'mini' || e.detail === 'szo' ? e.detail : null);
@@ -63,7 +65,7 @@ export default function Nav() {
   const GAME_PATHS = { '/titkosiras': 'titkos', '/szokereso': 'szo', '/mini': 'mini' };
   const onGame = GAME_PATHS[pathname];
   const game = onGame || (pathname.startsWith('/szokereso') ? 'szo' : pathname.startsWith('/mini') ? 'mini' : tabGame || 'titkos');
-  const variant = pathname === '/' && miniLive ? 'napi' : miniLive ? game : 'titkos';
+  const variant = pathname === '/' && miniLive ? 'napi' : pathname.startsWith('/kisokos') && miniLive ? 'kisokos' : miniLive ? game : 'titkos';
   const brandHref = !miniLive ? '/' : onGame || pathname === '/' ? '/' : { titkos: '/titkosiras', szo: '/szokereso', mini: '/mini' }[game];
   const loginHref = pathname === '/' || pathname.startsWith('/login') ? '/login' : `/login?callbackUrl=${encodeURIComponent(pathname)}`;
 
@@ -111,8 +113,8 @@ export default function Nav() {
         </div>
         {/* A játékok oldalán a felirat a főoldalra visz, máshol (Kisokos, archívum, közösségi stb.)
             a játékhoz, amelyikhez az oldal (vagy a kiválasztott fül) tartozik. */}
-        <a href={brandHref} className={`brand-link${variant === 'titkos' ? '' : ' brand-link-flow'}`} aria-label={BRAND_LABEL[variant]}>
-          {variant === 'titkos' ? <TitkosWordmark /> : variant === 'szo' ? <SzoWordmark /> : variant === 'mini' ? <MiniWordmark /> : <NapiWordmark />}
+        <a href={brandHref} className={`brand-link${variant === 'titkos' ? '' : ' brand-link-flow'}${!onGame && pathname !== '/' && !pathname.startsWith('/kisokos') && !tabRead ? ' brand-pending' : ''}`} aria-label={BRAND_LABEL[variant]}>
+          {variant === 'titkos' ? <TitkosWordmark /> : variant === 'szo' ? <SzoWordmark /> : variant === 'mini' ? <MiniWordmark /> : variant === 'kisokos' ? <KisokosWordmark /> : <NapiWordmark />}
         </a>
         {/* Jobb oldalon adminnak az admin felület gombja (egyébként üres hely, hogy a felirat
             pontosan középen maradjon). */}

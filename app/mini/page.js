@@ -93,7 +93,7 @@ export default function MiniPage() {
   const done = !!local;
   const myTime = stats?.mine ?? local?.elapsed ?? null;
   return (
-    <div className="wrap mini-page">
+    <div className="wrap mini-page mini-side">
       <GameBar game="mini" />
       <h1 className="sr-only">Heti Mini</h1>
       <div className="card">

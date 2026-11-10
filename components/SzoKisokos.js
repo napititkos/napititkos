@@ -38,7 +38,7 @@ export default function SzoKisokos() {
         </button>
       </div>
       {cur && (
-        <RamCoach target={cur.target} place={cur.place || 'below'} scroll={false} blocking={!cur.free} blink={cur.wait ? cur.target : undefined} onOk={cur.wait ? undefined : next}>
+        <RamCoach target={cur.target} place={cur.place || 'below'} scroll={!!cur.free} blocking={!cur.free} blink={cur.wait ? cur.target : undefined} onOk={cur.wait ? undefined : next}>
           {cur.text}
         </RamCoach>
       )}

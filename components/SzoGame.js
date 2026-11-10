@@ -71,7 +71,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panel]);
   const dayLabel = /^\d{4}-\d{2}-\d{2}$/.test(date)
-    ? new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric', weekday: 'long' })
+    ? new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' })
     : 'Gyakorlás';
   const shareText = () => {
     const d = new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' });
@@ -408,7 +408,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
           Megtaláltad az összes szót! Időd: {fmt(elapsed)} · A napi szó: <b>{data.word.toUpperCase()}</b>
         </div>
       )}
-      {(foundReq.length > 0 || done) && (
+      {!preview && (foundReq.length > 0 || done) && (
         <div className="szo-share">
           <ShareButton text={shareText()} />
         </div>

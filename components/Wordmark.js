@@ -1,15 +1,40 @@
 import Logo from './Logo';
 
-// A játékok feliratai (a fejlécben és a főoldali csempéken ugyanazok). A kos a „titkos” és a
-// „szó” O-ja helyén áll. A Fredoka betűtípusból hiányzik az Ő, ezért az O fölé rajzoljuk a
-// kettős ékezetet; a kos gyűrűjére (Ó) ugyanígy kerül az ékezet.
-const Ring = ({ acute = false }) => (
-  <span className={`brand-o${acute ? ' brand-o-acute' : ''}`}>
+// A játékok feliratai. A kos a „titkos” / „szó” / „kisokos” O-ja helyén áll; a Heti Mininél a két
+// szó között (kisebb kerettel, hogy ne lehessen O-nak olvasni). A Fredoka betűtípusból hiányzik az
+// Ő, ezért az ékezeteket magából a betűtípus Ó betűjéből vágjuk ki (csak az ékezet látszik belőle),
+// így pontosan olyanok, mint a TITKOSÍRÁS Í és Á ékezetei.
+const Ring = ({ acute = false, small = false }) => (
+  <span className={`brand-o${small ? ' brand-o-small' : ''}`}>
     <Logo size={null} className="brand-o-logo" />
+    {acute && <Accent />}
   </span>
 );
 
-export function TitkosWordmark() {
+// A betűtípus Ó ékezete (a betű alsó része levágva).
+const Accent = ({ cls = '' }) => (
+  <span className={`acc-clip ${cls}`} aria-hidden="true">
+    <span>Ó</span>
+  </span>
+);
+
+// Ő: O + két kivágott ékezet (a kettős ékezet).
+export const ODbl = () => (
+  <span className="acc-letter">
+    O
+    <Accent cls="acc-l" />
+    <Accent cls="acc-r" />
+  </span>
+);
+
+export function TitkosWordmark({ ring = true }) {
+  if (!ring)
+    return (
+      <div className="brand brand-flow brand-plain" aria-hidden="true">
+        <span className="bf-ink">TITKOS</span>
+        <span className="bf-accent">ÍRÁS</span>
+      </div>
+    );
   return (
     <div className="brand brand-mid brand-c" aria-hidden="true">
       <span className="bm-left">TITK</span>
@@ -21,23 +46,41 @@ export function TitkosWordmark() {
   );
 }
 
-export function SzoWordmark() {
+export function SzoWordmark({ ring = true }) {
   return (
-    <div className="brand brand-flow brand-c" aria-hidden="true">
-      <span className="bf-ink">SZ</span>
-      <Ring acute />
+    <div className={`brand brand-flow${ring ? ' brand-c' : ' brand-plain'}`} aria-hidden="true">
+      {ring ? (
+        <>
+          <span className="bf-ink">SZ</span>
+          <Ring acute />
+        </>
+      ) : (
+        <span className="bf-ink">SZÓ</span>
+      )}
       <span className="bf-accent">
-        KERES<span className="dbl-acute">O</span>
+        KERES
+        <ODbl />
       </span>
     </div>
   );
 }
 
-export function MiniWordmark() {
+export function MiniWordmark({ ring = true }) {
   return (
-    <div className="brand brand-flow brand-heti" aria-hidden="true">
+    <div className={`brand brand-flow brand-heti${ring ? ' brand-c' : ' brand-plain'}`} aria-hidden="true">
       <span className="bf-ink">HETI</span>
+      {ring && <Ring small />}
       <span className="bf-accent">MINI</span>
+    </div>
+  );
+}
+
+export function KisokosWordmark() {
+  return (
+    <div className="brand brand-flow brand-c" aria-hidden="true">
+      <span className="bf-ink">KIS</span>
+      <Ring />
+      <span className="bf-accent">KOS</span>
     </div>
   );
 }
