@@ -37,12 +37,13 @@ function saveDay(date, st) {
   } catch {}
 }
 
-export default function SzoGame({ data, onComplete }) {
+// preview: admin kipróbálás – semmi nem mentődik (se az eszközön, se a szerveren, se a trófeákhoz).
+export default function SzoGame({ data, onComplete, preview = false }) {
   const { date, grid, required, bonus, paths } = data;
   const reqSet = useMemo(() => new Set(required), [required]);
   const bonusSet = useMemo(() => new Set(bonus), [bonus]);
-  const saved = useMemo(() => loadAll()[date] || {}, [date]);
-  const [found, setFound] = useState(() => [...new Set([...(saved.found || []), ...(data.mine?.found || [])])]);
+  const saved = useMemo(() => (preview ? {} : loadAll()[date] || {}), [date, preview]);
+  const [found, setFound] = useState(() => (preview ? [] : [...new Set([...(saved.found || []), ...(data.mine?.found || [])])]));
   const [elapsed, setElapsed] = useState(saved.elapsed || data.mine?.elapsed || 0);
   const [hints, setHints] = useState(saved.hints || 0);
   const [stars, setStars] = useState(saved.stars || 0); // hány csillagot (segítséget) kapott már
@@ -81,10 +82,12 @@ export default function SzoGame({ data, onComplete }) {
   elapsedRef.current = elapsed;
 
   useEffect(() => {
+    if (preview) return;
     saveDay(date, { found, elapsed, hints, stars, shown, abc, outer });
   }, [date, found, elapsed, hints, stars, shown, abc, outer]);
 
   function sync(words, el) {
+    if (preview) return;
     clearTimeout(syncT.current);
     syncT.current = setTimeout(() => {
       fetch('/api/szo/progress', {
@@ -108,7 +111,7 @@ export default function SzoGame({ data, onComplete }) {
     if (!reqSet.has(w) && !bonusSet.has(w)) return flash(`„${w.toUpperCase()}” nincs a listán`, 'bad');
     const next = [...found, w];
     setFound(next);
-    recordSzoWord();
+    if (!preview) recordSzoWord();
     const el = Date.now() - startRef.current;
     setElapsed(el);
     if (shown?.word === w) setShown(null);
@@ -124,7 +127,7 @@ export default function SzoGame({ data, onComplete }) {
       } else flash(n >= total ? 'Megtaláltad az összes szót!' : `Szép! ${w.toUpperCase()}`, 'good');
       if (n >= total) {
         fireConfetti();
-        onComplete && onComplete(el);
+        if (!preview && onComplete) onComplete(el);
       }
     }
     sync(next, el);
@@ -309,7 +312,7 @@ export default function SzoGame({ data, onComplete }) {
           </div>
         )}
       </div>
-      <SzoReport date={date} />
+      {!preview && <SzoReport date={date} />}
     </div>
   );
 }

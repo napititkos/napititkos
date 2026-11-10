@@ -1580,6 +1580,49 @@ section('Élesítés után: főoldal (játékok), /titkosiras, szókereső arch�
   check('a jelzés lezárható', !j.reports.some((x) => x.id === rep.id));
 }
 
+section('Szókereső admin: szóbank szűrés, rendezés, lapozás; tiltás a mai rácsból');
+{
+  const g = (qs) => fetch(BASE + '/api/admin/szo?' + qs, { headers: adm }).then((r) => r.json());
+  j = await g('filter=required&len=3&sort=abc');
+  check('szűrés: kötelező, 3 betűs, ABC-sorrendben, lapozva (50/oldal)', j.results.length === 50 && j.results.every((x) => Array.from(x.word).length === 3 && x.status === 'kötelező') && j.pages > 1 && j.results[0].word.localeCompare(j.results[1].word, 'hu') <= 0, JSON.stringify(j.results.slice(0, 3)));
+  const p2 = await g('filter=required&len=3&sort=abc&page=2');
+  check('a második oldal más szavakat ad', p2.page === 2 && p2.results[0].word !== j.results[0].word);
+  j = await g('filter=bonus&letter=k&sort=len');
+  check('szűrés: bónusz, k kezdőbetű, hossz szerint', j.results.length > 0 && j.results.every((x) => x.status === 'bónusz' && /^k/.test(x.word)) && Array.from(j.results[0].word).length <= Array.from(j.results[j.results.length - 1].word).length);
+  j = await g('q=' + encodeURIComponent('sz?k'));
+  check('mintakeresés: sz?k', j.results.length > 0 && j.results.every((x) => /^sz.k$/.test(x.word)), JSON.stringify(j.results.slice(0, 5)));
+  j = await g('q=szek');
+  check('ékezet nélküli keresés is talál (szék)', j.results.some((x) => x.word === 'szék'));
+  // Tiltás a mai rácsból: kikerül a mai szavak közül is, és a tiltottak között látszik
+  const today = (await g('')).today;
+  const victim = today.required.find((w) => w !== today.word);
+  r = await post('/api/admin/szo', { action: 'ban', word: victim }, adm); check('mai szó tiltása: 200', r.status === 200);
+  j = await g('filter=banned');
+  check('a tiltott szó a mai rácsból kikerült, és a tiltottak között van', !j.today.required.includes(victim) && !j.today.paths[victim] && j.results.some((x) => x.word === victim && x.status === 'tiltott'));
+  const pub = await (await fetch(BASE + '/api/szo')).json();
+  check('a játékosok is már nélküle kapják a mai rácsot', !pub.required.includes(victim));
+  await post('/api/admin/szo', { action: 'unban', word: victim }, adm);
+}
+
+section('Szókereső admin: a következő 7 nap, csere');
+{
+  j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  const up = j.upcoming || [];
+  const words = [j.today.word, ...up.map((u) => u.word)];
+  check('a következő 7 nap tervezett rácsai (különböző napi szavakkal)', up.length === 7 && up.every((u, i) => u.grid.length === 9 && u.date > j.today.date) && new Set(words).size === words.length, JSON.stringify(up.map((u) => u.date + ':' + u.word)));
+  r = await fetch(BASE + '/api/szo?date=' + up[0].date); check('a jövőbeli nap a játékosoknak nem érhető el', r.status === 404);
+  const old = up[2];
+  r = await post('/api/admin/szo', { action: 'regenerate', date: old.date }, adm); j = await r.json();
+  check('csere: 200, új napi szó', r.status === 200 && j.word && j.word !== old.word, JSON.stringify(j));
+  const after = (await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json()).upcoming.find((u) => u.date === old.date);
+  check('a lista a cserélt rácsot mutatja', after.word === j.word);
+  const used = JSON.parse(await redis.get('szo:used'));
+  check('a régi napi szó felszabadul, az új foglalt', !used.includes(old.word) && used.includes(j.word));
+  r = await post('/api/admin/szo', { action: 'regenerate', date: (await (await fetch(BASE + '/api/szo')).json()).date }, adm); check('a mai rács nem cserélhető: 400', r.status === 400);
+  r = await post('/api/admin/szo', { action: 'regenerate', date: '2099-01-01' }, adm); check('7 napon túli: 400', r.status === 400);
+  r = await post('/api/admin/szo', { action: 'regenerate', date: old.date }); check('csere adminság nélkül: 401', r.status === 401);
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
