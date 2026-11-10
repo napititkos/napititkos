@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import MiniPlayer from '../../components/MiniPlayer';
 import DailyReactions from '../../components/DailyReactions';
 import GameBar from '../../components/GameBar';
@@ -30,13 +29,13 @@ function loadLocal() {
 }
 
 export default function MiniPage() {
-  const { status } = useSession();
   const [data, setData] = useState(null);
   const [local, setLocal] = useState(null);
   const [stats, setStats] = useState(null);
 
+  // A rejtvényt azonnal betöltjük (a bejelentkezési süti a kéréssel együtt megy, nem kell
+  // megvárni a munkamenet állapotát), így a rejtvény jelenik meg elsőként.
   useEffect(() => {
-    if (status === 'loading') return;
     const dev = deviceId();
     fetch(`/api/mini${dev ? `?device=${dev}` : ''}`, { cache: 'no-store' })
       .then((r) => r.json())
@@ -50,7 +49,7 @@ export default function MiniPage() {
         if (d.stats?.mine) recordMiniWeek(d.week);
       })
       .catch(() => setData({ live: false }));
-  }, [status]);
+  }, []);
 
   async function solved(elapsed) {
     fireConfetti();
@@ -92,6 +91,7 @@ export default function MiniPage() {
       <h1 className="sr-only">Heti Mini</h1>
       <div className="card">
         <MiniPlayer key={data.puzzle.id + (done ? '-kesz' : '')} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} solvedMsg={false} />
+        {data.puzzle.author && <div className="mini-author">Készítette: {data.puzzle.author}</div>}
         {done && (
           <>
             <div className="mini-stats" aria-label="Statisztika">
@@ -106,7 +106,7 @@ export default function MiniPage() {
           </>
         )}
       </div>
-      <GameFooter game="mini" />
+      {data?.live && <GameFooter game="mini" />}
     </div>
   );
 }

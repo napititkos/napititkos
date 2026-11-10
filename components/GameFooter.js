@@ -14,7 +14,7 @@ const GAMES = {
 
 // Játékcsempe (a főoldalon és a játékok alján): balra a játék logója, a csempét alul-felül
 // kitöltve; mellette középen a játék neve a címbetűtípussal és színekkel (kos nélkül), alatta az alcím.
-export function GameTile({ game, isNew = false, big = false }) {
+export function GameTile({ game, isNew = false, big = false, done = false }) {
   const g = GAMES[game];
   return (
     <a className={`card game-tile${big ? ' game-tile-big' : ''}`} href={g.href} aria-label={`${g.title} – ${g.sub}`}>
@@ -24,6 +24,14 @@ export function GameTile({ game, isNew = false, big = false }) {
         </span>
       )}
       <span className="game-tile-icon">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : <MiniIcon size={null} />}</span>
+      {done && (
+        <span className="game-tile-done" role="img" aria-label="Teljesítve">
+          <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+            <circle cx="12" cy="12" r="11" fill="var(--btn-primary)" />
+            <path d="M6.5 12.5l3.6 3.6 7.4-8" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      )}
       <span className="game-tile-text">
         <span className="game-tile-word">{game === 'titkos' ? <TitkosWordmark ring={false} /> : game === 'szo' ? <SzoWordmark ring={false} /> : <MiniWordmark ring={false} />}</span>
         <span className="game-tile-sub">{g.sub}</span>

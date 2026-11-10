@@ -38,7 +38,7 @@ export async function POST(req, { params }) {
     if (item.promoted) return Response.json({ error: 'already', message: 'Ezt a minit már beemelték.' }, { status: 409 });
     const v = validatePuzzle(item);
     if (typeof v === 'string') return Response.json({ error: 'invalid', message: v }, { status: 400 });
-    const q = await enqueuePuzzle(v);
+    const q = await enqueuePuzzle(v, { author: item.name });
     if (!q) return Response.json({ error: 'busy' }, { status: 503 });
     await kv.withLock('cmini', async () => {
       const l = await cminiList();

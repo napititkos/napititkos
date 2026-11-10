@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
+import { weekLabel } from '../lib/isoWeek';
 import MiniEditor from './MiniEditor';
 import MiniBank from './MiniBank';
 import { N, numbering } from '../lib/miniGrid';
@@ -61,6 +62,16 @@ export default function AdminMini() {
 
   const openNew = (extra = {}) =>
     setEditing({ key: `new-${Date.now()}`, initial: { title: '', rows: Array.from({ length: N }, () => Array(N).fill('')), clues: {}, ...extra } });
+
+  // Várólistás rejtvény szerkesztése: piszkozattá alakítjuk, és megnyitjuk a szerkesztőben;
+  // beemeléskor a várólistán a régi helyére kerül vissza.
+  async function editQueued(id) {
+    const res = await fetch('/api/admin/mini/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'editQueued', id }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) return alert(d.message || 'Nem sikerült megnyitni.');
+    await load();
+    openDraft(d.id);
+  }
 
   async function openDraft(id) {
     setMsg(null);
@@ -227,10 +238,18 @@ export default function AdminMini() {
               <div className="mini-queue-info">
                 <span>
                   <b>{i + 1}.</b> {q.entries.map((e) => e.word.toUpperCase()).join(', ')}
+                  <br />
+                  <span className="mini-muted">
+                    Megjelenik: {state.scheduled?.[i] ? `${weekLabel(state.scheduled[i])} (${new Date(`${state.scheduled[i]}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}., hétfő)` : '–'}
+                    {q.author ? ` · készítette: ${q.author}` : ''}
+                  </span>
                 </span>
-                <span style={{ display: 'flex', gap: 6 }}>
+                <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button className="ghost small" onClick={() => setTrying({ rows: q.rows, entries: q.entries })}>
                     Kipróbálom
+                  </button>
+                  <button className="ghost small" onClick={() => editQueued(q.id)}>
+                    Szerkesztés
                   </button>
                   <button className="ghost small danger" onClick={() => removeQueued(q.id)}>
                     Törlés

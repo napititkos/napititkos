@@ -21,7 +21,7 @@ export async function GET(req) {
     {
       live: true,
       week: cur.week,
-      puzzle: { id: cur.id, rows: cur.rows, entries: cur.entries.map(({ dir, row, col, len, word, clue }) => ({ dir, row, col, len, word, clue })) },
+      puzzle: { id: cur.id, author: cur.author || null, rows: cur.rows, entries: cur.entries.map(({ dir, row, col, len, word, clue }) => ({ dir, row, col, len, word, clue })) },
       stats,
     },
     { headers: noStore }
