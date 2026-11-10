@@ -11,30 +11,34 @@ const DEMO = {"date":"kisokos","grid":["l","e","r","r","á","n","e","g","e"],"wo
 const STEPS = [
   { target: '.szo-kisokos .szo-board', text: 'Új játékunk a Szókereső! Minden nap új 3×3-as rácsot kapsz, a te feladatod pedig, hogy megtaláld az összes szót. Egy betűt egyszer használhatsz; a betűket telefonon ujjal tudod összehúzni, számítógépen pedig az egér segítségével.' },
   { target: '.szo-kisokos .szo-words-btn', text: 'A Szavak listájánál láthatod az összesítést, nyomjunk rá!', wait: true },
-  { target: '.szo-kisokos .szo-words-panel', text: 'Itt láthatod a szavakat, amiket már megtaláltál, illetve azokat, amik még nincsenek meg. Tudsz segítséget is kérni ezeknek a dobozoknak a bepipálásával.' },
-  { target: '.szo-kisokos .szo-report', text: 'Ha problémát észlelsz, itt tudod jelezni. Jó fejtegetést!' },
+  { target: '.szo-words-panel .szo-options', free: true, text: 'Itt láthatod a szavakat, amiket már megtaláltál, illetve azokat, amik még nincsenek meg. Tudsz segítséget is kérni ezeknek a dobozoknak a bepipálásával.' },
+  { target: '.szo-words-panel .szo-report', free: true, place: 'above', text: 'Ha problémát észlelsz, itt tudod jelezni. Jó fejtegetést!' },
 ];
 
 export default function SzoKisokos() {
   const [step, setStep] = useState(0);
   const [round, setRound] = useState(0);
+  const [closeKey, setCloseKey] = useState(0);
   const cur = STEPS[step];
   const next = () =>
     setStep((s) => {
-      if (s + 1 >= STEPS.length) recordSzoTutorial();
+      if (s + 1 >= STEPS.length) {
+        recordSzoTutorial();
+        setCloseKey((k) => k + 1); // az utolsó üzenet után a Szavak ablak bezárul
+      }
       return s + 1;
     });
   return (
     <div className="card szo-kisokos">
       <p className="mini-muted" style={{ marginTop: 0 }}>Próbáld ki egy gyakorló rácson, hogyan működik a napi szókereső!</p>
-      <SzoGame key={round} data={DEMO} preview showReport onPanel={(open) => open && step === 1 && setStep(2)} />
+      <SzoGame key={round} data={DEMO} preview showReport closeKey={closeKey} onPanel={(open) => open && step === 1 && setStep(2)} />
       <div className="mini-list-actions">
         <button type="button" className="ghost small" onClick={() => { setStep(0); setRound((r) => r + 1); }}>
           Újrakezdés
         </button>
       </div>
       {cur && (
-        <RamCoach target={cur.target} place="below" blink={cur.wait ? cur.target : undefined} onOk={cur.wait ? undefined : next}>
+        <RamCoach target={cur.target} place={cur.place || 'below'} scroll={false} blocking={!cur.free} blink={cur.wait ? cur.target : undefined} onOk={cur.wait ? undefined : next}>
           {cur.text}
         </RamCoach>
       )}

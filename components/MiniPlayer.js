@@ -24,7 +24,7 @@ function fmt(ms) {
 }
 
 // solvedTime: ha már megfejtette (pl. korábban ezen a héten), a kitöltött rács és az ideje látszik.
-export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null }) {
+export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null, dateLabel = '' }) {
   const m = useMemo(() => navModel(rows), [rows]);
   const { nums, words, order } = m;
   const isBlack = m.black;
@@ -172,11 +172,10 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null 
 
   return (
     <div className="mini-player">
+      {/* Felül balra a hét hétfője, jobbra az időzítő; az Ellenőrzés gomb a rejtvény alatt középen. */}
       <div className="mini-player-top">
+        <span className="mini-date">{dateLabel}</span>
         <span className="timer">{fmt(now - start)}</span>
-        <button type="button" className="ghost small" onClick={check} disabled={solved}>
-          Ellenőrzés
-        </button>
       </div>
       <div className="mini-cluebar">
         <button type="button" className="mini-cluebar-nav" aria-label="Előző szó" onClick={() => jump(-1)}>
@@ -233,6 +232,11 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null 
           onKeyDown={onKeyDown}
           onInput={onInput}
         />
+      </div>
+      <div className="mini-check-row">
+        <button type="button" className="ghost small mini-check-btn" onClick={check} disabled={solved}>
+          Ellenőrzés
+        </button>
       </div>
       {msg && (
         <div className={`feedback ${msg.ok ? 'good' : 'hint'}`} role="status" style={{ marginLeft: 0 }}>

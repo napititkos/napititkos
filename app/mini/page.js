@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import MiniPlayer from '../../components/MiniPlayer';
 import DailyReactions from '../../components/DailyReactions';
-import Icon from '../../components/Icon';
 import GameBar from '../../components/GameBar';
 import ShareButton from '../../components/ShareButton';
 import GameFooter from '../../components/GameFooter';
@@ -16,6 +15,13 @@ import { recordMiniWeek } from '../../lib/gameProgress';
 // statisztika (a te időd, átlagidő, teljesítések), emoji-reakciók és idő szerinti ranglista;
 // minden hetente indul újra. A megfejtés ténye és ideje ezen az eszközön megmarad a hét végéig.
 const KEY = 'titkositas_mini_v1';
+function weekLabel(week) {
+  try {
+    return `${new Date(`${week}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}. hete`;
+  } catch {
+    return '';
+  }
+}
 function fmt(ms) {
   if (ms == null) return '–';
   const s = Math.floor(ms / 1000);
@@ -89,9 +95,9 @@ export default function MiniPage() {
   return (
     <div className="wrap mini-page">
       <GameBar game="mini" />
-      <h1 className="page-title game-page-title">Heti mini keresztrejtvény</h1>
+      <h1 className="sr-only">Heti Mini</h1>
       <div className="card">
-        <MiniPlayer key={data.puzzle.id + (done ? '-kesz' : '')} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} />
+        <MiniPlayer key={data.puzzle.id + (done ? '-kesz' : '')} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} />
         {done && (
           <>
             <div className="mini-stats" aria-label="Statisztika">
@@ -101,9 +107,6 @@ export default function MiniPage() {
             </div>
             <DailyReactions date={data.week} scope="mini" interactive />
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-              <button className="ghost small" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: { tab: 'mini' } }))}>
-                <Icon src="/icons/Ranglista.png" size={16} /> Heti ranglista
-              </button>
               <ShareButton text={`🧩 Heti mini keresztrejtvény\nMegfejtettem ${fmt(myTime)} alatt!\nPróbáld ki te is: https://napititkos.hu/mini`} />
             </div>
           </>

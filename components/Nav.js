@@ -5,7 +5,9 @@ import { usePathname } from 'next/navigation';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
 import Icon from './Icon';
 import Logo from './Logo';
-import { MiniIcon } from './GameIcons';
+import { MiniWordmark, NapiWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
+
+const BRAND_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', napi: 'Napititkos – kezdőlap' };
 
 
 export default function Nav() {
@@ -44,7 +46,25 @@ export default function Nav() {
       })
       .catch(() => {});
   }, []);
-  const variant = pathname.startsWith('/szokereso') ? 'szo' : pathname.startsWith('/mini') && miniLive ? 'mini' : pathname === '/' && miniLive ? 'napi' : 'titkos';
+  // A fül (?tab=mini / ?tab=szo) az aloldalakon is meghatározza, melyik játékhoz tartozunk.
+  const [tabGame, setTabGame] = useState(null);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const t = new URLSearchParams(window.location.search).get('tab');
+        setTabGame(t === 'mini' || t === 'szo' ? t : null);
+      } catch {}
+    };
+    read();
+    const onTab = (e) => setTabGame(e.detail === 'mini' || e.detail === 'szo' ? e.detail : null);
+    window.addEventListener('rejtveny-tab', onTab);
+    return () => window.removeEventListener('rejtveny-tab', onTab);
+  }, [pathname]);
+  const GAME_PATHS = { '/titkosiras': 'titkos', '/szokereso': 'szo', '/mini': 'mini' };
+  const onGame = GAME_PATHS[pathname];
+  const game = onGame || (pathname.startsWith('/szokereso') ? 'szo' : pathname.startsWith('/mini') ? 'mini' : tabGame || 'titkos');
+  const variant = pathname === '/' && miniLive ? 'napi' : miniLive ? game : 'titkos';
+  const brandHref = !miniLive ? '/' : onGame || pathname === '/' ? '/' : { titkos: '/titkosiras', szo: '/szokereso', mini: '/mini' }[game];
   const loginHref = pathname === '/' || pathname.startsWith('/login') ? '/login' : `/login?callbackUrl=${encodeURIComponent(pathname)}`;
 
   useEffect(() => {
@@ -89,39 +109,11 @@ export default function Nav() {
             </a>
           )}
         </div>
-        {variant === 'titkos' ? (
-          <a href={miniLive ? '/titkosiras' : '/'} className="brand-link" aria-label="Titkosírás">
-            <div className="brand brand-mid brand-c" aria-hidden="true">
-              <span className="bm-left">TITK</span>
-              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
-              <span className="bm-right">S<span>ÍRÁS</span></span>
-            </div>
-          </a>
-        ) : variant === 'mini' ? (
-          <a href="/mini" className="brand-link brand-link-flow" aria-label="Mini keresztrejtvény">
-            <div className="brand brand-flow brand-mini" aria-hidden="true">
-              <MiniIcon size={null} />
-              <span className="bf-accent">MINI</span>
-            </div>
-          </a>
-        ) : variant === 'szo' ? (
-          <a href="/szokereso" className="brand-link brand-link-flow" aria-label="Szókereső">
-            <div className="brand brand-flow brand-c" aria-hidden="true">
-              <span className="bf-ink">SZ</span>
-              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
-              <span className="bf-accent">KERESŐ</span>
-            </div>
-          </a>
-        ) : (
-          <a href="/" className="brand-link brand-link-flow" aria-label="Napititkos – kezdőlap">
-            <div className="brand brand-flow brand-c" aria-hidden="true">
-              <span className="bf-accent">NAPI</span>
-              <span className="bf-ink">TITK</span>
-              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
-              <span className="bf-ink">S</span>
-            </div>
-          </a>
-        )}
+        {/* A játékok oldalán a felirat a főoldalra visz, máshol (Kisokos, archívum, közösségi stb.)
+            a játékhoz, amelyikhez az oldal (vagy a kiválasztott fül) tartozik. */}
+        <a href={brandHref} className={`brand-link${variant === 'titkos' ? '' : ' brand-link-flow'}`} aria-label={BRAND_LABEL[variant]}>
+          {variant === 'titkos' ? <TitkosWordmark /> : variant === 'szo' ? <SzoWordmark /> : variant === 'mini' ? <MiniWordmark /> : <NapiWordmark />}
+        </a>
         {/* Jobb oldalon adminnak az admin felület gombja (egyébként üres hely, hogy a felirat
             pontosan középen maradjon). */}
         <div className="topnav-right">

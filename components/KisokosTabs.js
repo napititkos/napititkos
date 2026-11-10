@@ -8,8 +8,9 @@ import RejtvenyTabs, { useMiniLive, useRejtvenyTab } from './RejtvenyTabs';
 // rejtvény kisokosára jutunk (a minik oldala a ?tab=mini címre visz).
 export default function KisokosTabs() {
   const live = useMiniLive();
-  const [tab, setTab] = useRejtvenyTab();
+  const [tab, setTab, ready] = useRejtvenyTab();
   if (!live) return <TutorialContent />;
+  if (!ready) return null;
   return (
     <>
       <RejtvenyTabs tab={tab} onChange={setTab} labels={{ titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Mini' }} withSzo />

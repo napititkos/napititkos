@@ -40,7 +40,7 @@ function saveDay(date, st) {
 }
 
 // preview: admin kipróbálás – semmi nem mentődik (se az eszközön, se a szerveren, se a trófeákhoz).
-export default function SzoGame({ data, onComplete, preview = false, showReport = !preview, onPanel }) {
+export default function SzoGame({ data, onComplete, preview = false, showReport = !preview, onPanel, closeKey }) {
   const { date, grid, required, bonus, paths } = data;
   const reqSet = useMemo(() => new Set(required), [required]);
   const bonusSet = useMemo(() => new Set(bonus), [bonus]);
@@ -59,6 +59,20 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     setPanel(v);
     onPanel && onPanel(v);
   };
+  // Kívülről (pl. a Kisokos végén) bezárható a Szavak ablak.
+  useEffect(() => {
+    if (closeKey) setPanel(false);
+  }, [closeKey]);
+  useEffect(() => {
+    if (!panel) return;
+    const esc = (e) => e.key === 'Escape' && togglePanel(false);
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel]);
+  const dayLabel = /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric', weekday: 'long' })
+    : 'Gyakorlás';
   const shareText = () => {
     const d = new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' });
     const pts = szoPointsTotal(foundReq);
@@ -146,8 +160,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       if (earned > stars && n < total) {
         setHints((h) => h + (earned - stars));
         setStars(earned);
-        flash(`+${szoPointsOf(w)} pont · Segítséget kaptál! Koppints egy még meg nem talált szóra a Szavak listában.`, 'good', 3200);
-      } else flash(n >= total ? `+${szoPointsOf(w)} pont · Megtaláltad az összes szót!` : `Szép! +${szoPointsOf(w)} pont`, 'good', n >= total ? 3200 : 1900);
+        flash(`+${szoPointsOf(w)} pont · Segítséget kaptál!`, 'good', 3200);
+      } else flash(n >= total ? `+${szoPointsOf(w)} pont · Mind megvan!` : `Szép! +${szoPointsOf(w)} pont`, 'good', n >= total ? 3200 : 1900);
       if (n >= total) {
         fireConfetti();
         if (!preview) recordSzoFull(date);
@@ -245,7 +259,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     if (hints < 1 || found.includes(w)) return;
     setHints((h) => h - 1);
     setShown({ word: w, path: paths[w] });
-    flash('Megmutattuk az útját a rácson!', 'good', 2400);
+    flash('Megmutattuk az útját!', 'good', 2400);
   }
 
   // Szólista hossz szerint.
@@ -261,8 +275,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   return (
     <div className="szo-game">
       <div className="szo-top">
+        <span className="szo-date">{dayLabel}</span>
         <span className="timer">{fmt(elapsed)}</span>
-        <span className="szo-hints" aria-live="polite">{hints > 0 ? `Segítség: ${hints}` : ''}</span>
       </div>
       <div className="szo-progress" aria-label={`${foundReq.length} / ${total} szó`}>
         <div className="szo-bar">
@@ -275,11 +289,19 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         </span>
       </div>
       {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}
-      <button type="button" className={`szo-words-btn${panel ? ' open' : ''}`} aria-expanded={panel} onClick={() => togglePanel(!panel)}>
-        Szavak <span>{foundReq.length}/{total}</span> <span aria-hidden="true">{panel ? '▴' : '▾'}</span>
+      <button type="button" className={`szo-words-btn${panel ? ' open' : ''}`} aria-haspopup="dialog" onClick={() => togglePanel(true)}>
+        Szavak <span>{foundReq.length}/{total}</span>
+        {hints > 0 && <span className="szo-hint-badge">{hints} segítség</span>}
       </button>
       {panel && (
-        <div className="szo-words-panel">
+        <div className="modal-overlay szo-words-overlay" onClick={() => togglePanel(false)}>
+        <div className="modal-card szo-words-panel" role="dialog" aria-label="Szavak" onClick={(e) => e.stopPropagation()}>
+          <button type="button" className="modal-x szo-words-x" aria-label="Bezárás" onClick={() => togglePanel(false)}>
+            ×
+          </button>
+          <h2 className="szo-words-title">
+            Szavak <span>{foundReq.length}/{total}</span>
+          </h2>
         <div className="szo-options">
           <label className="checkbox-row">
             <input type="checkbox" checked={abc} onChange={(e) => setAbc(e.target.checked)} /> ABC-sorrend (a még meg nem talált szavak a helyükön)
@@ -328,6 +350,12 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         </div>
 
           {showReport && <SzoReport date={date} />}
+          <div className="actions" style={{ marginTop: 12 }}>
+            <button className="primary" onClick={() => togglePanel(false)}>
+              Bezárás
+            </button>
+          </div>
+        </div>
         </div>
       )}
       {/* Két külön sor: fölül az üzenet (halványodva eltűnik), alatta a szó. A beírás mindig

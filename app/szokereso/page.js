@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import SzoGame from '../../components/SzoGame';
-import Icon from '../../components/Icon';
 import GameBar from '../../components/GameBar';
 import GameFooter from '../../components/GameFooter';
 import { deviceId } from '../../lib/device';
@@ -22,7 +21,7 @@ export default function SzokeresoPage() {
   return (
     <div className="wrap">
       <GameBar game="szo" />
-      <h1 className="page-title game-page-title">Napi szókereső</h1>
+      <h1 className="sr-only">Szókereső</h1>
       <div className="card">
         {!data ? (
           <p>Betöltés…</p>
@@ -31,11 +30,6 @@ export default function SzokeresoPage() {
         ) : (
           <>
             <SzoGame key={data.date} data={data} />
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-              <button className="ghost small" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: { tab: 'szo' } }))}>
-                <Icon src="/icons/Ranglista.png" size={16} /> Mai ranglista
-              </button>
-            </div>
           </>
         )}
       </div>

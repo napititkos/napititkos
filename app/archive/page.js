@@ -21,7 +21,7 @@ export default function ArchivePage() {
   const { status } = useSession();
   // A mini élesítése után: „Korábbi rejtvények”, Titkosírások / Minik választóval.
   const miniLive = useMiniLive();
-  const [kind, setKind] = useRejtvenyTab();
+  const [kind, setKind, tabReady] = useRejtvenyTab();
   const [items, setItems] = useState(null);
   // A fiók haladásának megérkezése után (másik eszközön megfejtettek) frissítjük a megfejtett jelzéseket.
   useEffect(() => {
@@ -168,7 +168,7 @@ export default function ArchivePage() {
         <BackButton />
       </div>
       {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo />}
-      {miniLive && kind === 'szo' ? (
+      {!tabReady ? null : miniLive && kind === 'szo' ? (
         <SzoArchive />
       ) : miniLive && kind === 'mini' ? (
         <MiniArchive />
