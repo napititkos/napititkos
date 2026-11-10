@@ -969,7 +969,7 @@ export default function DailyGame() {
       )}
 
       {/* Élesítés után: az archívum és a közösségi csempe, alattuk a másik két játék. */}
-      {miniInfo?.live && <GameFooter game="titkos" />}
+      {miniInfo?.live && puzzleMeta && <GameFooter game="titkos" />}
       {/* Két fél szélességű doboz a korábbi és a közösségi titkosírásokhoz (megfejtés előtt is). */}
       {!miniInfo?.live && (
         <div className="next-links">

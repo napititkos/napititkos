@@ -15,6 +15,23 @@ import { szoPointsOf, szoPointsTotal } from '../lib/szoPoints';
 // és első/utolsó betű. A haladásjelző egyharmadánál és kétharmadánál egy-egy segítség jár: egy
 // még meg nem talált szóra koppintva a rács megmutatja az útját.
 const KEY = 'titkositas_szo_v1';
+// Egy szó összes útja a rácson (szomszédos négyzeteken, mindegyiket egyszer használva).
+function allRoutes(grid, word) {
+  const letters = Array.from(word);
+  const out = [];
+  const rec = (path) => {
+    if (path.length === letters.length) return out.push(path.slice());
+    const last = path[path.length - 1];
+    for (let j = 0; j < 9; j++) {
+      if (path.includes(j) || grid[j] !== letters[path.length] || (last != null && !adjacent(last, j))) continue;
+      path.push(j);
+      rec(path);
+      path.pop();
+    }
+  };
+  rec([]);
+  return out;
+}
 const CENTER = (i) => [50 + (i % 3) * 100, 50 + Math.floor(i / 3) * 100];
 const adjacent = (a, b) => a !== b && Math.abs(Math.floor(a / 3) - Math.floor(b / 3)) <= 1 && Math.abs((a % 3) - (b % 3)) <= 1;
 const len = (w) => Array.from(w).length;
@@ -40,16 +57,14 @@ function saveDay(date, st) {
 }
 
 // preview: admin kipróbálás – semmi nem mentődik (se az eszközön, se a szerveren, se a trófeákhoz).
-export default function SzoGame({ data, onComplete, preview = false, showReport = !preview, onPanel, closeKey }) {
+export default function SzoGame({ data, onComplete, preview = false, showReport = !preview, onPanel, closeKey, onStars }) {
   const { date, grid, required, bonus, paths } = data;
   const reqSet = useMemo(() => new Set(required), [required]);
   const bonusSet = useMemo(() => new Set(bonus), [bonus]);
   const saved = useMemo(() => (preview ? {} : loadAll()[date] || {}), [date, preview]);
   const [found, setFound] = useState(() => (preview ? [] : [...new Set([...(saved.found || []), ...(data.mine?.found || [])])]));
   const [elapsed, setElapsed] = useState(saved.elapsed || data.mine?.elapsed || 0);
-  const [hints, setHints] = useState(saved.hints || 0);
   const [stars, setStars] = useState(saved.stars || 0); // hány csillagot (segítséget) kapott már
-  const [shown, setShown] = useState(saved.shown || null); // a felfedett szó (útjával)
   const [abc, setAbc] = useState(!!saved.abc);
   const [outer, setOuter] = useState(!!saved.outer);
   const [path, setPath] = useState([]);
@@ -90,6 +105,26 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
 
   const foundReq = found.filter((w) => reqSet.has(w));
   const foundBonus = found.filter((w) => bonusSet.has(w));
+  // A még meg nem talált kötelező szavak összes lehetséges útja (egy szónak több útja is lehet):
+  // ebből számoljuk, mely betűkhöz tartozik még szó (a többi kifakul), és a csillagok jutalmát:
+  // hány szó kezdődik az adott négyzettel, és hány szó tartalmazza (szavanként egyszer számolva).
+  const live = useMemo(() => {
+    const starts = Array(9).fill(0);
+    const has = Array(9).fill(0);
+    const cells = new Set();
+    for (const w of required) {
+      if (found.includes(w)) continue;
+      const rs = allRoutes(grid, w);
+      const st = new Set(rs.map((r) => r[0]));
+      const hs = new Set(rs.flat());
+      st.forEach((i) => starts[i]++);
+      hs.forEach((i) => {
+        has[i]++;
+        cells.add(i);
+      });
+    }
+    return { starts, has, cells };
+  }, [grid, required, found]);
   const total = required.length;
   const done = foundReq.length >= total && total > 0;
 
@@ -113,8 +148,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
 
   useEffect(() => {
     if (preview) return;
-    saveDay(date, { found, elapsed, hints, stars, shown, abc, outer });
-  }, [date, found, elapsed, hints, stars, shown, abc, outer]);
+    saveDay(date, { found, elapsed, stars, abc, outer });
+  }, [date, found, elapsed, stars, abc, outer]);
 
   function sync(words, el) {
     if (preview) return;
@@ -153,19 +188,21 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     if (!preview) recordSzoWord();
     const el = Date.now() - startRef.current;
     setElapsed(el);
-    if (shown?.word === w) setShown(null);
     if (bonusSet.has(w)) flash('Bónuszszó!', 'good');
     else {
       const n = next.filter((x) => reqSet.has(x)).length;
-      // Csillagok a pontok egyharmadánál és kétharmadánál: egy-egy segítség.
+      // Csillagok a pontok egyharmadánál és kétharmadánál. Jutalmuk: az 1. csillagtól a betűk bal
+      // felső sarkában, hány még meg nem talált szó kezdődik velük; a 2. csillagtól a jobb felső
+      // sarokban, hány még meg nem talált szó tartalmazza őket.
       const pts = szoPointsTotal(next.filter((x) => reqSet.has(x)));
       const all = szoPointsTotal(required);
       const earned = (pts * 3 >= all ? 1 : 0) + (pts * 3 >= 2 * all ? 1 : 0);
-      if (earned > stars && n < total) {
-        setHints((h) => h + (earned - stars));
+      if (earned > stars) {
         setStars(earned);
-        flash(`+${szoPointsOf(w)} pont · Segítséget kaptál!`, 'good', 3200);
-      } else flash(n >= total ? `+${szoPointsOf(w)} pont · Mind megvan!` : `Szép! +${szoPointsOf(w)} pont`, 'good', n >= total ? 3200 : 1900);
+        onStars && onStars(earned);
+      }
+      if (earned > stars && n < total) flash(`+${szoPointsOf(w)} pont · Jutalom: számok a betűkön!`, 'good', 3200);
+      else flash(n >= total ? `+${szoPointsOf(w)} pont · Mind megvan!` : `Szép! +${szoPointsOf(w)} pont`, 'good', n >= total ? 3200 : 1900);
       if (n >= total) {
         fireConfetti();
         if (!preview) recordSzoFull(date);
@@ -259,12 +296,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     return () => document.removeEventListener('pointerdown', onDocDown, true);
   }, []);
 
-  function useHint(w) {
-    if (hints < 1 || found.includes(w)) return;
-    setHints((h) => h - 1);
-    setShown({ word: w, path: paths[w] });
-    flash('Megmutattuk az útját!', 'good', 2400);
-  }
+
 
   // Szólista hossz szerint.
   const groups = useMemo(() => {
@@ -282,8 +314,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     <div className="szo-game">
       <div className="szo-top">
         <span className="szo-date">
+          {dayNo > 0 && <span className="szo-dayno">#{dayNo} </span>}
           {dayLabel}
-          {dayNo > 0 && <span className="szo-dayno"> #{dayNo}</span>}
         </span>
         <span className="timer">{fmt(elapsed)}</span>
       </div>
@@ -297,7 +329,6 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}
       <button type="button" className={`szo-words-btn${panel ? ' open' : ''}`} aria-haspopup="dialog" onClick={() => togglePanel(true)}>
         {foundReq.length}/{total} szó · {szoPointsTotal(foundReq)} pont
-        {hints > 0 && <span className="szo-hint-badge">{hints} segítség</span>}
       </button>
       {panel && (
         <div className="modal-overlay szo-words-overlay" onClick={() => togglePanel(false)}>
@@ -316,7 +347,6 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
             <input type="checkbox" checked={outer} onChange={(e) => setOuter(e.target.checked)} /> Első és utolsó betű mutatása
           </label>
         </div>
-        {hints > 0 && !done && <p className="mini-muted">Van {hints} segítséged: koppints egy csillagos (még meg nem talált) szóra, és megmutatjuk az útját.</p>}
         <div className="szo-lists">
           {groups.map(([L, words]) => {
             const got = words.filter((w) => found.includes(w));
@@ -333,9 +363,9 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
                       <li key={w} className="got">{w.toUpperCase()}</li>
                     ) : (
                       <li key={w}>
-                        <button type="button" className={`szo-masked${hints > 0 ? ' can' : ''}${shown?.word === w ? ' shown' : ''}`} disabled={hints < 1 && shown?.word !== w} onClick={() => useHint(w)} aria-label={hints > 0 ? 'Még meg nem talált szó – koppints a segítséghez' : 'Még meg nem talált szó'}>
+                        <span className="szo-masked" aria-label="Még meg nem talált szó">
                           {mask(w)}
-                        </button>
+                        </span>
                       </li>
                     )
                   )}
@@ -389,20 +419,28 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         aria-label="Szókereső rács"
       >
         <svg className="szo-lines" viewBox="0 0 300 300" aria-hidden="true">
-          {shown?.path && <polyline className="hint" points={shown.path.map((i) => CENTER(i).join(',')).join(' ')} />}
           {path.length > 1 && <polyline points={path.map((i) => CENTER(i).join(',')).join(' ')} />}
         </svg>
         {[0, 1, 2].map((r) => (
           <div key={r} role="row" className="szo-row">
             {[0, 1, 2].map((c) => {
               const i = r * 3 + c;
-              const hintStep = shown?.path ? shown.path.indexOf(i) : -1;
+              const faded = !done && !live.cells.has(i);
               return (
-                <span key={i} role="gridcell" className={`szo-cell${path.includes(i) ? ' on' : ''}${hintStep >= 0 ? ' hint' : ''}`} aria-label={grid[i].toUpperCase()}>
+                <span key={i} role="gridcell" className={`szo-cell${path.includes(i) ? ' on' : ''}${faded ? ' faded' : ''}`} aria-label={`${grid[i].toUpperCase()}${faded ? ' (már nincs hozzá szó)' : ''}`}>
                   <span className="szo-hit" data-szo-cell={i} onPointerDown={(e) => onDown(e, i)}>
                     {grid[i].toUpperCase()}
+                    {stars >= 1 && !done && (
+                      <span className="szo-n szo-n-start" title="Ennyi még meg nem talált szó kezdődik ezzel a betűvel">
+                        {live.starts[i]}
+                      </span>
+                    )}
+                    {stars >= 2 && !done && (
+                      <span className="szo-n szo-n-has" title="Ennyi még meg nem talált szó tartalmazza ezt a betűt">
+                        {live.has[i]}
+                      </span>
+                    )}
                   </span>
-                  {hintStep >= 0 && <span className="szo-step">{hintStep + 1}</span>}
                 </span>
               );
             })}

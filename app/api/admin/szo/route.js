@@ -123,11 +123,13 @@ export async function POST(req) {
     else if (body.action !== 'unban') return 'unknown';
     await kv.set(SZO_KEYS.added, added);
     await kv.set(SZO_KEYS.banned, banned);
-    // A tiltott szó a mai rácsból is azonnal kikerül (a kötelezők és a bónuszok közül is).
+    // A tiltott szó a mai és a következő 7 nap már legenerált rácsából is azonnal kikerül
+    // (a kötelezők és a bónuszok közül is).
     if (body.action === 'ban') {
-      const key = szoPuzzleKey(todayStr());
-      const p = await kv.get(key);
-      if (p && (p.required.includes(word) || p.bonus.includes(word))) {
+      for (let i = 0; i <= 7; i++) {
+        const key = szoPuzzleKey(addDays(todayStr(), i));
+        const p = await kv.get(key);
+        if (!p || !(p.required.includes(word) || p.bonus.includes(word)) || p.word === word) continue;
         const paths = { ...p.paths };
         delete paths[word];
         await kv.set(key, { ...p, required: p.required.filter((w) => w !== word), bonus: p.bonus.filter((w) => w !== word), paths });

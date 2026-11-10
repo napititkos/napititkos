@@ -32,6 +32,17 @@ export async function GET(req) {
       published: pub.slice(-10).reverse(),
       current: pub[pub.length - 1] || null,
       week: weekStart(),
+      // A várólista elemeinek tervezett hete: ha a mostani héten már megjelent mini, a következő
+      // héttől, különben ettől a héttől sorban.
+      scheduled: (() => {
+        const ws = weekStart();
+        const curDone = pub.length && pub[pub.length - 1].week >= ws;
+        return (queue || []).map((_, i) => {
+          const d = new Date(`${ws}T12:00:00Z`);
+          d.setUTCDate(d.getUTCDate() + 7 * (i + (curDone ? 1 : 0)));
+          return d.toISOString().slice(0, 10);
+        });
+      })(),
       start: miniStart(),
       bankWords: Object.keys(bank).length,
       titkosWords: Object.keys(titkos).length,

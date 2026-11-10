@@ -30,7 +30,9 @@ export default function AdminSzo() {
   const [sort, setSort] = useState('abc');
   const [page, setPage] = useState(1);
   const [msg, setMsg] = useState(null);
-  const [trying, setTrying] = useState(null); // a kipróbált nap rácsa
+  const [trying, setTrying] = useState(null);
+  const [newWord, setNewWord] = useState('');
+  const [openDay, setOpenDay] = useState(null); // a lenyitott tervezett nap // a kipróbált nap rácsa
   const [regen, setRegen] = useState(null); // épp cserélt nap
 
   function load() {
@@ -127,7 +129,7 @@ export default function AdminSzo() {
 
       <div className="card">
         <b>A következő 7 nap</b>
-        <p className="mini-muted" style={{ margin: '4px 0 8px' }}>A tervezett rácsok; a játékosok mindig csak az adott napon kapják meg. Az „Új kérése” lecseréli a nap rácsát egy új napi szóval.</p>
+        <p className="mini-muted" style={{ margin: '4px 0 8px' }}>A tervezett rácsok; a játékosok mindig csak az adott napon kapják meg. A „Szavak” gombbal megnézheted a nap szavait, és a × gombbal bármelyiket tilthatod (a mai és az összes tervezett napból kikerül). Az „Új kérése” lecseréli a nap rácsát egy új napi szóval.</p>
         <ul className="admin-szo-upcoming">
           {(data.upcoming || []).map((u) => (
             <li key={u.date}>
@@ -143,6 +145,9 @@ export default function AdminSzo() {
                 </span>
               </div>
               <span className="admin-szo-actions">
+                <button className="ghost small" aria-expanded={openDay === u.date} onClick={() => setOpenDay(openDay === u.date ? null : u.date)}>
+                  {openDay === u.date ? 'Szavak ▴' : 'Szavak ▾'}
+                </button>
                 <button className="ghost small" onClick={() => setTrying(u)}>
                   Kipróbálom
                 </button>
@@ -150,6 +155,33 @@ export default function AdminSzo() {
                   {regen === u.date ? 'Generálás…' : 'Új kérése'}
                 </button>
               </span>
+              {/* A nap szavai, a mai rácshoz hasonlóan: × = tiltás (az összes tervezett napból kikerül). */}
+              {openDay === u.date && (
+                <div className="admin-szo-up-words">
+                  {[
+                    ['Kötelező szavak', u.required],
+                    ['Bónuszszavak', u.bonus],
+                  ].map(([title, words]) => (
+                    <div key={title} className="admin-szo-today-words">
+                      <h3>
+                        {title} ({words.length})
+                      </h3>
+                      <ul>
+                        {words.map((w) => (
+                          <li key={w}>
+                            {w.toUpperCase()}
+                            {w !== u.word && (
+                              <button type="button" className="admin-szo-x" aria-label={`${w.toUpperCase()} tiltása`} title="Tiltás" onClick={() => act('ban', w)}>
+                                ×
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -160,7 +192,20 @@ export default function AdminSzo() {
         <p className="mini-muted" style={{ margin: '4px 0 8px' }}>
           Kötelező (köznév): {data.counts.required} · bónusz: {data.counts.bonus} · hozzáadott: {data.counts.added} · tiltott: {data.counts.banned}
         </p>
-        <input type="search" className="admin-szo-search" placeholder="Keresés vagy új szó (3-9 betű; * és ? minta)" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Szó keresése" />
+        {/* Új szó kézi felvitele a kötelező szavak közé. */}
+        <form
+          className="admin-szo-add"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (newWord.trim()) act('add', newWord.trim()).then(() => setNewWord(''));
+          }}
+        >
+          <input value={newWord} onChange={(e) => setNewWord(e.target.value)} placeholder="Új szó (3-9 betű)" aria-label="Új szó felvitele" maxLength={9} />
+          <button type="submit" className="primary small" disabled={!newWord.trim()}>
+            Felvitel a bankba
+          </button>
+        </form>
+        <input type="search" className="admin-szo-search" placeholder="Keresés (3-9 betű; * és ? minta)" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Szó keresése" />
         <div className="admin-szo-filters">
           <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Szűrés">
             <option value="all">Összes</option>

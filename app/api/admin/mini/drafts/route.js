@@ -6,7 +6,7 @@ import { MINI_LETTERS, MINI_TEMPLATES, MINI_WORDS } from '../../../../../lib/min
 import { templateGrid } from '../../../../../lib/miniGen';
 import { addEntriesToBank, cluesFor, loadBank, normWord, titkosClues } from '../../../../../lib/mini';
 import { assemble, draftSummary } from '../../../../../lib/miniDraft';
-import { deleteDraft, getDraft, isDraftId, listDrafts, publishDraft, saveDraft } from '../../../../../lib/miniDraftStore';
+import { deleteDraft, draftFromQueue, getDraft, isDraftId, listDrafts, publishDraft, saveDraft } from '../../../../../lib/miniDraftStore';
 
 // Mini keresztrejtvény piszkozatok (admin). Bármelyik admin megnyithatja és mentheti a másik
 // piszkozatát; az ütközést a rev (mentésszám) kezeli: elavult rev-vel 409 jön a friss változattal.
@@ -77,6 +77,16 @@ export async function POST(req) {
     const out = {};
     for (const w of words) out[w] = { known: dictionary().has(w) || !!bank[w] || !!titkos[w], clues: cluesFor(w, bank, titkos) };
     return Response.json({ words: out }, { headers: NO_STORE });
+  }
+
+  // Várólistán lévő rejtvény szerkesztése: piszkozattá alakul, beemeléskor a helyére tér vissza.
+  if (action === 'editQueued') {
+    const user = await adminUser();
+    if (!user) return unauthorized();
+    const out = await draftFromQueue({ id: String(body.id || ''), actor: actorOf(user) });
+    if (!out) return Response.json({ error: 'busy' }, { status: 503, headers: NO_STORE });
+    if (out.status !== 200) return Response.json({ error: 'not-found', message: 'Ez a rejtvény már nincs a várólistán.' }, { status: 404, headers: NO_STORE });
+    return Response.json({ ok: true, id: out.id }, { headers: NO_STORE });
   }
 
   if (action === 'template') {

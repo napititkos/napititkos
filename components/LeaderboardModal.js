@@ -60,13 +60,13 @@ export default function LeaderboardModal() {
   if (!open) return null;
 
   return (
-    <div className="modal-overlay" onClick={() => setOpen(false)}>
+    <div className="modal-overlay lb-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card" ref={cardRef} style={holdH ? { minHeight: holdH, boxSizing: 'border-box' } : undefined} onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
         </h2>
         <p className="lb-countdown" aria-live="off">
-          {tab === 'mini' ? `Új rejtvény és új ranglista: ${fmtDHM(msUntilMonday(new Date(tick)))} múlva` : `${tab === 'szo' ? 'Új szókereső és új ranglista' : 'Nullázódik'}: ${fmtHMS(msUntilMidnight(new Date(tick)))} múlva`}
+          {`Nullázódik: ${tab === 'mini' ? fmtDHM(msUntilMonday(new Date(tick))) : fmtHMS(msUntilMidnight(new Date(tick)))} múlva`}
         </p>
         {(miniLive || tab !== 'daily') && (
           <div className="lb-tabs" role="tablist" aria-label="Ranglista választása">

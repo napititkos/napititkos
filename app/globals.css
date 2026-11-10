@@ -1774,3 +1774,30 @@ a.card.game-tile{ min-height: 0; }
 
 /* A szókereső sorszáma a dátum mellett, a napi titkosírás címének betűtípusával. */
 .szo-dayno{ font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-weight: 700; letter-spacing: 0.015em; color: var(--accent-text); font-size: 15px; }
+
+/* Szókereső: a kifakult betűkhöz már nem tartozik meg nem talált szó. A csillagok jutalma: bal felső
+   sarokban (lila) hány szó kezdődik a betűvel, jobb felső sarokban (zöld) hány szó tartalmazza. */
+.szo-cell.faded .szo-hit{ opacity: 0.32; filter: saturate(0.4); }
+.szo-hit{ position: relative; }
+.szo-n{ position: absolute; top: 6%; min-width: 1.35em; height: 1.35em; padding: 0 0.2em; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: clamp(11px, 3.4vw, 14px); font-weight: 800; line-height: 1; font-family: var(--font-nunito), Nunito, sans-serif; color: #fff; }
+.szo-n-start{ left: 7%; background: var(--btn-primary); }
+.szo-n-has{ right: 7%; background: #2e8b57; }
+@media (prefers-color-scheme: dark){ .szo-n-has{ background: #3aa56c; } }
+/* Heti Mini: megfejtés után is látszik, hol áll a kijelölés. */
+.mini-sq.solved.word{ background: var(--mini-word); }
+.mini-sq.solved.active{ background: var(--mini-active); }
+/* Az Ő (és ékezetei) mindig a környező felirat színét veszik át (világos módban is). */
+.brand .acc-letter, .brand .acc-letter .acc-clip > span{ color: inherit; }
+/* Ranglista: a teteje mindig ugyanott marad, fülváltáskor csak az alja mozog. */
+.modal-overlay.lb-overlay{ align-items: flex-start; padding-top: max(6vh, 24px); }
+.mini-author{ text-align: right; font-size: 12.5px; color: var(--ink-soft); margin-top: 8px; }
+
+/* Főoldal: teljesítve pipa a csempe jobb szélén; a „Hamarosan…” csempe halvány kérdőjellel. */
+.game-tile-done{ position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: flex; }
+.game-tile.game-tile-big:has(.game-tile-done) .game-tile-text{ padding-right: 30px; }
+.card.game-tile.game-tile-soon{ position: relative; display: flex; align-items: center; justify-content: center; min-height: 120px; box-sizing: border-box; margin: 0; overflow: hidden; border-style: dashed; }
+.soon-mark{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-fredoka), Fredoka, sans-serif; font-weight: 700; font-size: 110px; line-height: 1; color: var(--accent2); opacity: 0.18; }
+.soon-text{ position: relative; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: 0.04em; color: var(--accent-text); }
+.admin-szo-add{ display: flex; gap: 8px; margin: 10px 0 0; }
+.admin-szo-add input{ flex: 1; text-transform: none; }
+.admin-szo-up-words{ flex-basis: 100%; }

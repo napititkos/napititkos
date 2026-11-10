@@ -1628,6 +1628,39 @@ section('Szókereső admin: a következő 7 nap, csere');
   r = await post('/api/admin/szo', { action: 'regenerate', date: old.date }); check('csere adminság nélkül: 401', r.status === 401);
 }
 
+section('Mini admin: várólistás rejtvény szerkesztése a helyén, készítő, tervezett hét');
+{
+  const rowsQ = [['k', 'e', 'r', 't', '#'], ['#', '#', '#', '#', '#'], ['#', '#', '#', '#', '#'], ['#', '#', '#', '#', '#'], ['#', '#', '#', '#', '#']];
+  const entQ = [['A', 0, 0, 'kert'], ['D', 0, 0, 'k'], ['D', 0, 1, 'e'], ['D', 0, 2, 'r'], ['D', 0, 3, 't']].map(([dir, row, col, word]) => ({ dir, row, col, len: word.length, word, clue: 'Q ' + word }));
+  await redis.set('mini:queue', JSON.stringify([{ id: 'q1', rows: rowsQ, entries: entQ, author: 'Első' }, { id: 'q2', rows: rowsQ, entries: entQ, author: 'Második' }, { id: 'q3', rows: rowsQ, entries: entQ }]));
+  j = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  check('a várólista elemeinek tervezett hete (hétfők, egymást követő hetek)', j.scheduled?.length === 3 && j.scheduled.every((d, i) => new Date(d + 'T12:00:00Z').getUTCDay() === 1 && (i === 0 || (Date.parse(d) - Date.parse(j.scheduled[i - 1])) === 7 * 86400000)), JSON.stringify(j.scheduled));
+  r = await post('/api/admin/mini/drafts', { action: 'editQueued', id: 'q2' }, adm); j = await r.json();
+  check('várólistás mini szerkesztése: piszkozat lesz belőle', r.status === 200 && j.id);
+  const did = j.id;
+  check('a várólistáról közben kikerül', JSON.parse(await redis.get('mini:queue')).map((x) => x.id).join() === 'q1,q3');
+  r = await fetch(BASE + `/api/admin/mini/drafts?id=${did}`, { headers: adm }); const dj = await r.json();
+  const d = dj.draft || dj;
+  check('a piszkozatban a rács és a kérdések', d.rows?.[0]?.[0] === 'k' && d.clues?.['A:0:0']?.clue === 'Q kert', JSON.stringify(d).slice(0, 200));
+  r = await post('/api/admin/mini/drafts', { action: 'publish', id: did, rev: d.rev }, adm); j = await r.json();
+  const q = JSON.parse(await redis.get('mini:queue'));
+  check('beemeléskor a régi helyére (2.) tér vissza, a készítő nevével', r.status === 200 && q.length === 3 && q[1].author === 'Második' && q[0].id === 'q1', JSON.stringify(q.map((x) => x.id + ':' + (x.author || ''))));
+  r = await post('/api/admin/mini/drafts', { action: 'editQueued', id: 'nincs' }, adm); check('nem létező várólistás elem: 404', r.status === 404);
+}
+
+section('Szókereső admin: tiltás a következő napok tervezett rácsaiból is');
+{
+  j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  const day = j.upcoming.find((u) => u.required.some((w) => w !== u.word));
+  const victim = day.required.find((w) => w !== day.word);
+  r = await post('/api/admin/szo', { action: 'ban', word: victim }, adm); check('tiltás egy tervezett napról: 200', r.status === 200);
+  j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  check('a szó kikerült a tervezett nap(ok) szavai közül, és tiltott', !j.upcoming.some((u) => u.required.includes(victim) || u.bonus.includes(victim)) && !j.today.required.includes(victim) && j.banned.includes(victim));
+  const d = j.upcoming.find((u) => u.date === day.date);
+  check('a nap rácsa és napi szava változatlan', d.word === day.word && d.grid.join('') === day.grid.join(''));
+  await post('/api/admin/szo', { action: 'unban', word: victim }, adm);
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);
