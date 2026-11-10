@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { deviceId } from '../lib/device';
 import { getIdentity } from '../lib/identity';
 import { fireConfetti } from './Confetti';
-import { recordSzoWord } from '../lib/gameProgress';
+import { recordSzoFull, recordSzoWord } from '../lib/gameProgress';
+import ShareButton from './ShareButton';
 
 // Napi szókereső (3x3, a Squaredle mintájára). Szomszédos (átlósan is szomszédos) betűkön húzva
 // vagy koppintva lehet szavakat kirakni; húzás közben vonal köti össze a betűket. Egy szóban
@@ -38,7 +39,7 @@ function saveDay(date, st) {
 }
 
 // preview: admin kipróbálás – semmi nem mentődik (se az eszközön, se a szerveren, se a trófeákhoz).
-export default function SzoGame({ data, onComplete, preview = false }) {
+export default function SzoGame({ data, onComplete, preview = false, showReport = !preview, onPanel }) {
   const { date, grid, required, bonus, paths } = data;
   const reqSet = useMemo(() => new Set(required), [required]);
   const bonusSet = useMemo(() => new Set(bonus), [bonus]);
@@ -51,6 +52,16 @@ export default function SzoGame({ data, onComplete, preview = false }) {
   const [abc, setAbc] = useState(!!saved.abc);
   const [outer, setOuter] = useState(!!saved.outer);
   const [path, setPath] = useState([]);
+  const [panel, setPanel] = useState(false);
+  const togglePanel = (v) => {
+    setPanel(v);
+    onPanel && onPanel(v);
+  };
+  const shareText = () => {
+    const d = new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' });
+    const tail = done ? `Megtaláltam mind a ${total} szót ${fmt(elapsed)} alatt! 🎉` : `${foundReq.length}/${total} szót találtam meg eddig.`;
+    return `🔤 Napi szókereső – ${d}\n${tail}\nPróbáld ki te is: https://napititkos.hu/szokereso`;
+  };
   const [msg, setMsg] = useState(null);
   const dragging = useRef(false);
   const moved = useRef(false);
@@ -127,6 +138,7 @@ export default function SzoGame({ data, onComplete, preview = false }) {
       } else flash(n >= total ? 'Megtaláltad az összes szót!' : `Szép! ${w.toUpperCase()}`, 'good');
       if (n >= total) {
         fireConfetti();
+        if (!preview) recordSzoFull(date);
         if (!preview && onComplete) onComplete(el);
       }
     }
@@ -134,10 +146,19 @@ export default function SzoGame({ data, onComplete, preview = false }) {
   }
 
   // Húzás / koppintás a rácson.
+  // Melyik négyzet fölött van az ujj/egér: a rács geometriájából, a négyzet közepétől mért
+  // távolság alapján (a négyzetek közel vannak egymáshoz, így átlós húzásnál a sarkoknál nem
+  // akad bele a szomszédba).
   function cellFromPoint(x, y) {
-    const el = document.elementFromPoint(x, y);
-    const hit = el && el.closest && el.closest('[data-szo-cell]');
-    return hit ? Number(hit.dataset.szoCell) : null;
+    const r = boardRef.current?.getBoundingClientRect();
+    if (!r) return null;
+    const size = r.width / 3;
+    const col = Math.floor((x - r.left) / size);
+    const row = Math.floor((y - r.top) / size);
+    if (col < 0 || col > 2 || row < 0 || row > 2) return null;
+    const cx = r.left + (col + 0.5) * size;
+    const cy = r.top + (row + 0.5) * size;
+    return Math.hypot(x - cx, y - cy) <= size * 0.4 ? row * 3 + col : null;
   }
   // Az útvonalat refben is követjük, hogy a mellékhatások (beküldés) ne a setState-ben fussanak.
   const pathRef = useRef([]);
@@ -217,6 +238,72 @@ export default function SzoGame({ data, onComplete, preview = false }) {
         <span className="timer">{fmt(elapsed)}</span>
         <span className="szo-hints" aria-live="polite">{hints > 0 ? `Segítség: ${hints}` : ''}</span>
       </div>
+      <div className="szo-progress" aria-label={`${foundReq.length} / ${total} szó`}>
+        <div className="szo-bar">
+          <span style={{ width: `${pct}%` }} />
+          <i className={`szo-star${stars >= 1 ? ' got' : ''}`} style={{ left: '33.3%' }} aria-hidden="true">★</i>
+          <i className={`szo-star${stars >= 2 ? ' got' : ''}`} style={{ left: '66.6%' }} aria-hidden="true">★</i>
+        </div>
+        <span className="szo-count">
+          {foundReq.length} / {total} szó{foundBonus.length ? ` · ${foundBonus.length} bónusz` : ''}
+        </span>
+      </div>
+      {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}
+      <button type="button" className={`szo-words-btn${panel ? ' open' : ''}`} aria-expanded={panel} onClick={() => togglePanel(!panel)}>
+        Szavak <span>{foundReq.length}/{total}</span> <span aria-hidden="true">{panel ? '▴' : '▾'}</span>
+      </button>
+      {panel && (
+        <div className="szo-words-panel">
+        <div className="szo-options">
+          <label className="checkbox-row">
+            <input type="checkbox" checked={abc} onChange={(e) => setAbc(e.target.checked)} /> ABC-sorrend (a még meg nem talált szavak a helyükön)
+          </label>
+          <label className="checkbox-row">
+            <input type="checkbox" checked={outer} onChange={(e) => setOuter(e.target.checked)} /> Első és utolsó betű mutatása
+          </label>
+        </div>
+        {hints > 0 && !done && <p className="mini-muted">Van {hints} segítséged: koppints egy csillagos (még meg nem talált) szóra, és megmutatjuk az útját.</p>}
+        <div className="szo-lists">
+          {groups.map(([L, words]) => {
+            const got = words.filter((w) => found.includes(w));
+            const rest = words.filter((w) => !found.includes(w));
+            const items = abc ? words.slice().sort((a, b) => a.localeCompare(b, 'hu')) : [...got.sort((a, b) => a.localeCompare(b, 'hu')), ...rest];
+            return (
+              <div key={L} className="szo-group">
+                <h3>
+                  {L} betűs <span>({got.length}/{words.length})</span>
+                </h3>
+                <ul>
+                  {items.map((w) =>
+                    found.includes(w) ? (
+                      <li key={w} className="got">{w.toUpperCase()}</li>
+                    ) : (
+                      <li key={w}>
+                        <button type="button" className={`szo-masked${hints > 0 ? ' can' : ''}${shown?.word === w ? ' shown' : ''}`} disabled={hints < 1 && shown?.word !== w} onClick={() => useHint(w)} aria-label={hints > 0 ? 'Még meg nem talált szó – koppints a segítséghez' : 'Még meg nem talált szó'}>
+                          {mask(w)}
+                        </button>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            );
+          })}
+          {foundBonus.length > 0 && (
+            <div className="szo-group">
+              <h3>Bónuszszavak <span>({foundBonus.length})</span></h3>
+              <ul>
+                {foundBonus.sort((a, b) => a.localeCompare(b, 'hu')).map((w) => (
+                  <li key={w} className="got bonus">{w.toUpperCase()}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+          {showReport && <SzoReport date={date} />}
+        </div>
+      )}
       <div className={`szo-current${msg ? ` ${msg.kind}` : ''}`} aria-live="polite">{msg ? msg.text : current || '\u00a0'}</div>
       <div
         ref={boardRef}
@@ -251,68 +338,16 @@ export default function SzoGame({ data, onComplete, preview = false }) {
           </div>
         ))}
       </div>
-      <div className="szo-progress" aria-label={`${foundReq.length} / ${total} szó`}>
-        <div className="szo-bar">
-          <span style={{ width: `${pct}%` }} />
-          <i className={`szo-star${stars >= 1 ? ' got' : ''}`} style={{ left: '33.3%' }} aria-hidden="true">★</i>
-          <i className={`szo-star${stars >= 2 ? ' got' : ''}`} style={{ left: '66.6%' }} aria-hidden="true">★</i>
-        </div>
-        <span className="szo-count">
-          {foundReq.length} / {total} szó{foundBonus.length ? ` · ${foundBonus.length} bónusz` : ''}
-        </span>
-      </div>
       {done && (
         <div className="feedback good" role="status" style={{ marginLeft: 0 }}>
           Megtaláltad az összes szót! Időd: {fmt(elapsed)} · A napi szó: <b>{data.word.toUpperCase()}</b>
         </div>
       )}
-      <div className="szo-options">
-        <label className="checkbox-row">
-          <input type="checkbox" checked={abc} onChange={(e) => setAbc(e.target.checked)} /> ABC-sorrend (a még meg nem talált szavak a helyükön)
-        </label>
-        <label className="checkbox-row">
-          <input type="checkbox" checked={outer} onChange={(e) => setOuter(e.target.checked)} /> Első és utolsó betű mutatása
-        </label>
-      </div>
-      {hints > 0 && !done && <p className="mini-muted">Van {hints} segítséged: koppints egy csillagos (még meg nem talált) szóra, és megmutatjuk az útját.</p>}
-      <div className="szo-lists">
-        {groups.map(([L, words]) => {
-          const got = words.filter((w) => found.includes(w));
-          const rest = words.filter((w) => !found.includes(w));
-          const items = abc ? words.slice().sort((a, b) => a.localeCompare(b, 'hu')) : [...got.sort((a, b) => a.localeCompare(b, 'hu')), ...rest];
-          return (
-            <div key={L} className="szo-group">
-              <h3>
-                {L} betűs <span>({got.length}/{words.length})</span>
-              </h3>
-              <ul>
-                {items.map((w) =>
-                  found.includes(w) ? (
-                    <li key={w} className="got">{w.toUpperCase()}</li>
-                  ) : (
-                    <li key={w}>
-                      <button type="button" className={`szo-masked${hints > 0 ? ' can' : ''}${shown?.word === w ? ' shown' : ''}`} disabled={hints < 1 && shown?.word !== w} onClick={() => useHint(w)} aria-label={hints > 0 ? 'Még meg nem talált szó – koppints a segítséghez' : 'Még meg nem talált szó'}>
-                        {mask(w)}
-                      </button>
-                    </li>
-                  )
-                )}
-              </ul>
-            </div>
-          );
-        })}
-        {foundBonus.length > 0 && (
-          <div className="szo-group">
-            <h3>Bónuszszavak <span>({foundBonus.length})</span></h3>
-            <ul>
-              {foundBonus.sort((a, b) => a.localeCompare(b, 'hu')).map((w) => (
-                <li key={w} className="got bonus">{w.toUpperCase()}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-      {!preview && <SzoReport date={date} />}
+      {(foundReq.length > 0 || done) && (
+        <div className="szo-share">
+          <ShareButton text={shareText()} />
+        </div>
+      )}
     </div>
   );
 }

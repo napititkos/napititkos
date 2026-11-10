@@ -5,6 +5,7 @@ import MiniPlayer from '../../components/MiniPlayer';
 import DailyReactions from '../../components/DailyReactions';
 import Icon from '../../components/Icon';
 import GameBar from '../../components/GameBar';
+import ShareButton from '../../components/ShareButton';
 import GameFooter from '../../components/GameFooter';
 import { deviceId } from '../../lib/device';
 import { getIdentity } from '../../lib/identity';
@@ -99,10 +100,11 @@ export default function MiniPage() {
               <span className="pill">Teljesítések: {stats?.count ?? '–'}</span>
             </div>
             <DailyReactions date={data.week} scope="mini" interactive />
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
               <button className="ghost small" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: { tab: 'mini' } }))}>
                 <Icon src="/icons/Ranglista.png" size={16} /> Heti ranglista
               </button>
+              <ShareButton text={`🧩 Heti mini keresztrejtvény\nMegfejtettem ${fmt(myTime)} alatt!\nPróbáld ki te is: https://napititkos.hu/mini`} />
             </div>
           </>
         )}

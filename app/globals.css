@@ -1617,3 +1617,19 @@ button.admin-szo-x:hover{ background: rgba(192, 57, 43, 0.12); }
 .admin-szo-grid.small span{ height: 22px; font-size: 11px; border-width: 1px; }
 .admin-szo-up-meta{ display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 160px; font-size: 13.5px; color: var(--ink-soft); }
 .admin-szo-up-meta > b{ color: var(--ink); text-transform: capitalize; }
+
+/* Szókereső: lekerekített négyzetek, közel egymáshoz; felül a haladásjelző, alatta a Szavak gomb. */
+.szo-board .szo-hit{ width: 90%; aspect-ratio: 1; border-radius: 20%; }
+.szo-board{ width: min(100%, 320px); }
+button.szo-words-btn{
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 9px 14px;
+  border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-weight: 800; font-size: 15px;
+}
+button.szo-words-btn span:first-of-type{ color: var(--ink-soft); font-weight: 700; }
+button.szo-words-btn.open{ border-color: var(--btn-primary); }
+.szo-words-panel{ display: flex; flex-direction: column; gap: 10px; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--card); }
+.szo-share{ display: flex; justify-content: center; }
+.share-wrap{ display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.share-msg{ font-size: 13px; font-weight: 700; color: var(--accent-text); }
+/* A lenyitott szólista görgethető, hogy a rács a közelben maradjon. */
+.szo-words-panel{ max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
