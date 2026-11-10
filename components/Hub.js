@@ -6,8 +6,8 @@ export default function Hub() {
   return (
     <div className="hub">
       <GameTile game="titkos" />
-      <GameTile game="szo" />
-      <GameTile game="mini" />
+      <GameTile game="szo" isNew />
+      <GameTile game="mini" isNew />
     </div>
   );
 }

@@ -1646,12 +1646,16 @@ button.pager-num.on{ background: var(--btn-primary); border-color: var(--btn-pri
 
 /* Szókereső: fölül az üzenet (halványodva tűnik el), alatta a szó; mindkét sor fix magasságú,
    így semmi nem ugrál. */
-.szo-say{ display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.szo-msg-line{ height: 40px; display: flex; align-items: flex-end; justify-content: center; text-align: center; }
+.szo-say{ display: flex; flex-direction: column; align-items: center; gap: 0; margin: -4px 0; }
+.szo-msg-line{ height: 22px; display: flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }
 .szo-msg{ font-size: 14.5px; font-weight: 800; line-height: 1.25; animation-name: szo-fade; animation-timing-function: ease-in; animation-fill-mode: forwards; }
 .szo-msg.good{ color: #1f6b3a; } .szo-msg.bad{ color: var(--bad, #c0392b); } .szo-msg.muted, .szo-msg.info{ color: var(--ink-soft); }
 @keyframes szo-fade{ 0%{ opacity: 0; transform: translateY(3px); } 8%{ opacity: 1; transform: none; } 60%{ opacity: 1; } 100%{ opacity: 0; } }
-.szo-word-line{ height: 36px; display: flex; align-items: center; justify-content: center; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: 0.08em; color: var(--ink); transition: color 0.2s ease, opacity 0.2s ease; }
+.szo-word-line{ height: 34px; display: flex; align-items: center; justify-content: center; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: 0.08em; color: var(--ink); transition: color 0.2s ease, opacity 0.2s ease; }
 .szo-word-line.good{ color: #1f6b3a; } .szo-word-line.bonus{ color: var(--accent-text); } .szo-word-line.bad{ color: var(--bad, #c0392b); opacity: 0.75; } .szo-word-line.muted{ color: var(--ink-soft); }
 @media (prefers-color-scheme: dark){ .szo-msg.good, .szo-word-line.good{ color: #7fd6a0; } }
 @media (prefers-reduced-motion: reduce){ .szo-msg{ animation-name: none; } }
+
+/* Főoldal: a két új játék csempéjén „ÚJ!” jelzés a jobb felső sarokban. */
+a.card.game-tile{ position: relative; }
+.game-tile-new{ position: absolute; top: -9px; right: 10px; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: var(--btn-primary); color: #fff; font-weight: 800; font-size: 12.5px; letter-spacing: 0.02em; box-shadow: 0 3px 8px rgba(31, 26, 43, 0.2); transform: rotate(12deg); }

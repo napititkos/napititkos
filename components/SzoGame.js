@@ -146,8 +146,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       if (earned > stars && n < total) {
         setHints((h) => h + (earned - stars));
         setStars(earned);
-        flash(`+${szoPointsOf(w)} pont · Segítséget kaptál! Koppints egy még meg nem talált szóra a Szavak listában.`, 'good', 3200);
-      } else flash(n >= total ? `+${szoPointsOf(w)} pont · Megtaláltad az összes szót!` : `Szép! +${szoPointsOf(w)} pont`, 'good', n >= total ? 3200 : 1900);
+        flash(`+${szoPointsOf(w)} pont · Segítséget kaptál!`, 'good', 3200);
+      } else flash(n >= total ? `+${szoPointsOf(w)} pont · Mind megvan!` : `Szép! +${szoPointsOf(w)} pont`, 'good', n >= total ? 3200 : 1900);
       if (n >= total) {
         fireConfetti();
         if (!preview) recordSzoFull(date);
@@ -245,7 +245,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     if (hints < 1 || found.includes(w)) return;
     setHints((h) => h - 1);
     setShown({ word: w, path: paths[w] });
-    flash('Megmutattuk az útját a rácson!', 'good', 2400);
+    flash('Megmutattuk az útját!', 'good', 2400);
   }
 
   // Szólista hossz szerint.

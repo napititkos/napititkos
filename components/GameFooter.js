@@ -10,10 +10,15 @@ const GAMES = {
   mini: { href: '/mini', title: 'Mini keresztrejtvény', sub: 'Minden héten új!' },
 };
 
-export function GameTile({ game }) {
+export function GameTile({ game, isNew = false }) {
   const g = GAMES[game];
   return (
     <a className="card game-tile" href={g.href}>
+      {isNew && (
+        <span className="game-tile-new" aria-label="Új játék">
+          ÚJ!
+        </span>
+      )}
       <span className="game-tile-icon">
         {game === 'titkos' ? <Logo size={56} /> : game === 'szo' ? <SzoIcon size={56} /> : <MiniIcon size={56} />}
       </span>
