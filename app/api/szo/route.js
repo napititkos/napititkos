@@ -31,7 +31,7 @@ export async function GET(req) {
   try {
     mineFound = found ? JSON.parse(found) : [];
   } catch {}
-  const [c, e] = res ? String(res).split(':').map(Number) : [null, null];
+  const [c, e, pts] = res ? String(res).split(':').map(Number) : [null, null, null];
   return Response.json(
     {
       live: true,
@@ -42,7 +42,7 @@ export async function GET(req) {
       required: p.required,
       bonus: p.bonus,
       paths: p.paths,
-      mine: { found: mineFound, count: c, elapsed: e },
+      mine: { found: mineFound, count: c, elapsed: e, points: pts ?? null },
     },
     { headers: noStore }
   );

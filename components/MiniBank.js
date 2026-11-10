@@ -1,4 +1,5 @@
 'use client';
+import Pager from './Pager';
 import { MINI_IMPORT_LABELS } from '../lib/miniImportData';
 const importLabel = (src) => MINI_IMPORT_LABELS[String(src).replace(/^auto:/, '')] || src;
 import { useEffect, useState } from 'react';
@@ -214,60 +215,48 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
         megjelent rejtvényeket nem érinti. A titkosírásból származó kérdések csak olvashatók.
       </p>
 
-      <div className="mini-bank-controls">
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <label className="field-label" htmlFor="mini-bank-q">Keresés a szóban vagy a kérdésben</label>
-          <input id="mini-bank-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="pl. alm, gyümölcs vagy a??a" style={{ textTransform: 'none', width: '100%' }} />
-          <div className="mini-muted" style={{ fontSize: 12, marginTop: 4 }}>
-            Az ékezet nem számít (ko = kő). Minta: <b>?</b> egy betű, <b>*</b> bármennyi betű, a teljes szóra, pl. <b>a??a</b>, <b>k*ő</b>, <b>??</b>.
-          </div>
-        </div>
-        <div>
-          <label className="field-label" htmlFor="mini-bank-sort">Rendezés</label>
-          <select id="mini-bank-sort" value={sort} onChange={(e) => setSortPick(e.target.value)}>
-            {SORTS.map(([v, t]) => (
-              <option key={v} value={v}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Kereső és szűrők a szókereső szóbankjával azonos elrendezésben (legördülő menük). */}
+      <input id="mini-bank-q" type="search" className="admin-szo-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Keresés a szóban vagy a kérdésben (pl. alm, gyümölcs, a??a)" aria-label="Keresés a szóban vagy a kérdésben" />
+      <div className="mini-muted" style={{ fontSize: 12, margin: '-4px 0 8px' }}>
+        Az ékezet nem számít (ko = kő). Minta: <b>?</b> egy betű, <b>*</b> bármennyi betű, a teljes szóra, pl. <b>a??a</b>, <b>k*ő</b>, <b>??</b>.
       </div>
-
-      <div className="mini-bank-filters" role="group" aria-label="Szűrés">
-        {FILTERS.map(([v, t]) => (
-          <button key={v} type="button" className={filter === v ? 'primary small' : 'ghost small'} aria-pressed={filter === v} onClick={() => setFilter(v)}>
-            {t}
-          </button>
-        ))}
+      <div className="admin-szo-filters">
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Szűrés">
+          {FILTERS.map(([v, t]) => (
+            <option key={v} value={v}>
+              {t}
+            </option>
+          ))}
+        </select>
+        <select value={len} onChange={(e) => setLen(Number(e.target.value))} aria-label="Hossz">
+          <option value={0}>Bármilyen hossz</option>
+          {LENGTHS.map((n) => (
+            <option key={n} value={n} disabled={!!data && !(data.lenCounts?.[n] > 0) && len !== n}>
+              {n} betűs{data ? ` (${data.lenCounts?.[n] || 0})` : ''}
+            </option>
+          ))}
+        </select>
+        <select value={letter} onChange={(e) => setLetter(e.target.value)} aria-label="Kezdőbetű">
+          <option value="">Bármely kezdőbetű</option>
+          {letterList.map(([ch, c]) => (
+            <option key={ch} value={ch}>
+              {ch.toUpperCase()} ({c})
+            </option>
+          ))}
+        </select>
+        <select id="mini-bank-sort" value={sort} onChange={(e) => setSortPick(e.target.value)} aria-label="Rendezés">
+          {SORTS.map(([v, t]) => (
+            <option key={v} value={v}>
+              {t}
+            </option>
+          ))}
+        </select>
       </div>
-
-      <div className="mini-bank-facet" role="group" aria-label="Szűrés hossz szerint">
-        <span className="mini-bank-facet-label">Hossz</span>
-        <button type="button" className={!len ? 'primary small' : 'ghost small'} aria-pressed={!len} onClick={() => setLen(0)}>
-          Mind
-        </button>
-        {LENGTHS.map((n) => {
-          const c = data?.lenCounts?.[n] || 0;
-          return (
-            <button key={n} type="button" className={len === n ? 'primary small' : 'ghost small'} aria-pressed={len === n} disabled={!data || (c === 0 && len !== n)} onClick={() => setLen(len === n ? 0 : n)}>
-              {n} betű{data ? ` (${c})` : ''}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mini-bank-facet" role="group" aria-label="Ugrás kezdőbetű szerint">
-        <span className="mini-bank-facet-label">Kezdőbetű</span>
-        <button type="button" className={!letter ? 'primary small' : 'ghost small'} aria-pressed={!letter} onClick={() => setLetter('')}>
-          Mind
-        </button>
-        {letterList.map(([ch, c]) => (
-          <button key={ch} type="button" className={`mini-bank-letter ${letter === ch ? 'primary small' : 'ghost small'}`} aria-pressed={letter === ch} title={`${c} szó`} onClick={() => setLetter(letter === ch ? '' : ch)}>
-            {ch.toUpperCase()}
-          </button>
-        ))}
-      </div>
+      {data && (
+        <p className="mini-muted" style={{ margin: '8px 0' }}>
+          {data.total} találat · {data.page}. oldal / {data.pages}
+        </p>
+      )}
 
       {msg && (
         <div className={`feedback ${msg.ok ? 'good' : 'hint'}`} style={{ marginLeft: 0, marginTop: 12 }} role="status">
@@ -385,17 +374,7 @@ export default function MiniBank({ refreshKey = 0, onChanged }) {
       </div>
 
       {data && data.total > 0 && (
-        <div className="mini-bank-pager">
-          <button type="button" className="ghost small" disabled={data.page <= 1 || loading} onClick={() => setPage((p) => p - 1)}>
-            ‹ Előző
-          </button>
-          <span className="mini-muted">
-            {from}–{to} / {data.total} szó · {data.page}/{data.pages}. oldal
-          </span>
-          <button type="button" className="ghost small" disabled={data.page >= data.pages || loading} onClick={() => setPage((p) => p + 1)}>
-            Következő ›
-          </button>
-        </div>
+        <Pager page={data.page} pages={data.pages} disabled={loading} onPage={setPage} info={`${from}–${to} / ${data.total} szó`} />
       )}
     </div>
   );

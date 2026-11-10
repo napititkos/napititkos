@@ -5,6 +5,7 @@ import { getIdentity } from '../lib/identity';
 import { fireConfetti } from './Confetti';
 import { recordSzoFull, recordSzoWord } from '../lib/gameProgress';
 import ShareButton from './ShareButton';
+import { szoPointsOf, szoPointsTotal } from '../lib/szoPoints';
 
 // Napi szókereső (3x3, a Squaredle mintájára). Szomszédos (átlósan is szomszédos) betűkön húzva
 // vagy koppintva lehet szavakat kirakni; húzás közben vonal köti össze a betűket. Egy szóban
@@ -53,13 +54,15 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   const [outer, setOuter] = useState(!!saved.outer);
   const [path, setPath] = useState([]);
   const [panel, setPanel] = useState(false);
+  const [lastWord, setLastWord] = useState(null); // a legutóbb beküldött szó (a beírás felülírja)
   const togglePanel = (v) => {
     setPanel(v);
     onPanel && onPanel(v);
   };
   const shareText = () => {
     const d = new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' });
-    const tail = done ? `Megtaláltam mind a ${total} szót ${fmt(elapsed)} alatt! 🎉` : `${foundReq.length}/${total} szót találtam meg eddig.`;
+    const pts = szoPointsTotal(foundReq);
+    const tail = done ? `Megtaláltam mind a ${total} szót ${fmt(elapsed)} alatt, ${pts} pont! 🎉` : `${foundReq.length}/${total} szó, ${pts} pont eddig.`;
     return `🔤 Napi szókereső – ${d}\n${tail}\nPróbáld ki te is: https://napititkos.hu/szokereso`;
   };
   const [msg, setMsg] = useState(null);
@@ -109,24 +112,33 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     }, 400);
   }
 
-  function flash(text, kind = 'info') {
-    setMsg({ text, kind });
+  // Visszajelzés: külön sorban a szó fölött, halványodva tűnik el (a hossza nem tolja el a rácsot).
+  function flash(text, kind = 'info', ms = 1900) {
+    const id = Date.now() + Math.random();
+    setMsg({ text, kind, id, ms });
     clearTimeout(flash.t);
-    flash.t = setTimeout(() => setMsg(null), 1800);
+    flash.t = setTimeout(() => setMsg((m) => (m && m.id === id ? null : m)), ms);
   }
 
   function submit(p) {
     const w = p.map((i) => grid[i]).join('');
     if (p.length < 3) return;
-    if (found.includes(w)) return flash(`„${w.toUpperCase()}” már megvan`, 'muted');
-    if (!reqSet.has(w) && !bonusSet.has(w)) return flash(`„${w.toUpperCase()}” nincs a listán`, 'bad');
+    if (found.includes(w)) {
+      setLastWord({ text: w.toUpperCase(), kind: 'muted' });
+      return flash('Már megvan', 'muted');
+    }
+    if (!reqSet.has(w) && !bonusSet.has(w)) {
+      setLastWord({ text: w.toUpperCase(), kind: 'bad' });
+      return flash('Nincs a listán', 'bad');
+    }
+    setLastWord({ text: w.toUpperCase(), kind: bonusSet.has(w) ? 'bonus' : 'good' });
     const next = [...found, w];
     setFound(next);
     if (!preview) recordSzoWord();
     const el = Date.now() - startRef.current;
     setElapsed(el);
     if (shown?.word === w) setShown(null);
-    if (bonusSet.has(w)) flash(`Bónuszszó: ${w.toUpperCase()}!`, 'good');
+    if (bonusSet.has(w)) flash('Bónuszszó!', 'good');
     else {
       const n = next.filter((x) => reqSet.has(x)).length;
       // Csillagok egyharmadnál és kétharmadnál: egy-egy segítség.
@@ -134,8 +146,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       if (earned > stars && n < total) {
         setHints((h) => h + (earned - stars));
         setStars(earned);
-        flash('Segítséget kaptál! Koppints egy még meg nem talált szóra a listában.', 'good');
-      } else flash(n >= total ? 'Megtaláltad az összes szót!' : `Szép! ${w.toUpperCase()}`, 'good');
+        flash(`+${szoPointsOf(w)} pont · Segítséget kaptál! Koppints egy még meg nem talált szóra a Szavak listában.`, 'good', 3200);
+      } else flash(n >= total ? `+${szoPointsOf(w)} pont · Megtaláltad az összes szót!` : `Szép! +${szoPointsOf(w)} pont`, 'good', n >= total ? 3200 : 1900);
       if (n >= total) {
         fireConfetti();
         if (!preview) recordSzoFull(date);
@@ -215,11 +227,25 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   }
   const tapLast = useRef(null);
 
+  // Ha a rácson kívülre (vagy a négyzetek közé) koppint, a félbehagyott kijelölés törlődik.
+  useEffect(() => {
+    const onDocDown = (e) => {
+      if (!pathRef.current.length) return;
+      const hit = e.target?.closest?.('[data-szo-cell]');
+      if (hit && boardRef.current?.contains(hit)) return;
+      dragging.current = false;
+      tapLast.current = null;
+      setP([]);
+    };
+    document.addEventListener('pointerdown', onDocDown, true);
+    return () => document.removeEventListener('pointerdown', onDocDown, true);
+  }, []);
+
   function useHint(w) {
     if (hints < 1 || found.includes(w)) return;
     setHints((h) => h - 1);
     setShown({ word: w, path: paths[w] });
-    flash('Megmutattuk az útját a rácson!', 'good');
+    flash('Megmutattuk az útját a rácson!', 'good', 2400);
   }
 
   // Szólista hossz szerint.
@@ -245,7 +271,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
           <i className={`szo-star${stars >= 2 ? ' got' : ''}`} style={{ left: '66.6%' }} aria-hidden="true">★</i>
         </div>
         <span className="szo-count">
-          {foundReq.length} / {total} szó{foundBonus.length ? ` · ${foundBonus.length} bónusz` : ''}
+          {foundReq.length} / {total} szó · {szoPointsTotal(foundReq)} pont{foundBonus.length ? ` · ${foundBonus.length} bónusz` : ''}
         </span>
       </div>
       {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}
@@ -304,7 +330,18 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
           {showReport && <SzoReport date={date} />}
         </div>
       )}
-      <div className={`szo-current${msg ? ` ${msg.kind}` : ''}`} aria-live="polite">{msg ? msg.text : current || '\u00a0'}</div>
+      {/* Két külön sor: fölül az üzenet (halványodva eltűnik), alatta a szó. A beírás mindig
+          felülírja: amíg betűket húz, az üzenet nem látszik, a szó sorában a beírt betűk állnak. */}
+      <div className="szo-say">
+        <div className="szo-msg-line" aria-live="polite">
+          {msg && !current && (
+            <span key={msg.id} className={`szo-msg ${msg.kind}`} style={{ animationDuration: `${msg.ms}ms` }}>
+              {msg.text}
+            </span>
+          )}
+        </div>
+        <div className={`szo-word-line${current ? ' typing' : lastWord ? ` ${lastWord.kind}` : ''}`}>{current || lastWord?.text || '\u00a0'}</div>
+      </div>
       <div
         ref={boardRef}
         className={`szo-board${done ? ' done' : ''}`}

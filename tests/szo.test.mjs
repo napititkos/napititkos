@@ -38,3 +38,9 @@ test('szókereső: ugyanarra a napra ugyanazt generálja; trágár és tiltott s
   const s2 = solveGrid(a.grid, { banned: [some], added: ['xyz'] });
   assert.ok(!s2.required.includes(some) && !s2.bonus.includes(some));
 });
+
+test('szókereső pontozás: 3→3, 4→5, 5→10, 6→15, 7→25, 8→40, 9→65', async () => {
+  const { szoPointsOf, szoPointsTotal } = await import('../lib/szoPoints.js');
+  assert.deepEqual(['kos', 'okos', 'kosok', 'szelet', 'kosaras', 'kosarazó', 'készenlét'].map(szoPointsOf), [3, 5, 10, 15, 25, 40, 65]);
+  assert.equal(szoPointsTotal(['kos', 'cs', 'szék']), 3 + 0 + 5); // a „szék” 4 betű (sz = 2 négyzet)
+});

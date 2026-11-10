@@ -1534,7 +1534,12 @@ section('Napi szókereső: rács, haladás, ranglista, admin szólista');
   await post('/api/szo/progress', { date: sz.date, device: 'b'.repeat(32), words: sz.required.slice(0, 3), elapsed: 40000, name: 'Gyors Gizi' });
   j = await (await fetch(BASE + '/api/szo/leaderboard')).json();
   const names = j.entries.map((e) => `${e.name}:${e.count}`);
-  check('ranglista: több szó elöl, egyenlőségnél a gyorsabb', names[0] === 'Gyors Gizi:3' && names[1] === 'Kommentelő Kata:3' && names[2] === 'Szó Sári:2', JSON.stringify(names));
+  const pts = (ws) => ws.reduce((a, w) => a + ({ 3: 3, 4: 5, 5: 10, 6: 15, 7: 25, 8: 40, 9: 65 }[Array.from(w).length] || 0), 0);
+  check('ranglista: több pont elöl, egyenlőségnél a gyorsabb', names[0] === 'Gyors Gizi:3' && names[1] === 'Kommentelő Kata:3' && names[2] === 'Szó Sári:2', JSON.stringify(names));
+  check('ranglista: a pontszám a szavak hossza szerint', j.entries[0].points === pts(sz.required.slice(0, 3)) && j.entries[2].points === pts(sz.required.slice(0, 2)), JSON.stringify(j.entries));
+  await post('/api/szo/progress', { date: sz.date, device: 'c'.repeat(32), words: [sz.word], elapsed: 90000, name: 'Hosszú Hugó' });
+  j = await (await fetch(BASE + '/api/szo/leaderboard')).json();
+  check('ranglista: kevesebb, de hosszabb szó (a 9 betűs napi szó, 65 pont) előrébb van', j.entries[0].name === 'Hosszú Hugó' && j.entries[0].points === 65 && j.entries[0].count === 1, JSON.stringify(j.entries.slice(0, 2)));
   const ttl = await redis.ttl('szo:lb:' + sz.date);
   check('a ranglista 2 nap után lejár, a saját eredmény (archívum) megmarad', ttl > 0 && ttl <= 2 * 86400 && (await redis.ttl('szo:res:' + sz.date)) === -1, String(ttl));
   // Admin szólista
