@@ -44,3 +44,11 @@ test('szókereső pontozás: 3→3, 4→5, 5→10, 6→15, 7→25, 8→40, 9→6
   assert.deepEqual(['kos', 'okos', 'kosok', 'szelet', 'kosaras', 'kosarazó', 'készenlét'].map(szoPointsOf), [3, 5, 10, 15, 25, 40, 65]);
   assert.equal(szoPointsTotal(['kos', 'cs', 'szék']), 3 + 0 + 5); // a „szék” 4 betű (sz = 2 négyzet)
 });
+
+test('ISO-hét a heti minikhez', async () => {
+  const { isoWeek, weekLabel } = await import('../lib/isoWeek.js');
+  assert.deepEqual(isoWeek('2026-11-09'), { year: 2026, week: 46 });
+  assert.deepEqual(isoWeek('2026-01-01'), { year: 2026, week: 1 });
+  assert.deepEqual(isoWeek('2027-01-01'), { year: 2026, week: 53 });
+  assert.equal(weekLabel('2026-11-09'), '2026. 46. hét');
+});

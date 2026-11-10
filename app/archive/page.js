@@ -125,9 +125,9 @@ export default function ArchivePage() {
   if (status !== 'authenticated') {
     return (
       <div className="wrap">
-        <div className="page-title-row">
-          <h1 className="page-title">Korábbi titkosírások</h1>
-          <BackButton />
+        <h1 className="sr-only">Korábbi rejtvények</h1>
+        <div className="kisokos-tabrow">
+          <BackButton className="kisokos-back" />
         </div>
         <div className="card">
           {/* Amíg a bejelentkezés állapota vagy a darabszám nem ismert, csak "Betöltés…" látszik,
@@ -163,11 +163,12 @@ export default function ArchivePage() {
 
   return (
     <div className="wrap">
-      <div className="page-title-row">
-        <h1 className="page-title">{miniLive ? 'Korábbi rejtvények' : 'Korábbi titkosírások'}</h1>
-        <BackButton />
+      <h1 className="sr-only">Korábbi rejtvények</h1>
+      {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban. */}
+      <div className="kisokos-tabrow">
+        {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo />}
+        <BackButton className="kisokos-back" />
       </div>
-      {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo />}
       {!tabReady ? null : miniLive && kind === 'szo' ? (
         <SzoArchive />
       ) : miniLive && kind === 'mini' ? (

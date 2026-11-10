@@ -70,6 +70,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     return () => window.removeEventListener('keydown', esc);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panel]);
+  // A szókereső sorszáma: 2026. november 10. az 1., utána naponta eggyel több.
+  const dayNo = /^\d{4}-\d{2}-\d{2}$/.test(date) ? Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse('2026-11-10T12:00:00Z')) / 86400000) + 1 : 0;
   const dayLabel = /^\d{4}-\d{2}-\d{2}$/.test(date)
     ? new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' })
     : 'Gyakorlás';
@@ -155,8 +157,10 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     if (bonusSet.has(w)) flash('Bónuszszó!', 'good');
     else {
       const n = next.filter((x) => reqSet.has(x)).length;
-      // Csillagok egyharmadnál és kétharmadnál: egy-egy segítség.
-      const earned = (n >= Math.ceil(total / 3) ? 1 : 0) + (n >= Math.ceil((2 * total) / 3) ? 1 : 0);
+      // Csillagok a pontok egyharmadánál és kétharmadánál: egy-egy segítség.
+      const pts = szoPointsTotal(next.filter((x) => reqSet.has(x)));
+      const all = szoPointsTotal(required);
+      const earned = (pts * 3 >= all ? 1 : 0) + (pts * 3 >= 2 * all ? 1 : 0);
       if (earned > stars && n < total) {
         setHints((h) => h + (earned - stars));
         setStars(earned);
@@ -271,26 +275,28 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   const mask = (w) => (outer ? `${Array.from(w)[0]}${'*'.repeat(len(w) - 2)}${Array.from(w).slice(-1)}` : '*'.repeat(len(w))).toUpperCase();
 
   const current = path.map((i) => grid[i]).join('').toUpperCase();
-  const pct = total ? Math.round((foundReq.length / total) * 100) : 0;
+  // A haladásjelző (és a csillagok) a pontok szerint halad: hosszabb szóra nagyobbat ugrik.
+  const totalPts = szoPointsTotal(required);
+  const pct = totalPts ? Math.round((szoPointsTotal(foundReq) / totalPts) * 100) : 0;
   return (
     <div className="szo-game">
       <div className="szo-top">
-        <span className="szo-date">{dayLabel}</span>
+        <span className="szo-date">
+          {dayLabel}
+          {dayNo > 0 && <span className="szo-dayno"> #{dayNo}</span>}
+        </span>
         <span className="timer">{fmt(elapsed)}</span>
       </div>
-      <div className="szo-progress" aria-label={`${foundReq.length} / ${total} szó`}>
+      <div className="szo-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`Haladás: ${foundReq.length} / ${total} szó, ${szoPointsTotal(foundReq)} pont`}>
         <div className="szo-bar">
           <span style={{ width: `${pct}%` }} />
           <i className={`szo-star${stars >= 1 ? ' got' : ''}`} style={{ left: '33.3%' }} aria-hidden="true">★</i>
           <i className={`szo-star${stars >= 2 ? ' got' : ''}`} style={{ left: '66.6%' }} aria-hidden="true">★</i>
         </div>
-        <span className="szo-count">
-          {foundReq.length} / {total} szó · {szoPointsTotal(foundReq)} pont{foundBonus.length ? ` · ${foundBonus.length} bónusz` : ''}
-        </span>
       </div>
       {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}
       <button type="button" className={`szo-words-btn${panel ? ' open' : ''}`} aria-haspopup="dialog" onClick={() => togglePanel(true)}>
-        Szavak <span>{foundReq.length}/{total}</span>
+        {foundReq.length}/{total} szó · {szoPointsTotal(foundReq)} pont
         {hints > 0 && <span className="szo-hint-badge">{hints} segítség</span>}
       </button>
       {panel && (

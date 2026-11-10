@@ -5,6 +5,7 @@ import MiniPlayer from '../../components/MiniPlayer';
 import DailyReactions from '../../components/DailyReactions';
 import GameBar from '../../components/GameBar';
 import ShareButton from '../../components/ShareButton';
+import { weekLabel } from '../../lib/isoWeek';
 import GameFooter from '../../components/GameFooter';
 import { deviceId } from '../../lib/device';
 import { getIdentity } from '../../lib/identity';
@@ -15,13 +16,6 @@ import { recordMiniWeek } from '../../lib/gameProgress';
 // statisztika (a te időd, átlagidő, teljesítések), emoji-reakciók és idő szerinti ranglista;
 // minden hetente indul újra. A megfejtés ténye és ideje ezen az eszközön megmarad a hét végéig.
 const KEY = 'titkositas_mini_v1';
-function weekLabel(week) {
-  try {
-    return `${new Date(`${week}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}. hete`;
-  } catch {
-    return '';
-  }
-}
 function fmt(ms) {
   if (ms == null) return '–';
   const s = Math.floor(ms / 1000);
@@ -97,7 +91,7 @@ export default function MiniPage() {
       <GameBar game="mini" />
       <h1 className="sr-only">Heti Mini</h1>
       <div className="card">
-        <MiniPlayer key={data.puzzle.id + (done ? '-kesz' : '')} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} />
+        <MiniPlayer key={data.puzzle.id + (done ? '-kesz' : '')} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} solvedMsg={false} />
         {done && (
           <>
             <div className="mini-stats" aria-label="Statisztika">
