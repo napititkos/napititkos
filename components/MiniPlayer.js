@@ -24,7 +24,9 @@ function fmt(ms) {
 }
 
 // solvedTime: ha már megfejtette (pl. korábban ezen a héten), a kitöltött rács és az ideje látszik.
-export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null, dateLabel = '' }) {
+// solvedMsg: false esetén megfejtéskor nincs zöld „Megfejtetted!” üzenet (a heti mini oldalán a
+// statisztika mutatja az időt).
+export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null, dateLabel = '', solvedMsg = true }) {
   const m = useMemo(() => navModel(rows), [rows]);
   const { nums, words, order } = m;
   const isBlack = m.black;
@@ -40,7 +42,7 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
   const already = solvedTime != null;
   const [fill, setFill] = useState(() => rows.map((row) => row.map((ch) => (ch === '#' ? '#' : already ? String(ch).toUpperCase() : ''))));
   const [marks, setMarks] = useState({}); // ellenőrzés: "r,c" -> 'ok' | 'bad'
-  const [msg, setMsg] = useState(already ? { ok: true, text: `Megfejtetted! Időd: ${fmt(solvedTime)}` } : null);
+  const [msg, setMsg] = useState(already && solvedMsg ? { ok: true, text: `Megfejtetted! Időd: ${fmt(solvedTime)}` } : null);
   const [solved, setSolved] = useState(already);
   const [start] = useState(() => Date.now() - (already ? solvedTime : 0));
   const [now, setNow] = useState(Date.now());
@@ -73,7 +75,7 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
       setSolved(true);
       setNow(Date.now());
       setMarks({});
-      setMsg({ ok: true, text: `Megfejtetted! Időd: ${fmt(t)}` });
+      setMsg(solvedMsg ? { ok: true, text: `Megfejtetted! Időd: ${fmt(t)}` } : null);
       onSolved && onSolved(t);
     } else {
       setMsg({ ok: false, text: 'Majdnem! Valahol még hiba van – az Ellenőrzés megmutatja, hol.' });

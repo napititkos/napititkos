@@ -1,6 +1,6 @@
 'use client';
 import { fmtDHM, fmtHMS, msUntilMidnight, msUntilMonday } from '../lib/budapestClock';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { getIdentity } from '../lib/identity';
 import Icon from './Icon';
@@ -28,12 +28,17 @@ export default function LeaderboardModal() {
     return () => clearInterval(t);
   }, [open]);
 
+  // Fülváltáskor a doboz megtartja a méretét, amíg az új adat be nem töltődik, utána igazodik hozzá.
+  const cardRef = useRef(null);
+  const [holdH, setHoldH] = useState(null);
   function load(t) {
+    if (cardRef.current) setHoldH(cardRef.current.getBoundingClientRect().height);
     setEntries(null);
     fetch(t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : '/api/leaderboard', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setEntries(d.entries || []))
-      .catch(() => setEntries([]));
+      .catch(() => setEntries([]))
+      .finally(() => setHoldH(null));
   }
 
   useEffect(() => {
@@ -56,7 +61,7 @@ export default function LeaderboardModal() {
 
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" ref={cardRef} style={holdH ? { minHeight: holdH, boxSizing: 'border-box' } : undefined} onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
         </h2>

@@ -1728,7 +1728,7 @@ a.card.game-tile.game-tile-big{ min-height: 118px; }
 .szo-say{ background: var(--accent-soft); border-radius: 12px; padding: 4px 10px; margin: 0; }
 
 /* Kisokos: a játékválasztó és a vissza gomb egy sorban; a vissza gomb jobbra, más színnel. */
-.kisokos-tabrow{ display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.kisokos-tabrow{ display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; }
 .kisokos-tabrow .rejtveny-tabs{ margin: 0; }
 a.back-home-btn.kisokos-back{ margin-left: auto; padding: 6px 12px; font-size: 13px; background: var(--accent2-soft); border-color: var(--accent2); color: var(--accent2-text); }
 @media (prefers-color-scheme: dark){ a.back-home-btn.kisokos-back{ color: var(--ink); } }
@@ -1760,3 +1760,17 @@ a.card.game-tile{ min-height: 0; }
 
 /* Szókereső: vékonyabb, de nagyobb betűk (a négyzetek mérete változatlan). */
 .szo-board .szo-hit{ font-weight: 600; font-size: clamp(34px, 12.5vw, 54px); }
+
+/* Korábbi rejtvények fejléce: hosszú változat, ha elfér; különben KORÁBBIAK. */
+.brand-korabbi .kor-short{ display: none; }
+.topnav-c .brand-link.brand-link-flow:has(.brand-korabbi){ font-size: min(calc((100vw - 110px) / 11.6), 46px); }
+@media (max-width: 560px){
+  .brand-korabbi .kor-long{ display: none; }
+  .brand-korabbi .kor-short{ display: inline; }
+  .topnav-c .brand-link.brand-link-flow:has(.brand-korabbi){ font-size: min(calc((100vw - 110px) / 6.6), 50px); }
+}
+/* Értesítések: legfeljebb kb. 20 sor magas, görgethető. */
+.notif-pop .notif-scroll{ max-height: min(27em, 60vh) !important; overflow-y: auto; overscroll-behavior: contain; }
+
+/* A szókereső sorszáma a dátum mellett, a napi titkosírás címének betűtípusával. */
+.szo-dayno{ font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-weight: 700; letter-spacing: 0.015em; color: var(--accent-text); font-size: 15px; }

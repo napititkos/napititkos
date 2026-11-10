@@ -2,17 +2,11 @@
 import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
 import MiniThumb from './MiniThumb';
+import { weekLabel } from '../lib/isoWeek';
 import { recordMiniWeek } from '../lib/gameProgress';
 
 // Korábbi rejtvények – Minik: a korábbi heti mini keresztrejtvények (a mostani hét előttiek).
 // Az előnézet megfejtés előtt üres, utána kitöltött. Rányomva megnyílik és megfejthető.
-function weekLabel(week) {
-  try {
-    return `${new Date(`${week}T12:00:00Z`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' })} hete`;
-  } catch {
-    return week;
-  }
-}
 function fmt(ms) {
   const s = Math.floor(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;

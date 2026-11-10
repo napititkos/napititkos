@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
 import Icon from './Icon';
 import Logo from './Logo';
-import { KisokosWordmark, MiniWordmark, NapiWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
+import { KisokosWordmark, KorabbiWordmark, MiniWordmark, NapiWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
 
-const BRAND_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', napi: 'napititkos.hu – kezdőlap', kisokos: 'Kisokos' };
+const BRAND_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', napi: 'napititkos.hu – kezdőlap', kisokos: 'Kisokos', korabbi: 'Korábbi rejtvények' };
 
 
 export default function Nav() {
@@ -65,7 +65,7 @@ export default function Nav() {
   const GAME_PATHS = { '/titkosiras': 'titkos', '/szokereso': 'szo', '/mini': 'mini' };
   const onGame = GAME_PATHS[pathname];
   const game = onGame || (pathname.startsWith('/szokereso') ? 'szo' : pathname.startsWith('/mini') ? 'mini' : tabGame || 'titkos');
-  const variant = pathname === '/' && miniLive ? 'napi' : pathname.startsWith('/kisokos') && miniLive ? 'kisokos' : miniLive ? game : 'titkos';
+  const variant = pathname === '/' && miniLive ? 'napi' : pathname.startsWith('/kisokos') && miniLive ? 'kisokos' : pathname.startsWith('/archive') && miniLive ? 'korabbi' : miniLive ? game : 'titkos';
   const brandHref = !miniLive ? '/' : onGame || pathname === '/' ? '/' : { titkos: '/titkosiras', szo: '/szokereso', mini: '/mini' }[game];
   const loginHref = pathname === '/' || pathname.startsWith('/login') ? '/login' : `/login?callbackUrl=${encodeURIComponent(pathname)}`;
 
@@ -113,8 +113,8 @@ export default function Nav() {
         </div>
         {/* A játékok oldalán a felirat a főoldalra visz, máshol (Kisokos, archívum, közösségi stb.)
             a játékhoz, amelyikhez az oldal (vagy a kiválasztott fül) tartozik. */}
-        <a href={brandHref} className={`brand-link${variant === 'titkos' ? '' : ' brand-link-flow'}${variant === 'napi' ? ' brand-link-napi' : ''}${!onGame && pathname !== '/' && !pathname.startsWith('/kisokos') && !tabRead ? ' brand-pending' : ''}`} aria-label={BRAND_LABEL[variant]}>
-          {variant === 'titkos' ? <TitkosWordmark /> : variant === 'szo' ? <SzoWordmark /> : variant === 'mini' ? <MiniWordmark /> : variant === 'kisokos' ? <KisokosWordmark /> : <NapiWordmark />}
+        <a href={brandHref} className={`brand-link${variant === 'titkos' || variant === 'kisokos' ? '' : ' brand-link-flow'}${variant === 'napi' ? ' brand-link-napi' : ''}${!onGame && pathname !== '/' && !pathname.startsWith('/kisokos') && !pathname.startsWith('/archive') && !tabRead ? ' brand-pending' : ''}`} aria-label={BRAND_LABEL[variant]}>
+          {variant === 'titkos' ? <TitkosWordmark /> : variant === 'szo' ? <SzoWordmark /> : variant === 'mini' ? <MiniWordmark /> : variant === 'kisokos' ? <KisokosWordmark /> : variant === 'korabbi' ? <KorabbiWordmark /> : <NapiWordmark />}
         </a>
         {/* Jobb oldalon adminnak az admin felület gombja (egyébként üres hely, hogy a felirat
             pontosan középen maradjon). */}

@@ -75,12 +75,15 @@ export function MiniWordmark({ ring = true }) {
   );
 }
 
+// Ugyanabban az elrendezésben és méretben, mint a TITKOSÍRÁS: a kos-O ugyanakkora és ugyanott áll.
 export function KisokosWordmark() {
   return (
-    <div className="brand brand-flow brand-c" aria-hidden="true">
-      <span className="bf-ink">KIS</span>
+    <div className="brand brand-mid brand-c" aria-hidden="true">
+      <span className="bm-left">KIS</span>
       <Ring />
-      <span className="bf-accent">KOS</span>
+      <span className="bm-right">
+        <span>KOS</span>
+      </span>
     </div>
   );
 }
@@ -93,6 +96,20 @@ export function NapiWordmark() {
       <Ring />
       <span className="bf-ink">S</span>
       <span className="bf-accent bf-tld">.HU</span>
+    </div>
+  );
+}
+
+// Korábbi rejtvények: szélesebb kijelzőn KORÁBBI REJTVÉNYEK, keskenyen KORÁBBIAK (a kos az O
+// helyén). A kettő közül a CSS választja ki azt, ami elfér.
+export function KorabbiWordmark() {
+  return (
+    <div className="brand brand-flow brand-c brand-korabbi" aria-hidden="true">
+      <span className="bf-ink">K</span>
+      <Ring />
+      <span className="bf-ink">RÁBBI</span>
+      <span className="bf-accent kor-long">&nbsp;REJTVÉNYEK</span>
+      <span className="bf-accent kor-short">AK</span>
     </div>
   );
 }

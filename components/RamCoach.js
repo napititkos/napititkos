@@ -41,7 +41,7 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     };
     // Először azonnal (animáció nélkül) a célhoz görgetünk, hogy az üzenet ne "csússzon" utána.
     const first = target ? document.querySelector(target) : null;
-    if (scroll && first && place !== 'bottom' && place !== 'side') first.scrollIntoView({ block: 'center', behavior: 'instant' });
+    if (scroll && first && place !== 'bottom' && place !== 'side') first.scrollIntoView({ block: 'center', behavior: 'smooth' });
     measure();
     const id = setInterval(measure, 400);
     const onMove = () => {
