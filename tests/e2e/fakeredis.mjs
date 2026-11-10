@@ -86,6 +86,7 @@ function run(a) {
     case 'RPUSH': { const e = get(a[1], 'list', true); e.v.push(...a.slice(2)); return int(e.v.length); }
     case 'TYPE': { const e = alive(a[1]); return `+${e ? e.type : 'none'}\r\n`; }
     case 'HLEN': { const e = get(a[1], 'hash'); return int(e ? e.v.size : 0); }
+    case 'PERSIST': { const e = alive(a[1]); if (!e || e.exp === null) return int(0); e.exp = null; return int(1); }
     case 'LLEN': { const e = get(a[1], 'list'); return int(e ? e.v.length : 0); }
     case 'LRANGE': {
       const e = get(a[1], 'list'); if (!e) return arr([]);

@@ -1,4 +1,5 @@
 'use client';
+import BackButton from '../../components/BackButton';
 import MyMinis from '../../components/MyMinis';
 import { useEffect, useState } from 'react';
 import PasswordChange from '../../components/PasswordChange';
@@ -85,7 +86,7 @@ export default function AccountPage() {
     <div className="wrap">
       <div className="page-title-row">
         <h1 className="page-title">Profilom{session.user.name ? ` – ${session.user.name}` : ''}</h1>
-        <a href="/" className="back-home-btn"><svg className="back-arrow" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg> Főoldal</a>
+        <BackButton />
       </div>
       {/* Sorrend: közösségi titkosírásaim, statisztikáim, fiókadatok (név, e-mail, jelszó),
           adataim (letöltés, törlés) - mind külön dobozban. */}

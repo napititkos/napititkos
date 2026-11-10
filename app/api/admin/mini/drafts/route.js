@@ -4,8 +4,8 @@ import { adminUser, isAdminRequest } from '../../../../../lib/adminAuth';
 import { readJson } from '../../../../../lib/validate';
 import { MINI_LETTERS, MINI_TEMPLATES, MINI_WORDS } from '../../../../../lib/miniData';
 import { templateGrid } from '../../../../../lib/miniGen';
-import { cluesFor, loadBank, normWord, titkosClues } from '../../../../../lib/mini';
-import { draftSummary } from '../../../../../lib/miniDraft';
+import { addEntriesToBank, cluesFor, loadBank, normWord, titkosClues } from '../../../../../lib/mini';
+import { assemble, draftSummary } from '../../../../../lib/miniDraft';
 import { deleteDraft, getDraft, isDraftId, listDrafts, publishDraft, saveDraft } from '../../../../../lib/miniDraftStore';
 
 // Mini keresztrejtvény piszkozatok (admin). Bármelyik admin megnyithatja és mentheti a másik
@@ -60,7 +60,10 @@ export async function POST(req) {
     if (hasId && (!isDraftId(body.id) || !Number.isInteger(body.rev))) return reply({ status: 400, message: 'Hibás azonosító.' });
     const user = await adminUser();
     if (!user) return unauthorized();
-    return reply(await saveDraft({ id: hasId ? body.id : undefined, rev: body.rev, input: body, actor: actorOf(user) }));
+    const out = await saveDraft({ id: hasId ? body.id : undefined, rev: body.rev, input: body, actor: actorOf(user) });
+    // Mentéskor a kész szavak beírt kérdései egyből a kérdésbankba kerülnek.
+    if (out.status === 200 && out.draft) out.bankAdded = await addEntriesToBank(assemble(out.draft.rows, out.draft.clues));
+    return reply(out);
   }
 
   if (action === 'delete' || action === 'publish') {

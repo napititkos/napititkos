@@ -4,9 +4,12 @@ import { useSession } from 'next-auth/react';
 import MiniPlayer from '../../components/MiniPlayer';
 import DailyReactions from '../../components/DailyReactions';
 import Icon from '../../components/Icon';
+import GameBar from '../../components/GameBar';
+import GameFooter from '../../components/GameFooter';
 import { deviceId } from '../../lib/device';
 import { getIdentity } from '../../lib/identity';
 import { fireConfetti } from '../../components/Confetti';
+import { recordMiniWeek } from '../../lib/gameProgress';
 
 // A heti mini keresztrejtvény (csak élesítés után). Időzítő, ellenőrzés, megfejtéskor konfetti,
 // statisztika (a te időd, átlagidő, teljesítések), emoji-reakciók és idő szerinti ranglista;
@@ -40,13 +43,17 @@ export default function MiniPage() {
         setData(d);
         setStats(d.stats || null);
         const l = loadLocal();
-        setLocal(l && l.week === d.week ? l : null);
+        // Ha egy másik eszközön (ugyanazzal a fiókkal) már megfejtette, a szerver tudja az idejét.
+        const fromServer = d.stats?.mine ? { week: d.week, elapsed: d.stats.mine } : null;
+        setLocal(l && l.week === d.week ? l : fromServer);
+        if (d.stats?.mine) recordMiniWeek(d.week);
       })
       .catch(() => setData({ live: false }));
   }, [status]);
 
   async function solved(elapsed) {
     fireConfetti();
+    recordMiniWeek(data.week);
     const rec = { week: data.week, elapsed };
     try {
       localStorage.setItem(KEY, JSON.stringify(rec));
@@ -80,11 +87,8 @@ export default function MiniPage() {
   const myTime = stats?.mine ?? local?.elapsed ?? null;
   return (
     <div className="wrap mini-page">
-      <div className="page-title-row">
-        <h1 className="page-title">Heti mini keresztrejtvény</h1>
-        <a href="/kisokos?tab=mini" className="back-home-btn mini-kisokos-link">Kisokos</a>
-        <a href="/" className="back-home-btn"><svg className="back-arrow" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg> Főoldal</a>
-      </div>
+      <GameBar game="mini" />
+      <h1 className="page-title game-page-title">Heti mini keresztrejtvény</h1>
       <div className="card">
         <MiniPlayer key={data.puzzle.id + (done ? '-kesz' : '')} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} />
         {done && (
@@ -103,6 +107,7 @@ export default function MiniPage() {
           </>
         )}
       </div>
+      <GameFooter game="mini" />
     </div>
   );
 }

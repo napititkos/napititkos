@@ -1,4 +1,5 @@
 'use client';
+import BackButton from '../../components/BackButton';
 import ResendVerification from '../../components/ResendVerification';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -7,6 +8,7 @@ import { loadProgress, saveProgress } from '../../lib/progress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
 import DailyReactions from '../../components/DailyReactions';
 import MiniArchive from '../../components/MiniArchive';
+import SzoArchive from '../../components/SzoArchive';
 import RejtvenyTabs, { useMiniLive, useRejtvenyTab } from '../../components/RejtvenyTabs';
 import ClueLine from '../../components/ClueLine';
 
@@ -21,6 +23,12 @@ export default function ArchivePage() {
   const miniLive = useMiniLive();
   const [kind, setKind] = useRejtvenyTab();
   const [items, setItems] = useState(null);
+  // A fiók haladásának megérkezése után (másik eszközön megfejtettek) frissítjük a megfejtett jelzéseket.
+  useEffect(() => {
+    const onSynced = () => setArchiveSolved(loadProgress().archiveSolved || []);
+    window.addEventListener('progress-synced', onSynced);
+    return () => window.removeEventListener('progress-synced', onSynced);
+  }, []);
   const [presets, setPresets] = useState(null);
   const [error, setError] = useState(null);
   const [unverified, setUnverified] = useState(false);
@@ -119,7 +127,7 @@ export default function ArchivePage() {
       <div className="wrap">
         <div className="page-title-row">
           <h1 className="page-title">Korábbi titkosírások</h1>
-          <a href="/" className="back-home-btn"><svg className="back-arrow" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg> Főoldal</a>
+          <BackButton />
         </div>
         <div className="card">
           {/* Amíg a bejelentkezés állapota vagy a darabszám nem ismert, csak "Betöltés…" látszik,
@@ -157,10 +165,12 @@ export default function ArchivePage() {
     <div className="wrap">
       <div className="page-title-row">
         <h1 className="page-title">{miniLive ? 'Korábbi rejtvények' : 'Korábbi titkosírások'}</h1>
-        <a href="/" className="back-home-btn"><svg className="back-arrow" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg> Főoldal</a>
+        <BackButton />
       </div>
-      {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} />}
-      {miniLive && kind === 'mini' ? (
+      {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo />}
+      {miniLive && kind === 'szo' ? (
+        <SzoArchive />
+      ) : miniLive && kind === 'mini' ? (
         <MiniArchive />
       ) : (
       <div className="card archive-card">
