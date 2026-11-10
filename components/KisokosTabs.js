@@ -1,6 +1,7 @@
 'use client';
 import { TutorialContent } from './TutorialModal';
 import MiniKisokos from './MiniKisokos';
+import SzoKisokos from './SzoKisokos';
 import RejtvenyTabs, { useMiniLive, useRejtvenyTab } from './RejtvenyTabs';
 
 // A Kisokos két része (a mini élesítése után): Titkosírás és Mini. A rejtvényekről mindig az adott
@@ -11,8 +12,8 @@ export default function KisokosTabs() {
   if (!live) return <TutorialContent />;
   return (
     <>
-      <RejtvenyTabs tab={tab} onChange={setTab} labels={{ titkos: 'Titkosírás', mini: 'Mini' }} />
-      {tab === 'mini' ? <MiniKisokos /> : <TutorialContent />}
+      <RejtvenyTabs tab={tab} onChange={setTab} labels={{ titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Mini' }} withSzo />
+      {tab === 'mini' ? <MiniKisokos /> : tab === 'szo' ? <SzoKisokos /> : <TutorialContent />}
     </>
   );
 }

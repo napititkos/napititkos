@@ -30,11 +30,9 @@ export default function GameBar({ game = 'titkos' }) {
       <button className="pill quick-pill" type="button" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: lbTab ? { tab: lbTab } : {} }))}>
         <Icon src="/icons/Ranglista.png" size={16} className="quick-ico" /> Ranglista
       </button>
-      {game !== 'szo' && (
-        <a className="pill quick-pill" href={kisokos}>
-          <Icon src="/icons/Tutorial.png" size={15} className="quick-ico" /> Kisokos
-        </a>
-      )}
+      <a className="pill quick-pill" href={kisokos}>
+        <Icon src="/icons/Tutorial.png" size={15} className="quick-ico" /> Kisokos
+      </a>
       <button className="pill quick-pill" type="button" aria-label={`Trófeák: ${count} / ${ACHIEVEMENTS.length} megszerezve`} title="Trófeák" onClick={() => window.dispatchEvent(new CustomEvent('open-achievements', { detail: { game } }))}>
         <Icon src="/icons/Trofeak.png" size={16} /> {count}/{ACHIEVEMENTS.length}
       </button>
