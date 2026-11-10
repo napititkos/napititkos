@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount } from '../lib/tutorial';
 import Icon from './Icon';
 import Logo from './Logo';
+import { MiniIcon } from './GameIcons';
 
 
 export default function Nav() {
@@ -24,6 +25,26 @@ export default function Nav() {
   }, [status, isAdmin]);
   // Bejelentkezés után ugyanarra az oldalra térjen vissza, ahonnan indult.
   const pathname = usePathname() || '/';
+  // A fejléc logója a játék szerint: élesítés után a főoldalon NAPITITKOS, a szókeresőben
+  // SZÓKERESŐ (a kos az Ó helyén), máshol TITKOSÍRÁS. Az élesítés állapotát az eszköz megjegyzi,
+  // hogy oldalváltáskor ne villanjon a régi logó.
+  const [miniLive, setMiniLive] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('mini-live') === '1') setMiniLive(true);
+    } catch {}
+    fetch('/api/mini/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const v = !!d?.live;
+        setMiniLive(v);
+        try {
+          localStorage.setItem('mini-live', v ? '1' : '0');
+        } catch {}
+      })
+      .catch(() => {});
+  }, []);
+  const variant = pathname.startsWith('/szokereso') ? 'szo' : pathname.startsWith('/mini') && miniLive ? 'mini' : pathname === '/' && miniLive ? 'napi' : 'titkos';
   const loginHref = pathname === '/' || pathname.startsWith('/login') ? '/login' : `/login?callbackUrl=${encodeURIComponent(pathname)}`;
 
   useEffect(() => {
@@ -68,13 +89,39 @@ export default function Nav() {
             </a>
           )}
         </div>
-        <a href="/" className="brand-link" aria-label="Titkosírás - kezdőlap">
-          <div className="brand brand-mid brand-c" aria-hidden="true">
-            <span className="bm-left">TITK</span>
-            <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
-            <span className="bm-right">S<span>ÍRÁS</span></span>
-          </div>
-        </a>
+        {variant === 'titkos' ? (
+          <a href={miniLive ? '/titkosiras' : '/'} className="brand-link" aria-label="Titkosírás">
+            <div className="brand brand-mid brand-c" aria-hidden="true">
+              <span className="bm-left">TITK</span>
+              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
+              <span className="bm-right">S<span>ÍRÁS</span></span>
+            </div>
+          </a>
+        ) : variant === 'mini' ? (
+          <a href="/mini" className="brand-link brand-link-flow" aria-label="Mini keresztrejtvény">
+            <div className="brand brand-flow brand-mini" aria-hidden="true">
+              <MiniIcon size={null} />
+              <span className="bf-accent">MINI</span>
+            </div>
+          </a>
+        ) : variant === 'szo' ? (
+          <a href="/szokereso" className="brand-link brand-link-flow" aria-label="Szókereső">
+            <div className="brand brand-flow brand-c" aria-hidden="true">
+              <span className="bf-ink">SZ</span>
+              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
+              <span className="bf-accent">KERESŐ</span>
+            </div>
+          </a>
+        ) : (
+          <a href="/" className="brand-link brand-link-flow" aria-label="Napititkos – kezdőlap">
+            <div className="brand brand-flow brand-c" aria-hidden="true">
+              <span className="bf-accent">NAPI</span>
+              <span className="bf-ink">TITK</span>
+              <span className="brand-o"><Logo size={null} className="brand-o-logo" /></span>
+              <span className="bf-ink">S</span>
+            </div>
+          </a>
+        )}
         {/* Jobb oldalon adminnak az admin felület gombja (egyébként üres hely, hogy a felirat
             pontosan középen maradjon). */}
         <div className="topnav-right">

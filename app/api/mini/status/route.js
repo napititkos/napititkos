@@ -6,5 +6,6 @@ import { currentMini, miniLive } from '../../../../lib/mini';
 export async function GET() {
   if (!miniLive()) return Response.json({ live: false }, { headers: { 'Cache-Control': 'public, s-maxage=60' } });
   const cur = await currentMini();
-  return Response.json({ live: !!cur, week: cur?.week || null }, { headers: { 'Cache-Control': 'public, s-maxage=60' } });
+  // live: élesítve van (a játékok felülete látszik); week: van-e már ezen a héten mini.
+  return Response.json({ live: true, week: cur?.week || null }, { headers: { 'Cache-Control': 'public, s-maxage=60' } });
 }

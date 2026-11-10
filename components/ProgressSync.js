@@ -35,6 +35,9 @@ export default function ProgressSync() {
         const merged = mergeProgress(local, data.progress);
         saveProgress(merged);
         setProgressSyncEnabled(true);
+        // Az oldalak (főoldal, korábbi titkosírások) ebből tudják, hogy a fiók haladása megérkezett
+        // (pl. egy másik eszközön már megfejtett mai titkosírás), és frissítik a nézetet.
+        window.dispatchEvent(new Event('progress-synced'));
         fetch('/api/account/progress', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

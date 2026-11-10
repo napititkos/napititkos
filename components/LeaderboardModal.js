@@ -30,7 +30,7 @@ export default function LeaderboardModal() {
 
   function load(t) {
     setEntries(null);
-    fetch(t === 'mini' ? '/api/mini/leaderboard' : '/api/leaderboard', { cache: 'no-store' })
+    fetch(t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : '/api/leaderboard', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setEntries(d.entries || []))
       .catch(() => setEntries([]));
@@ -39,7 +39,7 @@ export default function LeaderboardModal() {
   useEffect(() => {
     function handleOpen(e) {
       setMyName(session?.user?.name || getIdentity().name);
-      const t = e?.detail?.tab === 'mini' ? 'mini' : 'daily';
+      const t = e?.detail?.tab === 'mini' || e?.detail?.tab === 'szo' ? e.detail.tab : 'daily';
       setTab(t);
       load(t);
       fetch('/api/mini/status')
@@ -61,12 +61,13 @@ export default function LeaderboardModal() {
           <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
         </h2>
         <p className="lb-countdown" aria-live="off">
-          {tab === 'mini' ? `Új rejtvény és új ranglista: ${fmtDHM(msUntilMonday(new Date(tick)))} múlva` : `Nullázódik: ${fmtHMS(msUntilMidnight(new Date(tick)))} múlva`}
+          {tab === 'mini' ? `Új rejtvény és új ranglista: ${fmtDHM(msUntilMonday(new Date(tick)))} múlva` : `${tab === 'szo' ? 'Új szókereső és új ranglista' : 'Nullázódik'}: ${fmtHMS(msUntilMidnight(new Date(tick)))} múlva`}
         </p>
-        {(miniLive || tab === 'mini') && (
+        {(miniLive || tab !== 'daily') && (
           <div className="lb-tabs" role="tablist" aria-label="Ranglista választása">
             {[
               ['daily', 'Titkosírás'],
+              ['szo', 'Szókereső'],
               ['mini', 'Keresztrejtvény'],
             ].map(([v, label]) => (
               <button
@@ -88,7 +89,7 @@ export default function LeaderboardModal() {
         )}
         {entries === null && <p>Betöltés...</p>}
         {entries && entries.length === 0 && (
-          <p style={{ color: 'var(--ink-soft)' }}>{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>
+          <p style={{ color: 'var(--ink-soft)' }}>{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : tab === 'szo' ? 'Ma még senki nem talált szót - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>
         )}
         {entries && entries.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -109,7 +110,7 @@ export default function LeaderboardModal() {
                   {i + 1}. {e.name}
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-                  {tab === 'mini' ? formatTime(e.elapsed) : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
+                  {tab === 'mini' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.count} szó · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
                 </span>
               </div>
             ))}

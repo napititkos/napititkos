@@ -18,26 +18,29 @@ export function useRejtvenyTab() {
   const [tab, setTab] = useState('titkos');
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).get('tab') === 'mini') setTab('mini');
+      const t = new URLSearchParams(window.location.search).get('tab');
+      if (t === 'mini' || t === 'szo') setTab(t);
     } catch {}
   }, []);
   const choose = (t) => {
     setTab(t);
     try {
       const u = new URL(window.location.href);
-      if (t === 'mini') u.searchParams.set('tab', 'mini');
+      if (t === 'mini' || t === 'szo') u.searchParams.set('tab', t);
       else u.searchParams.delete('tab');
       window.history.replaceState(null, '', u.toString());
     } catch {}
+    window.dispatchEvent(new CustomEvent('rejtveny-tab', { detail: t }));
   };
   return [tab, choose];
 }
 
-export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' } }) {
+export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false }) {
   return (
     <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus">
       {[
         ['titkos', labels.titkos],
+        ...(withSzo ? [['szo', labels.szo || 'Szókeresők']] : []),
         ['mini', labels.mini],
       ].map(([v, label]) => (
         <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? 'primary small' : 'ghost small'} onClick={() => onChange(v)}>

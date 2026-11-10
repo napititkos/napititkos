@@ -29,6 +29,10 @@ export async function POST(req) {
   const r = kv.raw();
   const first = await r.hsetnx(miniSolvesKey(cur.week), actor, String(elapsed));
   const name = cleanName(user?.name || body.name || '');
-  if (first && name) await r.hset(miniNamesKey(cur.week), actor, name);
+  if (first && name) {
+    await r.hset(miniNamesKey(cur.week), actor, name);
+    // A ranglista nevei 2 hét után törlődnek (az idők az archívumhoz megmaradnak).
+    await r.expire(miniNamesKey(cur.week), 14 * 24 * 3600);
+  }
   return Response.json({ ok: true, first: !!first, stats: await miniStats(cur.week, actor) }, { headers: { 'Cache-Control': 'no-store' } });
 }

@@ -1517,3 +1517,89 @@ button.mini-list-head{ display: flex; align-items: center; gap: 14px; width: 100
 .my-mini{ display: flex; align-items: center; gap: 12px; border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; }
 
 .lb-countdown{ font-size: 12.5px; color: var(--ink-soft); margin: -6px 0 10px; font-variant-numeric: tabular-nums; }
+
+/* Napi szókereső. */
+.szo-game{ display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin: 0 auto; }
+.szo-top{ display: flex; justify-content: space-between; align-items: center; min-height: 30px; }
+.szo-hints{ font-size: 13px; font-weight: 800; color: var(--accent-text); }
+.szo-current{ text-align: center; min-height: 32px; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: 0.06em; color: var(--ink); }
+.szo-current.good{ color: #2f8a52; font-size: 16px; letter-spacing: 0; }
+.szo-current.bad{ color: var(--bad, #c0392b); font-size: 16px; letter-spacing: 0; }
+.szo-current.muted{ color: var(--ink-soft); font-size: 16px; letter-spacing: 0; }
+.szo-board{ position: relative; display: grid; grid-template-rows: repeat(3, 1fr); width: min(100%, 330px); aspect-ratio: 1; margin: 0 auto; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.szo-row{ display: grid; grid-template-columns: repeat(3, 1fr); }
+.szo-cell{ position: relative; display: flex; align-items: center; justify-content: center; }
+/* A találati terület kisebb, mint a négyzet: átlós húzásnál ne akadjon bele a szomszédba. */
+.szo-hit{
+  position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; width: 72%; aspect-ratio: 1; border-radius: 50%;
+  background: var(--mini-sq); border: 3px solid var(--mini-border); color: var(--mini-ink);
+  font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: clamp(26px, 9vw, 40px); font-weight: 800; cursor: pointer;
+  transition: transform 0.08s ease, background-color 0.1s ease;
+}
+.szo-cell.on .szo-hit{ background: var(--mini-active); border-color: var(--mini-black); transform: scale(1.06); }
+.szo-cell.hint .szo-hit{ border-color: var(--btn-primary); box-shadow: 0 0 0 3px var(--accent-soft); }
+.szo-step{ position: absolute; top: 8%; right: 10%; z-index: 3; font-size: 12px; font-weight: 800; background: var(--btn-primary); color: #fff; border-radius: 999px; padding: 1px 6px; }
+.szo-lines{ position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.szo-lines polyline{ fill: none; stroke: var(--btn-primary); stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; opacity: 0.55; }
+.szo-lines polyline.hint{ stroke: var(--accent2); stroke-dasharray: 2 18; opacity: 0.9; }
+.szo-board.done .szo-hit{ background: #CDEBD6; }
+@media (prefers-color-scheme: dark){ .szo-board.done .szo-hit{ background: #24533A; } .szo-current.good{ color: #7fd6a0; } }
+.szo-progress{ display: flex; flex-direction: column; gap: 4px; }
+.szo-bar{ position: relative; height: 12px; border-radius: 999px; background: var(--accent-soft); overflow: visible; }
+.szo-bar > span{ display: block; height: 100%; border-radius: 999px; background: var(--btn-primary); transition: width 0.3s ease; }
+.szo-star{ position: absolute; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 20px; line-height: 1; color: var(--line); text-shadow: 0 0 2px var(--card); }
+.szo-star.got{ color: #f1b500; }
+.szo-count{ font-size: 13px; color: var(--ink-soft); text-align: center; }
+.szo-options{ display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.szo-lists{ display: flex; flex-direction: column; gap: 10px; }
+.szo-group h3{ font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent-text); margin: 4px 0; }
+.szo-group h3 span{ color: var(--ink-soft); font-weight: 600; }
+.szo-group ul{ list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.szo-group li.got{ font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 999px; background: var(--mini-sq); color: var(--mini-ink); }
+.szo-group li.got.bonus{ background: var(--accent2-soft); }
+button.szo-masked{ padding: 4px 10px; border-radius: 999px; border: 2px dashed var(--line); background: transparent; color: var(--ink-soft); font-size: 14px; font-weight: 700; letter-spacing: 0.08em; }
+button.szo-masked:disabled{ opacity: 1; cursor: default; }
+button.szo-masked.can{ border-color: var(--btn-primary); color: var(--accent-text); cursor: pointer; }
+button.szo-masked.shown{ border-style: solid; border-color: var(--btn-primary); }
+
+/* Admin: szókereső. */
+.admin-szo-today{ display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-top: 10px; }
+.admin-szo-grid{ display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; }
+.admin-szo-grid span{ display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 50%; background: var(--mini-sq); border: 2px solid var(--mini-border); font-weight: 800; color: var(--mini-ink); }
+input.admin-szo-search{ width: 100%; margin: 10px 0; text-transform: none; }
+.admin-szo-list{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.admin-szo-list li{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.admin-szo-actions{ margin-left: auto; display: flex; gap: 6px; }
+
+/* Fejléc: a NAPITITKOS és a SZÓKERESŐ felirat (a kos a „titkos” / „szó” O-ja helyén). Az Ő a
+   Fredokából hiányzik, ezért a Baloo 2 a tartalék betűtípus. */
+.topnav-c .brand-link.brand-link-flow{ font-size: min(calc((100vw - 110px) / 6.6), 50px); }
+.brand.brand-flow{ font-size: 1em; display: inline-flex; align-items: center; justify-content: center; line-height: 1; white-space: nowrap; letter-spacing: 0.03em; font-family: var(--font-fredoka), var(--font-baloo), 'Fredoka', sans-serif; }
+.brand-flow .bf-ink{ color: var(--ink); }
+.brand-flow .bf-accent{ color: var(--brand-iras); }
+@media (min-width: 640px){ .topnav-c .brand-link.brand-link-flow{ font-size: 52px; } }
+
+/* Főoldal (élesítés után): a három játék csempéje. Játékok alján: a másik két játék. */
+.hub{ display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+.game-tiles{ display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+a.card.game-tile{ display: flex; align-items: center; gap: 16px; margin: 0; text-decoration: none; color: var(--ink); transition: transform 0.15s ease; }
+a.card.game-tile:hover{ transform: translateY(-2px); }
+.game-tile-icon{ display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; flex-shrink: 0; }
+.game-tile-text{ display: flex; flex-direction: column; gap: 2px; }
+.game-tile-text b{ font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 20px; color: var(--accent-text); }
+.game-tile-text span{ font-size: 14px; color: var(--ink-soft); }
+.hub a.card.game-tile{ padding: 18px 20px; }
+.game-footer{ margin-top: 6px; }
+.game-page-title{ display: block; text-align: center; margin: 4px auto 12px; }
+.szo-thumb{ display: grid; grid-template-columns: repeat(3, 18px); gap: 2px; flex-shrink: 0; }
+.szo-thumb span{ display: flex; align-items: center; justify-content: center; height: 18px; border-radius: 50%; background: var(--mini-sq); color: var(--mini-ink); font-size: 10px; font-weight: 800; }
+.ach-group + .ach-group{ margin-top: 14px; }
+.ach-group-title{ font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent-text); margin: 4px 0 8px; }
+.szo-report{ margin-top: 8px; text-align: center; }
+.szo-report-form{ display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.szo-report-form textarea, .szo-report-form select{ width: 100%; text-transform: none; }
+button.link-btn{ background: none; border: none; padding: 4px; color: var(--accent-text); text-decoration: underline; font-weight: 700; cursor: pointer; }
+.game-footer .next-links > :only-child{ grid-column: 1 / -1; }
+/* A mini oldal fejléce: a 4x4-es rács ikon és a MINI felirat. */
+.brand.brand-mini{ gap: 0.18em; }
+.brand-mini .game-icon{ width: 1.05em; height: 1.05em; }

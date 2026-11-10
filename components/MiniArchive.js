@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
 import MiniThumb from './MiniThumb';
+import { recordMiniWeek } from '../lib/gameProgress';
 
 // Korábbi rejtvények – Minik: a korábbi heti mini keresztrejtvények (a mostani hét előttiek).
 // Az előnézet megfejtés előtt üres, utána kitöltött. Rányomva megnyílik és megfejthető.
@@ -34,6 +35,7 @@ export default function MiniArchive() {
 
   async function solved(it, elapsed) {
     setItems((list) => list.map((x) => (x.id === it.id ? { ...x, solvedMs: elapsed } : x)));
+    recordMiniWeek(it.week);
     try {
       await fetch('/api/mini/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ week: it.week, elapsed }) });
     } catch {}

@@ -11,7 +11,8 @@ import { cleanName, readJson } from '../../../lib/validate';
 const SCORE_BASE = 1e9;
 const MAX_HINTS = 20;
 const MAX_ELAPSED_MS = 24 * 3600 * 1000;
-const LEADERBOARD_TTL_SECONDS = 45 * 24 * 3600;
+// Az oldal csak a mai ranglistát mutatja; a második nap csak tartalék az éjféli váltás miatt.
+const LEADERBOARD_TTL_SECONDS = 2 * 24 * 3600;
 
 export async function POST(req) {
   // Címenként óránként legfeljebb 30 beküldés (spam ellen).

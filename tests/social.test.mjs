@@ -41,7 +41,8 @@ test('trófeák: elöl a Kisokos bevezetője, majd a teljes Kisokos; az Olvasott
   assert.equal(ACHIEVEMENTS[0].title, 'Kezdő');
   assert.equal(ACHIEVEMENTS[1].id, 'tutorial_done');
   assert.ok(!ACHIEVEMENTS.some((a) => a.id === 'read_help'));
-  assert.equal(ACHIEVEMENTS.length, 22);
+  assert.equal(ACHIEVEMENTS.length, 28);
+  assert.equal(ACHIEVEMENTS.filter((a) => !a.game).length, 22);
 });
 
 test('trófeák: a bevezető trófeát a Kezdetek teljesítése adja, a Kisokos megnyitása már nem ad trófeát', () => {

@@ -116,7 +116,7 @@ for (const bad of [{ hintsUsed: -1 }, { hintsUsed: 999 }, { hintsUsed: 'x' }, { 
 r = await post('/api/stats', 'nem json'); check('hibás JSON: 400', r.status === 400);
 r = await post('/api/stats', { date: 'leaderboard:*', hintsUsed: 0, correct: true });
 check('a kliens dátuma figyelmen kívül marad (nem hoz létre tetszőleges kulcsot)', r.status === 200 && (await redis.keys('stats:h:*')).join() === `stats:h:${budapestToday}`, (await redis.keys('stats:h:*')).join());
-check('a statisztika-kulcsnak van lejárata (TTL)', (await redis.ttl(`stats:h:${budapestToday}`)) > 0);
+check('a statisztika-kulcs nem jár le (a korábbi titkosírások megfejtőinek száma megmarad)', (await redis.ttl(`stats:h:${budapestToday}`)) === -1);
 const par = await Promise.all(Array.from({ length: 20 }, () => post('/api/stats', { hintsUsed: 1, correct: true })));
 st = await stGet();
 check('20 párhuzamos küldés közül egy sem vész el (natív számláló)', par.every((x) => x.status === 200) && st.completions === 23, JSON.stringify(st));
@@ -1122,6 +1122,10 @@ section('Mini keresztrejtvény: piszkozatok (mentés kész kérdések nélkül, 
   const d1 = j.draft;
   check('hiányos tábla mentése: 200, rev 1, tisztított cím, szerző', r.status === 200 && d1?.rev === 1 && d1.title === 'Kézi tábla' && !!d1.createdBy?.name && d1.updatedBy?.id === d1.createdBy?.id, JSON.stringify(j).slice(0, 200));
   check('a mentett kérdések megmaradtak, a rács kisbetűs', d1.clues['A:0:0']?.clue === 'Gyümölcs.' && d1.rows[0][0] === 'a' && d1.rows[0][4] === '#');
+  {
+    const bk = JSON.parse((await redis.get('mini:bank')) || '{}');
+    check('piszkozat mentésekor a kész szó kérdése egyből a bankba kerül, a hiányos szóé nem', bk.alma?.some((v) => v.clue === 'Gyümölcs.') && !Object.values(bk).flat().some((v) => v.clue === 'Nem teljes szóhoz írt kérdés'));
+  }
   let list = await (await getDrafts()).json();
   const it = list.drafts.find((x) => x.id === d1.id);
   check('a lista tartalmazza, haladással (szó/kész/kérdés)', !!it && it.progress.total > 0 && it.progress.complete >= 1 && it.progress.clued >= 1 && it.rows.length === 5 && !('clues' in it), JSON.stringify(it?.progress));
@@ -1507,6 +1511,73 @@ section('Mini kérdésbank: automatikus készletek egyszeri beemelése');
   r = await fetch(BASE + '/api/admin/mini/bank?q=fe&filter=all', { headers: adm }); j = await r.json();
   const fe = (j.rows || j.items || []).find((x) => x.word === 'fe');
   check('a szóbankban a forrás látszik (automatikus készlet)', fe && fe.clues.some((c) => c.src === 'auto:vegyjel'), JSON.stringify(fe).slice(0, 300));
+}
+
+section('Napi szókereső: rács, haladás, ranglista, admin szólista');
+{
+  r = await fetch(BASE + '/api/szo?device=' + 'a'.repeat(32)); j = await r.json();
+  const sz = j;
+  check('élesítés után: a mai szókereső (3x3 rács, 9 betűs napi szó, szavak útjai)', r.status === 200 && sz.live && sz.grid.length === 9 && Array.from(sz.word).length === 9 && sz.required.length >= 3 && sz.required.every((w) => Array.isArray(sz.paths[w])), JSON.stringify({ g: sz.grid, n: sz.required?.length }));
+  r = await fetch(BASE + '/api/szo?date=2099-01-01'); check('jövőbeli nap: 404', r.status === 404);
+  r = await fetch(BASE + '/api/szo?date=2020-01-01'); check('nem generált régi nap: 404 (nem generál visszamenőleg)', r.status === 404);
+  const dev = 'a'.repeat(32);
+  const two = sz.required.slice(0, 2);
+  const prog = (b, h = {}) => post('/api/szo/progress', { date: sz.date, device: dev, ...b }, h);
+  r = await prog({ words: [...two, 'nemletezoszo', 'xx'], elapsed: 30000, name: 'Szó Sári' }); j = await r.json();
+  check('haladás: csak a rács érvényes szavai számítanak', r.status === 200 && j.count === 2 && j.total === sz.required.length && !j.found.includes('nemletezoszo'), JSON.stringify(j));
+  r = await prog({ words: [], elapsed: 1000 }); j = await r.json();
+  check('a korábban megtalált szavak megmaradnak (eszközök közti szinkron)', j.count === 2 && j.found.length >= 2);
+  j = await (await fetch(BASE + '/api/szo?device=' + dev)).json();
+  check('újratöltéskor a szerver visszaadja a megtalált szavakat és az eredményt', j.mine.found.length >= 2 && j.mine.count === 2 && j.mine.elapsed === 30000);
+  r = await post('/api/szo/progress', { date: sz.date, words: sz.required.slice(0, 3), elapsed: 50000 }, { cookie: cA.header() }); j = await r.json();
+  check('bejelentkezve a fiókhoz kötődik', j.count === 3);
+  await post('/api/szo/progress', { date: sz.date, device: 'b'.repeat(32), words: sz.required.slice(0, 3), elapsed: 40000, name: 'Gyors Gizi' });
+  j = await (await fetch(BASE + '/api/szo/leaderboard')).json();
+  const names = j.entries.map((e) => `${e.name}:${e.count}`);
+  check('ranglista: több szó elöl, egyenlőségnél a gyorsabb', names[0] === 'Gyors Gizi:3' && names[1] === 'Kommentelő Kata:3' && names[2] === 'Szó Sári:2', JSON.stringify(names));
+  const ttl = await redis.ttl('szo:lb:' + sz.date);
+  check('a ranglista 2 nap után lejár, a saját eredmény (archívum) megmarad', ttl > 0 && ttl <= 2 * 86400 && (await redis.ttl('szo:res:' + sz.date)) === -1, String(ttl));
+  // Admin szólista
+  r = await fetch(BASE + '/api/admin/szo?q=' + encodeURIComponent(sz.required[0]), { headers: adm }); j = await r.json();
+  check('admin: a mai rács és a keresés állapottal', r.status === 200 && j.today?.word === sz.word && j.results.some((x) => x.word === sz.required[0] && x.status === 'kötelező'), JSON.stringify(j.results?.slice(0, 3)));
+  r = await fetch(BASE + '/api/admin/szo'); check('admin szólista adminság nélkül: 401', r.status === 401);
+  r = await post('/api/admin/szo', { action: 'ban', word: sz.required[0] }, adm); check('tiltás: 200', r.status === 200);
+  j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  check('a tiltott szó átkerül a tiltott listába', j.banned.includes(sz.required[0]));
+  r = await post('/api/admin/szo', { action: 'unban', word: sz.required[0] }, adm); j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  check('tiltás feloldása', !j.banned.includes(sz.required[0]));
+  r = await post('/api/admin/szo', { action: 'add', word: 'Kosbéka' }, adm); j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  check('új szó hozzáadása (kisbetűsítve)', r.status === 200 && j.added.includes('kosbéka'));
+  r = await post('/api/admin/szo', { action: 'add', word: 'ab' }, adm); check('túl rövid szó: 400', r.status === 400);
+  r = await fetch(BASE + '/szokereso'); check('/szokereso oldal: 200', r.status === 200);
+  r = await fetch(BASE + '/admin/szokereso'); check('/admin/szokereso: 200, noindex', r.status === 200 && /noindex/.test(r.headers.get('x-robots-tag') || ''));
+}
+
+section('Élesítés után: főoldal (játékok), /titkosiras, szókereső archívum, hibajelzés');
+{
+  r = await fetch(BASE + '/'); let html = await r.text();
+  check('a főoldal a három játék csempéje', r.status === 200 && html.includes('href="/titkosiras"') && html.includes('href="/szokereso"') && html.includes('href="/mini"') && !html.includes('letter-box'));
+  r = await fetch(BASE + '/titkosiras'); check('/titkosiras: a napi titkosírás oldala', r.status === 200);
+  // Szókereső archívum: a mai előtti, már generált napok
+  const sz = await (await fetch(BASE + '/api/szo')).json();
+  const y = (() => { const d = new Date(sz.date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); })();
+  await redis.set('szo:puzzle:' + y, JSON.stringify({ date: y, grid: sz.grid, word: sz.word, path: [], required: sz.required, bonus: sz.bonus, paths: sz.paths }));
+  r = await fetch(BASE + '/api/szo/archive'); check('szókereső archívum vendégként: 401', r.status === 401);
+  await post('/api/szo/progress', { date: y, words: sz.required.slice(0, 2), elapsed: 20000 }, { cookie: cA.header() });
+  j = await (await fetch(BASE + '/api/szo/archive', { headers: { cookie: cA.header() } })).json();
+  const it = j.items?.find((x) => x.date === y);
+  check('szókereső archívum: csak a korábbi napok, a saját eredménnyel', it && it.count === 2 && it.total === sz.required.length && !j.items.some((x) => x.date === sz.date), JSON.stringify(it));
+  check('a korábbi napi eredmény nem kerül a mai ranglistára', !(await redis.hget('szo:lb:' + y, 'u:' + JSON.parse(await redis.get('au:userByEmail:kommentelo@teszt.hu')))));
+  // Hibajelzés
+  r = await post('/api/szo/report', { date: sz.date, type: 'nincs', text: 'x' }); check('hibajelzés: érvénytelen típus 400', r.status === 400);
+  r = await post('/api/szo/report', { date: sz.date, type: 'missing', text: '' }); check('hibajelzés: üres szöveg 400', r.status === 400);
+  r = await post('/api/szo/report', { date: sz.date, type: 'missing', text: '  kosbéka  ' }); check('hibajelzés: 200', r.status === 200);
+  j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  const rep = j.reports?.[0];
+  check('az admin látja a jelzést', rep && rep.type === 'missing' && rep.text === 'kosbéka' && rep.date === sz.date, JSON.stringify(rep));
+  r = await post('/api/admin/szo', { action: 'dismissReport', id: rep.id }, adm);
+  j = await (await fetch(BASE + '/api/admin/szo', { headers: adm })).json();
+  check('a jelzés lezárható', !j.reports.some((x) => x.id === rep.id));
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
