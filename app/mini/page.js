@@ -74,7 +74,7 @@ export default function MiniPage() {
   if (!data.live || !data.puzzle) {
     return (
       <div className="wrap">
-        <h1 className="page-title">Mini keresztrejtvény</h1>
+        <h1 className="sr-only">Heti Mini</h1>
         <div className="card">
           <p>{data.live ? 'Ezen a héten még nincs új mini keresztrejtvény. Nézz vissza később!' : 'A mini keresztrejtvény hamarosan érkezik.'}</p>
           <a href="/">← Vissza a főoldalra</a>

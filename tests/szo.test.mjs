@@ -52,3 +52,14 @@ test('ISO-hét a heti minikhez', async () => {
   assert.deepEqual(isoWeek('2027-01-01'), { year: 2026, week: 53 });
   assert.equal(weekLabel('2026-11-09'), '2026. 46. hét');
 });
+
+test('szókereső nehézség: hétfőn a legkevesebb, vasárnap a legtöbb kötelező szó', async () => {
+  const { generateSzo, szoDayTarget } = await import('../lib/szoGen.js');
+  const week = ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22'];
+  const counts = week.map((d) => generateSzo(d, { seconds: 60 }).required.length);
+  for (let i = 1; i < 7; i++) assert.ok(counts[i] > counts[i - 1], JSON.stringify(counts));
+  week.forEach((d, i) => assert.ok(Math.abs(counts[i] - szoDayTarget(d)) <= 3, `${d}: ${counts[i]}`));
+  // újragenerálásnál (más „salt”) is a nap célértéke körül marad
+  const again = generateSzo('2026-11-22', { seconds: 60, salt: 'x' }).required.length;
+  assert.ok(Math.abs(again - szoDayTarget('2026-11-22')) <= 3, String(again));
+});

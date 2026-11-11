@@ -1,5 +1,5 @@
 'use client';
-import BackButton from '../../components/BackButton';
+import HomePill from '../../components/HomePill';
 import MyMinis from '../../components/MyMinis';
 import { useEffect, useState } from 'react';
 import PasswordChange from '../../components/PasswordChange';
@@ -74,7 +74,7 @@ export default function AccountPage() {
   if (!session?.user) {
     return (
       <div className="wrap">
-        <h1 className="page-title">Profilom</h1>
+        <h1 className="sr-only">Profil</h1>
         <div className="card">
           A profilod megtekintéséhez <a href="/login" style={{ color: 'var(--accent-text)', fontWeight: 700 }}>jelentkezz be</a>.
         </div>
@@ -84,9 +84,9 @@ export default function AccountPage() {
 
   return (
     <div className="wrap">
-      <div className="page-title-row">
-        <h1 className="page-title">Profilom{session.user.name ? ` – ${session.user.name}` : ''}</h1>
-        <BackButton />
+      <h1 className="sr-only">Profil</h1>
+      <div className="kisokos-tabrow">
+        <HomePill className="kisokos-back" />
       </div>
       {/* Sorrend: közösségi titkosírásaim, statisztikáim, fiókadatok (név, e-mail, jelszó),
           adataim (letöltés, törlés) - mind külön dobozban. */}
@@ -135,42 +135,66 @@ export default function AccountPage() {
       <div className="card">
         <div className="help-block" style={{ marginBottom: 0 }}>
           <h3>Statisztikáim</h3>
+          {/* Játékonként külön: titkosírás, szókereső, heti mini. */}
           {prog && (
-            <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '10px 0 14px' }}>
-              <div className="stat">
-                <b>{prog.streak}</b>
-                <span>napos sorozat</span>
+            <>
+              <h4 className="stat-game">Titkosírás</h4>
+              <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '6px 0 12px' }}>
+                <div className="stat">
+                  <b>{prog.streak}</b>
+                  <span>napos sorozat</span>
+                </div>
+                <div className="stat">
+                  <b>{prog.best}</b>
+                  <span>legjobb sorozat</span>
+                </div>
+                <div className="stat">
+                  <b>{solvedCount(prog)}</b>
+                  <span>megoldott</span>
+                </div>
+                <div className="stat">
+                  <b>{prog.noHintSolves || 0}</b>
+                  <span>tipp nélkül</span>
+                </div>
+                <div className="stat">
+                  <b>{formatTimeMs(prog.fastestTime)}</b>
+                  <span>leggyorsabb idő</span>
+                </div>
               </div>
-              <div className="stat">
-                <b>{prog.best}</b>
-                <span>legjobb sorozat</span>
+              <h4 className="stat-game">Szókereső</h4>
+              <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '6px 0 12px' }}>
+                <div className="stat">
+                  <b>{(prog.szoFullDays || []).length}</b>
+                  <span>teljesen megfejtve</span>
+                </div>
+                <div className="stat">
+                  <b>{prog.szoWords || 0}</b>
+                  <span>megtalált szó</span>
+                </div>
               </div>
-              <div className="stat">
-                <b>{solvedCount(prog)}</b>
-                <span>megoldott</span>
+              <h4 className="stat-game">Heti Mini</h4>
+              <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '6px 0 12px' }}>
+                <div className="stat">
+                  <b>{(prog.miniWeeks || []).length}</b>
+                  <span>megfejtve</span>
+                </div>
               </div>
-              <div className="stat">
-                <b>{prog.noHintSolves || 0}</b>
-                <span>tipp nélkül</span>
+              <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '6px 0 14px' }}>
+                <a
+                  href="#"
+                  className="stat-link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.dispatchEvent(new Event('open-achievements'));
+                  }}
+                >
+                  <b>
+                    {(prog.unlocked || []).filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length}/{ACHIEVEMENTS.length}
+                  </b>
+                  <span>trófea</span>
+                </a>
               </div>
-              <div className="stat">
-                <b>{formatTimeMs(prog.fastestTime)}</b>
-                <span>leggyorsabb idő</span>
-              </div>
-              <a
-                href="#"
-                className="stat-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.dispatchEvent(new Event('open-achievements'));
-                }}
-              >
-                <b>
-                  {(prog.unlocked || []).filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length}/{ACHIEVEMENTS.length}
-                </b>
-                <span>trófea</span>
-              </a>
-            </div>
+            </>
           )}
           <button className="ghost" type="button" onClick={() => window.dispatchEvent(new Event('open-achievements'))}>
             Trófeák megtekintése

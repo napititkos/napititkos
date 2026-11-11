@@ -17,7 +17,7 @@ export default function KisokosTabs() {
       {/* A játék választó egy sorban a vissza (Játék) gombbal, ami jobbra, eltérő színnel áll. */}
       <div className="kisokos-tabrow">
         <RejtvenyTabs tab={tab} onChange={setTab} labels={{ titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Mini' }} withSzo />
-        <BackButton className="kisokos-back" />
+        <BackButton pill className="kisokos-back" />
       </div>
       {tab === 'mini' ? <MiniKisokos /> : tab === 'szo' ? <SzoKisokos /> : <TutorialContent />}
     </>

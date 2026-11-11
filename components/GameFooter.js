@@ -26,9 +26,8 @@ export function GameTile({ game, isNew = false, big = false, done = false }) {
       <span className="game-tile-icon">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : <MiniIcon size={null} />}</span>
       {done && (
         <span className="game-tile-done" role="img" aria-label="Teljesítve">
-          <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-            <circle cx="12" cy="12" r="11" fill="var(--btn-primary)" />
-            <path d="M6.5 12.5l3.6 3.6 7.4-8" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
+            <path d="M4 12.8l5 5L20.5 6" fill="none" stroke="var(--btn-primary)" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       )}

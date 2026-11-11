@@ -1,6 +1,6 @@
 // A játékok ikonjai a főoldali és a játékok alatti csempékhez (SVG, a paletta színeivel).
 // Szókereső: 3x3-as, lekerekített négyzetekből álló rács (mint a játékban) egy már meghúzott vonallal.
-// Mini: 4x4-es keresztrejtvény (KOS / OKOS / SOK, sötétlila fekete négyzetekkel).
+// Mini: 4x4-es keresztrejtvény (SOK / OKOS / KOS mindkét irányban, sötétlila fekete négyzetekkel).
 export function SzoIcon({ size = 64 }) {
   const L = ['K', 'O', 'S', 'S', 'O', 'K', 'O', 'K', 'S'];
   const c = (i) => [20 + (i % 3) * 30, 20 + Math.floor(i / 3) * 30];
@@ -21,7 +21,7 @@ export function SzoIcon({ size = 64 }) {
 }
 
 export function MiniIcon({ size = 64 }) {
-  const G = ['KOS#', 'OKOS', 'SOK#', '#S##'];
+  const G = ['SOK#', 'OKOS', 'KOS#', '#S##'];
   return (
     <svg width={size || undefined} height={size || undefined} viewBox="0 0 100 100" aria-hidden="true" className="game-icon">
       <rect x="4" y="4" width="92" height="92" rx="6" fill="var(--mini-black)" />

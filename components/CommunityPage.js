@@ -95,11 +95,12 @@ export default function CommunityPage() {
 
   return (
     <div className="wrap">
-      <div className="page-title-row">
-        <h1 className="page-title">{miniLive ? 'Közösségi rejtvények' : 'Közösségi titkosírások'}</h1>
-        <BackButton />
+      <h1 className="sr-only">Közösségi rejtvények</h1>
+      {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban és a korábbiaknál. */}
+      <div className="kisokos-tabrow">
+        {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} />}
+        <BackButton pill className="kisokos-back" />
       </div>
-      {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} />}
       {!tabReady ? null : miniLive && kind === 'mini' ? (
         <CommunityMinis />
       ) : (
