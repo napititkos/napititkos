@@ -40,3 +40,24 @@ export function MiniIcon({ size = 64 }) {
     </svg>
   );
 }
+
+// Sudoku: egy 3x2-es doboz a rácsból, 5 beírt számmal és egy üres cellával.
+export function SudokuIcon({ size = 64 }) {
+  const nums = [3, 1, 5, 6, null, 2];
+  const W = 92 / 3;
+  return (
+    <svg width={size || undefined} height={size || undefined} viewBox="0 0 100 100" aria-hidden="true" className="game-icon">
+      <rect x="4" y={50 - W} width="92" height={2 * W} rx="6" fill="var(--mini-sq)" stroke="var(--mini-black)" strokeWidth="4" />
+      <line x1={4 + W} y1={50 - W} x2={4 + W} y2={50 + W} stroke="var(--mini-black)" strokeWidth="1.8" />
+      <line x1={4 + 2 * W} y1={50 - W} x2={4 + 2 * W} y2={50 + W} stroke="var(--mini-black)" strokeWidth="1.8" />
+      <line x1="4" y1="50" x2="96" y2="50" stroke="var(--mini-black)" strokeWidth="1.8" />
+      {nums.map((n, i) =>
+        n ? (
+          <text key={i} x={4 + W * (i % 3) + W / 2} y={50 - W + W * Math.floor(i / 3) + W / 2 + 7.5} textAnchor="middle" fontSize="21" fontWeight="800" fill="var(--mini-ink)" fontFamily="var(--font-baloo), sans-serif">
+            {n}
+          </text>
+        ) : null
+      )}
+    </svg>
+  );
+}

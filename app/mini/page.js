@@ -74,11 +74,12 @@ export default function MiniPage() {
   if (!data.live || !data.puzzle) {
     return (
       <div className="wrap">
+        {data.live && <GameBar game="mini" />}
         <h1 className="sr-only">Heti Mini</h1>
         <div className="card">
           <p>{data.live ? 'Ezen a héten még nincs új mini keresztrejtvény. Nézz vissza később!' : 'A mini keresztrejtvény hamarosan érkezik.'}</p>
-          <a href="/">← Vissza a főoldalra</a>
         </div>
+        {data.live && <GameFooter game="mini" />}
       </div>
     );
   }

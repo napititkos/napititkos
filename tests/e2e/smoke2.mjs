@@ -1661,6 +1661,42 @@ section('Szókereső admin: tiltás a következő napok tervezett rácsaiból is
   await post('/api/admin/szo', { action: 'unban', word: victim }, adm);
 }
 
+section('Napi sudoku');
+{
+  j = await (await fetch(BASE + '/api/sudoku?device=' + 'd'.repeat(32))).json();
+  check('a napi sudoku: 36 cella, nehézség, sorszám, a megoldás nem megy ki', j.live && j.givens?.length === 36 && j.level >= 1 && j.level <= 5 && j.number >= 1 && !('solution' in j), JSON.stringify(j).slice(0, 200));
+  const today = j.date;
+  const stored = JSON.parse(await redis.get('sudoku:puzzle:' + today));
+  r = await fetch(BASE + '/api/sudoku?date=2099-01-01'); check('jövőbeli nap: 404', r.status === 404);
+  r = await post('/api/sudoku/solve', { date: today, grid: stored.givens, elapsed: 10000, device: 'd'.repeat(32) }); check('hiányos rács: 400', r.status === 400);
+  const wrong = stored.solution.slice(); [wrong[0], wrong[1]] = [wrong[1], wrong[0]];
+  r = await post('/api/sudoku/solve', { date: today, grid: wrong, elapsed: 10000, device: 'd'.repeat(32) }); check('hibás rács: 400', r.status === 400);
+  r = await post('/api/sudoku/solve', { date: today, grid: stored.solution, elapsed: 61000, device: 'd'.repeat(32), name: 'Sudoku Sanyi' }); j = await r.json();
+  check('helyes megoldás: 200, statisztika', r.status === 200 && j.stats.mine === 61000 && j.stats.count === 1, JSON.stringify(j));
+  r = await post('/api/sudoku/solve', { date: today, grid: stored.solution, elapsed: 5000, device: 'd'.repeat(32) }); j = await r.json();
+  check('az első megoldás ideje marad', j.stats.mine === 61000);
+  await post('/api/sudoku/solve', { date: today, grid: stored.solution, elapsed: 45000, device: 'e'.repeat(32), name: 'Gyors Gyuri' });
+  j = await (await fetch(BASE + '/api/sudoku/leaderboard')).json();
+  check('ranglista idő szerint', j.entries.map((e) => e.name).join() === 'Gyors Gyuri,Sudoku Sanyi', JSON.stringify(j.entries));
+  j = await (await fetch(BASE + '/api/sudoku?device=' + 'd'.repeat(32))).json();
+  check('újratöltéskor a saját idő és a statisztika', j.mine === 61000 && j.stats.count === 2 && j.stats.avg === 53000, JSON.stringify(j));
+  // korábbi sudokuk
+  const y = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); })();
+  await redis.set('sudoku:puzzle:' + y, JSON.stringify({ ...stored, date: y }));
+  r = await fetch(BASE + '/api/sudoku/archive'); check('archívum vendégként: 401', r.status === 401);
+  j = await (await fetch(BASE + '/api/sudoku/archive', { headers: { cookie: cA.header() } })).json();
+  check('archívum: csak a korábbi napok', Array.isArray(j.items) && !j.items.some((x) => x.date === today), JSON.stringify(j).slice(0, 200));
+  // admin
+  j = await (await fetch(BASE + '/api/admin/sudoku', { headers: adm })).json();
+  check('admin: a mai és a következő 7 nap, nehézséggel', j.days?.length === 8 && j.days.every((d) => d.level >= 1 && d.level <= 5 && d.givens.length === 36));
+  const fut = j.days[3];
+  r = await post('/api/admin/sudoku', { action: 'regenerate', date: fut.date }, adm); const rj = await r.json();
+  const after = JSON.parse(await redis.get('sudoku:puzzle:' + fut.date));
+  check('admin: jövőbeli nap cseréje, ugyanazzal a nehézséggel', r.status === 200 && after.level === fut.level && after.givens.join() !== fut.givens.join(), JSON.stringify(rj));
+  r = await post('/api/admin/sudoku', { action: 'regenerate', date: today }, adm); check('admin: a mai nem cserélhető: 400', r.status === 400);
+  r = await post('/api/admin/sudoku', { action: 'regenerate', date: fut.date }); check('admin: jogosultság nélkül 401', r.status === 401);
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

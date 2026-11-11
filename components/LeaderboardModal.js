@@ -34,7 +34,7 @@ export default function LeaderboardModal() {
   function load(t) {
     if (cardRef.current) setHoldH(cardRef.current.getBoundingClientRect().height);
     setEntries(null);
-    fetch(t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : '/api/leaderboard', { cache: 'no-store' })
+    fetch(t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : t === 'sudoku' ? '/api/sudoku/leaderboard' : '/api/leaderboard', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setEntries(d.entries || []))
       .catch(() => setEntries([]))
@@ -44,7 +44,7 @@ export default function LeaderboardModal() {
   useEffect(() => {
     function handleOpen(e) {
       setMyName(session?.user?.name || getIdentity().name);
-      const t = e?.detail?.tab === 'mini' || e?.detail?.tab === 'szo' ? e.detail.tab : 'daily';
+      const t = ['mini', 'szo', 'sudoku'].includes(e?.detail?.tab) ? e.detail.tab : 'daily';
       setTab(t);
       load(t);
       fetch('/api/mini/status')
@@ -73,7 +73,8 @@ export default function LeaderboardModal() {
             {[
               ['daily', 'Titkosírás'],
               ['szo', 'Szókereső'],
-              ['mini', 'Keresztrejtvény'],
+              ['mini', 'Heti Mini'],
+              ['sudoku', 'Sudoku'],
             ].map(([v, label]) => (
               <button
                 key={v}
@@ -94,7 +95,7 @@ export default function LeaderboardModal() {
         )}
         {entries === null && <p>Betöltés...</p>}
         {entries && entries.length === 0 && (
-          <p style={{ color: 'var(--ink-soft)' }}>{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : tab === 'szo' ? 'Ma még senki nem talált szót - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>
+          <p style={{ color: 'var(--ink-soft)' }}>{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : tab === 'szo' ? 'Ma még senki nem talált szót - légy te az első!' : tab === 'sudoku' ? 'Ma még senki nem oldotta meg - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>
         )}
         {entries && entries.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -115,7 +116,7 @@ export default function LeaderboardModal() {
                   {i + 1}. {e.name}
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-                  {tab === 'mini' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.points} pont · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
+                  {tab === 'mini' || tab === 'sudoku' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.points} pont · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
                 </span>
               </div>
             ))}

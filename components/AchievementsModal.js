@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { ACHIEVEMENTS, achievementProgress, gameOf, statsFromProgress } from '../lib/achievements';
 
-const GAME_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Mini keresztrejtvény' };
+const GAME_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', sudoku: 'Sudoku' };
 import { loadProgress } from '../lib/progress';
 import Icon from './Icon';
 
@@ -50,14 +50,14 @@ export default function AchievementsModal() {
         {/* Szűrő: Összes (alapból, játékonként csoportosítva) / Titkosírás / Szókereső / Mini. */}
         {multi && (
           <div className="rejtveny-tabs" role="tablist" aria-label="Játék szerint">
-            {[['all', 'Összes'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['mini', 'Mini']].map(([v, label]) => (
+            {[['all', 'Összes'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['mini', 'Mini'], ['sudoku', 'Sudoku']].map(([v, label]) => (
               <button key={v} type="button" role="tab" aria-selected={filter === v} className={filter === v ? 'primary small' : 'ghost small'} onClick={() => setFilter(v)}>
                 {label}
               </button>
             ))}
           </div>
         )}
-        {(multi ? (filter === 'all' ? ['titkos', 'szo', 'mini'] : [filter]) : ['titkos']).map((g) => (
+        {(multi ? (filter === 'all' ? ['titkos', 'szo', 'mini', 'sudoku'] : [filter]) : ['titkos']).map((g) => (
           <div key={g} className="ach-group">
             {multi && filter === 'all' && <h3 className="ach-group-title">{GAME_LABEL[g]}</h3>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

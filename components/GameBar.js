@@ -26,27 +26,53 @@ export default function GameBar({ game = 'titkos' }) {
   useEffect(() => {
     const el = rowRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
+    // Lépésenként tömörít, amíg el nem fér. A saját változtatásai miatti méretváltozásokat (amíg
+    // dolgozik, és utána egy rövid ideig) figyelmen kívül hagyja, hogy ne ugráljon oda-vissza.
+    let busy = false;
+    let idle = 0;
+    const fits = () => el.scrollWidth <= el.clientWidth + 1;
     const fit = () => {
+      if (busy) return;
+      busy = true;
+      let level = 0;
       setCompact(0);
-      requestAnimationFrame(() => {
-        if (el.scrollWidth <= el.clientWidth + 1) return;
-        setCompact(1);
-        requestAnimationFrame(() => {
-          if (el.scrollWidth <= el.clientWidth + 1) return;
-          setCompact(2);
-          // nagyon keskeny kijelzőn (pl. 320 px) a gombok is kisebbek
-          requestAnimationFrame(() => {
-            if (el.scrollWidth > el.clientWidth + 1) setCompact(3);
-          });
-        });
-      });
+      const step = () => {
+        if (fits() || level >= 3) {
+          clearTimeout(idle);
+          idle = setTimeout(() => (busy = false), 200);
+          return;
+        }
+        level += 1;
+        setCompact(level);
+        requestAnimationFrame(() => requestAnimationFrame(step));
+      };
+      requestAnimationFrame(() => requestAnimationFrame(step));
     };
-    const ro = new ResizeObserver(fit);
+    // A sor és a gombok méretváltozására is újraszámol (pl. ha a trófeaszámláló vagy az értesítés
+    // gomb utólag töltődik be és szélesebb lesz).
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fit);
+    };
+    const ro = new ResizeObserver(schedule);
     ro.observe(el);
-    return () => ro.disconnect();
+    const watchKids = () => [...el.children].forEach((k) => ro.observe(k));
+    watchKids();
+    const mo = new MutationObserver(() => {
+      watchKids();
+      schedule();
+    });
+    mo.observe(el, { childList: true, subtree: true, characterData: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      cancelAnimationFrame(raf);
+      clearTimeout(idle);
+    };
   }, []);
-  const lbTab = game === 'mini' ? 'mini' : game === 'szo' ? 'szo' : undefined;
-  const kisokos = game === 'mini' ? '/kisokos?tab=mini' : game === 'szo' ? '/kisokos?tab=szo' : '/kisokos';
+  const lbTab = ['mini', 'szo', 'sudoku'].includes(game) ? game : undefined;
+  const kisokos = ['mini', 'szo', 'sudoku'].includes(game) ? `/kisokos?tab=${game}` : '/kisokos';
   return (
     <div ref={rowRef} className={`quick-row game-bar${compact >= 1 ? ' compact-trophy' : ''}${compact >= 2 ? ' compact-home' : ''}${compact >= 3 ? ' compact-tight' : ''}`}>
       <NotificationsButton />
