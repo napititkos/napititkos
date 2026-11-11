@@ -4,6 +4,7 @@ import { enumerationFor, splitAnswerWords } from '../lib/format';
 import { HL_TYPES, clueTokens } from '../lib/clue';
 import AdminMini from './AdminMini';
 import AdminSzo from './AdminSzo';
+import AdminSudoku from './AdminSudoku';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
@@ -190,6 +191,7 @@ export const ADMIN_SECTIONS = {
   notifications: { path: '/admin/ertesitesek', title: 'Értesítések', icon: '🔔', desc: 'A harang ikon alatti értesítések' },
   archive: { path: '/admin/archivum', title: 'Archivált titkosírások', icon: '📦', desc: 'A már megjelent titkosírások és az archívum tisztítása' },
   szo: { path: '/admin/szokereso', title: 'Napi szókereső', icon: '🔤', desc: 'A mai rács, a szólista, hozzáadás és tiltás' },
+  sudoku: { path: '/admin/sudoku', title: 'Napi sudoku', icon: '🔢', desc: 'A mai és a következő 7 nap rejtvénye, kipróbálás, csere' },
   mini: { path: '/admin/mini', title: 'Mini keresztrejtvény', icon: '🧩', desc: 'Generálás, kérdések, szóbank és a heti várólista' },
 };
 
@@ -884,7 +886,7 @@ export default function AdminApp({ section = 'home' }) {
 
       {section === 'home' && (
         <div className="admin-tiles">
-          {['puzzles', 'users', 'notifications', 'archive', 'mini', 'szo'].map((k) => {
+          {['puzzles', 'users', 'notifications', 'archive', 'mini', 'szo', 'sudoku'].map((k) => {
             const sec = ADMIN_SECTIONS[k];
             const count =
               k === 'puzzles'
@@ -912,6 +914,7 @@ export default function AdminApp({ section = 'home' }) {
 
       {section === 'mini' && <AdminMini />}
       {section === 'szo' && <AdminSzo />}
+      {section === 'sudoku' && <AdminSudoku />}
 
       {section === 'puzzles' && (
       <div className="card">

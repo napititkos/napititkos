@@ -172,6 +172,13 @@ export default function AccountPage() {
                   <span>megtalált szó</span>
                 </div>
               </div>
+              <h4 className="stat-game">Sudoku</h4>
+              <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '6px 0 12px' }}>
+                <div className="stat">
+                  <b>{(prog.sudokuDays || []).length}</b>
+                  <span>megoldva</span>
+                </div>
+              </div>
               <h4 className="stat-game">Heti Mini</h4>
               <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '6px 0 12px' }}>
                 <div className="stat">

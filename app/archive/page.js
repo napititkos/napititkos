@@ -9,6 +9,7 @@ import PuzzlePlayer from '../../components/PuzzlePlayer';
 import DailyReactions from '../../components/DailyReactions';
 import MiniArchive from '../../components/MiniArchive';
 import SzoArchive from '../../components/SzoArchive';
+import SudokuArchive from '../../components/SudokuArchive';
 import RejtvenyTabs, { useMiniLive, useRejtvenyTab } from '../../components/RejtvenyTabs';
 import ClueLine from '../../components/ClueLine';
 
@@ -166,10 +167,12 @@ export default function ArchivePage() {
       <h1 className="sr-only">Korábbi rejtvények</h1>
       {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban. */}
       <div className="kisokos-tabrow">
-        {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo />}
+        {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo withSudoku labels={{ titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Mini', sudoku: 'Sudoku' }} />}
         <BackButton pill className="kisokos-back" />
       </div>
-      {!tabReady ? null : miniLive && kind === 'szo' ? (
+      {!tabReady ? null : miniLive && kind === 'sudoku' ? (
+        <SudokuArchive />
+      ) : miniLive && kind === 'szo' ? (
         <SzoArchive />
       ) : miniLive && kind === 'mini' ? (
         <MiniArchive />

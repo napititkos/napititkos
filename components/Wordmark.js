@@ -152,3 +152,23 @@ export function KozossegiWordmark() {
     </div>
   );
 }
+
+// SUDOKU: a kos az O helyén, a TITKOSÍRÁS elrendezésében és méretében. ring=false: csempékre.
+export function SudokuWordmark({ ring = true }) {
+  if (!ring)
+    return (
+      <div className="brand brand-flow brand-plain" aria-hidden="true">
+        <span className="bf-ink">SUD</span>
+        <span className="bf-accent">OKU</span>
+      </div>
+    );
+  return (
+    <div className="brand brand-mid brand-c" aria-hidden="true">
+      <span className="bm-left">SUD</span>
+      <Ring />
+      <span className="bm-right">
+        <span>KU</span>
+      </span>
+    </div>
+  );
+}

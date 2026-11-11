@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 // Vissza gomb az aloldalakon. Élesítés előtt „Főoldal” (a napi titkosírás a főoldalon van);
 // utána „Játék”, és a megfelelő játékhoz visz: a ?tab=mini / ?tab=szo fül szerint, vagy a
 // megadott játékhoz, alapból a titkosíráshoz.
-const HREF = { titkos: '/titkosiras', mini: '/mini', szo: '/szokereso' };
+const HREF = { titkos: '/titkosiras', mini: '/mini', szo: '/szokereso', sudoku: '/sudoku' };
 
 // pill: a játékok gombsorának gombjaival azonos formájú („Főoldal”-szerű) gomb.
 export default function BackButton({ game, className = '', pill = false }) {
@@ -14,13 +14,13 @@ export default function BackButton({ game, className = '', pill = false }) {
     try {
       if (localStorage.getItem('mini-live') === '1') setLive(true);
       const t = new URLSearchParams(window.location.search).get('tab');
-      if (!game && (t === 'mini' || t === 'szo')) setG(t);
+      if (!game && (t === 'mini' || t === 'szo' || t === 'sudoku')) setG(t);
     } catch {}
     fetch('/api/mini/status')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setLive(!!d?.live))
       .catch(() => {});
-    const onTab = (e) => !game && setG(e.detail === 'mini' || e.detail === 'szo' ? e.detail : 'titkos');
+    const onTab = (e) => !game && setG(['mini', 'szo', 'sudoku'].includes(e.detail) ? e.detail : 'titkos');
     window.addEventListener('rejtveny-tab', onTab);
     return () => window.removeEventListener('rejtveny-tab', onTab);
   }, [game]);

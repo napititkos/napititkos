@@ -23,7 +23,7 @@ export function useRejtvenyTab() {
   useEffect(() => {
     try {
       const t = new URLSearchParams(window.location.search).get('tab');
-      if (t === 'mini' || t === 'szo') setTab(t);
+      if (t === 'mini' || t === 'szo' || t === 'sudoku') setTab(t);
     } catch {}
     setReady(true);
   }, []);
@@ -31,7 +31,7 @@ export function useRejtvenyTab() {
     setTab(t);
     try {
       const u = new URL(window.location.href);
-      if (t === 'mini' || t === 'szo') u.searchParams.set('tab', t);
+      if (t === 'mini' || t === 'szo' || t === 'sudoku') u.searchParams.set('tab', t);
       else u.searchParams.delete('tab');
       window.history.replaceState(null, '', u.toString());
     } catch {}
@@ -40,13 +40,14 @@ export function useRejtvenyTab() {
   return [tab, choose, ready];
 }
 
-export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false }) {
+export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false, withSudoku = false }) {
   return (
     <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus">
       {[
         ['titkos', labels.titkos],
         ...(withSzo ? [['szo', labels.szo || 'Szókeresők']] : []),
         ['mini', labels.mini],
+        ...(withSudoku ? [['sudoku', labels.sudoku || 'Sudoku']] : []),
       ].map(([v, label]) => (
         <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? 'primary small' : 'ghost small'} onClick={() => onChange(v)}>
           {label}

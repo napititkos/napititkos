@@ -6,7 +6,7 @@ import { loadProgress } from '../lib/progress';
 import { todayStr } from '../lib/date';
 
 // Főoldal: a három játék egyforma csempéje, egymás alatt, a megszokott tartalomszélességben, alattuk
-// egy „Hamarosan…” csempe. A kos csak a NAPITITKOS.HU főcímben szerepel. Bejelentkezve a már
+// a napi sudoku. A kos csak a NAPITITKOS.HU főcímben szerepel. Bejelentkezve a már
 // teljesített rejtvények (a mai titkosírás, a mai szókereső minden szava, a heti mini) csempéjén
 // jobbra egy lila pipa jelenik meg.
 function weekStartOf(d) {
@@ -32,6 +32,7 @@ export default function Hub() {
         titkos: !!prog.history?.[today]?.correct,
         szo: (prog.szoFullDays || []).includes(today),
         mini: (prog.miniWeeks || []).includes(week) || miniLocal?.week === week,
+        sudoku: (prog.sudokuDays || []).includes(today),
       });
     };
     read();
@@ -43,11 +44,8 @@ export default function Hub() {
       <div className="hub">
         <GameTile game="titkos" big done={done.titkos} />
         <GameTile game="szo" big isNew done={done.szo} />
+        <GameTile game="sudoku" big isNew done={done.sudoku} />
         <GameTile game="mini" big isNew done={done.mini} />
-        <div className="card game-tile game-tile-big game-tile-soon" aria-label="Hamarosan új játék">
-          <span className="soon-mark" aria-hidden="true">?</span>
-          <span className="soon-text">Hamarosan…</span>
-        </div>
       </div>
     </div>
   );
