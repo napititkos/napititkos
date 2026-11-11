@@ -1788,7 +1788,6 @@ a.card.game-tile{ min-height: 0; }
 
 /* Főoldal: teljesítve pipa a csempe jobb szélén; a „Hamarosan…” csempe halvány kérdőjellel. */
 .game-tile-done{ position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: flex; }
-.game-tile.game-tile-big:has(.game-tile-done) .game-tile-text{ padding-right: 40px; }
 .card.game-tile.game-tile-soon{ position: relative; display: flex; align-items: center; justify-content: center; min-height: 120px; box-sizing: border-box; margin: 0; overflow: hidden; border-style: dashed; }
 .soon-mark{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-fredoka), Fredoka, sans-serif; font-weight: 700; font-size: 110px; line-height: 1; color: var(--accent2); opacity: 0.18; }
 .soon-text{ position: relative; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: 0.04em; color: var(--accent-text); }
@@ -1805,10 +1804,9 @@ a.card.game-tile{ min-height: 0; }
 .szo-cup.got{ filter: none; opacity: 1; }
 .szo-bar{ margin-right: 12px; }
 
-/* Korábbi szókeresők: év és hónap szerinti bontás. */
-.szo-arch-y{ font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 20px; color: var(--accent-text); margin: 4px 0 8px; }
-.szo-arch-month{ margin-bottom: 10px; }
-.szo-arch-month > .archive-month-head{ display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px; }
+/* Korábbi szókeresők: ugyanolyan év és hónap dobozok, mint a korábbi titkosírásoknál. */
+.szo-arch-yhead{ display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.szo-arch-yhead span{ font-size: 13px; color: var(--ink-soft); }
 
 /* A vissza (Játék) / Főoldal gomb az aloldalak sorában: ugyanolyan, mint a játékok gombsorának
    gombjai, a sor jobb szélén. */
@@ -1826,3 +1824,11 @@ a.card.game-tile{ min-height: 0; }
 /* Nagyon keskeny kijelzőn, három választó mellett a Játék gombon csak a nyíl marad, hogy kiférjen. */
 @media (max-width: 380px){ .kisokos-tabrow:has(.rejtveny-tabs > :nth-child(3)) .back-pill .bp-label{ display: none; } }
 .kisokos-tabrow{ flex-wrap: nowrap; }
+
+.szo-bar{ position: relative; }
+.szo-dayno{ font-size: 17px; }
+/* KÖZÖSSÉGI: az Ö pontjai a gyűrű közepén. */
+.brand-o .acc-clip.acc-uml{ margin-left: -0.36em; }
+/* KORÁBBIAK: ugyanakkora betűk, mint a többi feliratban, ha kifér. */
+.topnav-c .brand-link.brand-link-flow:has(.brand-korabbi){ font-size: min(calc((50vw - 56px) / 3.36), calc((100vw - 110px) / 6.6), 50px); }
+@media (min-width: 640px){ .topnav-c .brand-link.brand-link-flow:has(.brand-korabbi){ font-size: 65px; } }
