@@ -8,7 +8,7 @@ const Ring = ({ acute = false, umlaut = false, small = false, bare = false }) =>
   <span className={`brand-o${small ? ' brand-o-small' : ''}${bare ? ' brand-o-bare' : ''}`}>
     <Logo size={null} className="brand-o-logo" />
     {acute && <Accent />}
-    {umlaut && <Accent ch="Ö" />}
+    {umlaut && <Accent ch="Ö" cls="acc-uml" />}
   </span>
 );
 

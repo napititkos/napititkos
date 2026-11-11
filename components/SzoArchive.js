@@ -19,6 +19,7 @@ export default function SzoArchive() {
   const [open, setOpen] = useState(null);
   const [game, setGame] = useState(null);
   const [openMonths, setOpenMonths] = useState({});
+  const [openYears, setOpenYears] = useState({});
   useEffect(() => {
     fetch('/api/szo/archive', { cache: 'no-store' })
       .then(async (r) => {
@@ -54,45 +55,69 @@ export default function SzoArchive() {
   const monthName = (m) => new Date(Date.UTC(2026, Number(m) - 1, 15)).toLocaleDateString('hu-HU', { month: 'long' });
   const firstKey = groups[0] ? `${groups[0].y}-${groups[0].months[0].m}` : null;
   const isOpen = (k) => (openMonths[k] ?? k === firstKey);
+  // Ugyanaz a doboz-szerkezet, mint a korábbi titkosírásoknál: év doboz (lenyitható), benne hónap
+  // dobozok (a legutóbbi nyitva), bennük a napok kártyái.
+  const fullCount = (list) => list.filter((it) => it.total && it.count >= it.total).length;
   return (
     <div className="szo-archive">
-      {groups.map((g) => (
-        <section key={g.y} className="szo-arch-year">
-          <h2 className="szo-arch-y">{g.y}</h2>
-          {g.months.map((mo) => {
-            const k = `${g.y}-${mo.m}`;
-            return (
-              <div key={k} className="szo-arch-month">
-                <button type="button" className="archive-month-head" aria-expanded={isOpen(k)} onClick={() => setOpenMonths((o) => ({ ...o, [k]: !isOpen(k) }))}>
-                  <span>{monthName(mo.m)}</span>
-                  <span className="mini-muted">{mo.items.length} szókereső {isOpen(k) ? '▴' : '▾'}</span>
-                </button>
-                {isOpen(k) && (
-    <div className="mini-list">
-      {mo.items.map((it) => (
-        <div key={it.date} className={`card mini-list-item${open === it.date ? ' open' : ''}`}>
-          <button type="button" className="mini-list-head" aria-expanded={open === it.date} onClick={() => toggle(it.date)}>
-            <span className="szo-thumb" aria-hidden="true">
-              {it.grid.map((ch, i) => (
-                <span key={i}>{String(ch).toUpperCase()}</span>
-              ))}
-            </span>
-            <span className="mini-list-meta">
-              <b>{day(it.date)}</b>
-              <span>{it.count ? `${it.count} / ${it.total} szó · ${it.points} pont` : `${it.total} szó vár rád`}</span>
-            </span>
-            <span className="mini-list-chev" aria-hidden="true">{open === it.date ? '▴' : '▾'}</span>
-          </button>
-          {open === it.date && <div className="mini-list-body">{game?.grid ? <SzoGame key={it.date} data={game} compact /> : <p>Betöltés…</p>}</div>}
-        </div>
-      ))}
-    </div>
-                )}
+      {groups.map((g) => {
+        const yearOpen = openYears[g.y] ?? true;
+        const yearItems = g.months.flatMap((m) => m.items);
+        return (
+          <div className="puzzle-editor" key={g.y}>
+            <div className="szo-arch-yhead" role="button" tabIndex={0} aria-expanded={yearOpen} onClick={() => setOpenYears((o) => ({ ...o, [g.y]: !yearOpen }))} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenYears((o) => ({ ...o, [g.y]: !yearOpen }))}>
+              <b>
+                {yearOpen ? '▾' : '▸'} {g.y}
+              </b>
+              <span>
+                {fullCount(yearItems)}/{yearItems.length} teljesen megfejtve
+              </span>
+            </div>
+            {yearOpen && (
+              <div style={{ marginTop: 12 }}>
+                {g.months.map((mo) => {
+                  const k = `${g.y}-${mo.m}`;
+                  return (
+                    <div key={k} className="archive-month">
+                      <button type="button" className="archive-month-head" aria-expanded={isOpen(k)} onClick={() => setOpenMonths((o) => ({ ...o, [k]: !isOpen(k) }))}>
+                        <b>
+                          {isOpen(k) ? '▾' : '▸'} {monthName(mo.m)}
+                        </b>
+                        <span>
+                          {fullCount(mo.items)}/{mo.items.length} teljesen megfejtve
+                        </span>
+                      </button>
+                      {isOpen(k) && (
+                        <div className="archive-month-items mini-list">
+                          {mo.items.map((it) => (
+                            <div key={it.date} className={`card mini-list-item${open === it.date ? ' open' : ''}`}>
+                              <button type="button" className="mini-list-head" aria-expanded={open === it.date} onClick={() => toggle(it.date)}>
+                                <span className="szo-thumb" aria-hidden="true">
+                                  {it.grid.map((ch, i) => (
+                                    <span key={i}>{String(ch).toUpperCase()}</span>
+                                  ))}
+                                </span>
+                                <span className="mini-list-meta">
+                                  <b>{day(it.date)}</b>
+                                  <span>{it.count ? `${it.count} / ${it.total} szó · ${it.points} pont` : `${it.total} szó vár rád`}</span>
+                                </span>
+                                <span className="mini-list-chev" aria-hidden="true">
+                                  {open === it.date ? '▴' : '▾'}
+                                </span>
+                              </button>
+                              {open === it.date && <div className="mini-list-body">{game?.grid ? <SzoGame key={it.date} data={game} compact /> : <p>Betöltés…</p>}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </section>
-      ))}
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

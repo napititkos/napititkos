@@ -66,8 +66,22 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   const [found, setFound] = useState(() => (preview ? [] : [...new Set([...(saved.found || []), ...(data.mine?.found || [])])]));
   const [elapsed, setElapsed] = useState(saved.elapsed || data.mine?.elapsed || 0);
   const [stars, setStars] = useState(saved.stars || 0); // hány csillagot (segítséget) kapott már
-  const [abc, setAbc] = useState(!!saved.abc);
-  const [outer, setOuter] = useState(!!saved.outer);
+  // A két jelölőnégyzet beállítása megmarad a napok (játékok) között is.
+  const prefs = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('szo_prefs') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const [abc, setAbc] = useState(() => (typeof window === 'undefined' ? false : !!(prefs.abc ?? saved.abc)));
+  const [outer, setOuter] = useState(() => (typeof window === 'undefined' ? false : !!(prefs.outer ?? saved.outer)));
+  useEffect(() => {
+    if (preview) return;
+    try {
+      localStorage.setItem('szo_prefs', JSON.stringify({ abc, outer }));
+    } catch {}
+  }, [abc, outer, preview]);
   const [path, setPath] = useState([]);
   const [panel, setPanel] = useState(false);
   const [lastWord, setLastWord] = useState(null); // a legutóbb beküldött szó (a beírás felülírja)
@@ -454,11 +468,6 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
           </div>
         ))}
       </div>
-      {done && (
-        <div className="feedback good" role="status" style={{ marginLeft: 0 }}>
-          Megtaláltad az összes szót! Időd: {fmt(elapsed)} · A napi szó: <b>{data.word.toUpperCase()}</b>
-        </div>
-      )}
       {!preview && (foundReq.length > 0 || done) && (
         <div className="szo-share">
           <ShareButton text={shareText()} />
