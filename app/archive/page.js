@@ -127,7 +127,7 @@ export default function ArchivePage() {
       <div className="wrap">
         <h1 className="sr-only">Korábbi rejtvények</h1>
         <div className="kisokos-tabrow">
-          <BackButton className="kisokos-back" />
+          <BackButton pill className="kisokos-back" />
         </div>
         <div className="card">
           {/* Amíg a bejelentkezés állapota vagy a darabszám nem ismert, csak "Betöltés…" látszik,
@@ -167,7 +167,7 @@ export default function ArchivePage() {
       {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban. */}
       <div className="kisokos-tabrow">
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo />}
-        <BackButton className="kisokos-back" />
+        <BackButton pill className="kisokos-back" />
       </div>
       {!tabReady ? null : miniLive && kind === 'szo' ? (
         <SzoArchive />

@@ -57,7 +57,8 @@ function saveDay(date, st) {
 }
 
 // preview: admin kipróbálás – semmi nem mentődik (se az eszközön, se a szerveren, se a trófeákhoz).
-export default function SzoGame({ data, onComplete, preview = false, showReport = !preview, onPanel, closeKey, onStars }) {
+// compact: a korábbi szókeresőknél nincs sorszám, dátum és időzítő a rács fölött.
+export default function SzoGame({ data, onComplete, preview = false, showReport = !preview, onPanel, closeKey, onStars, compact = false }) {
   const { date, grid, required, bonus, paths } = data;
   const reqSet = useMemo(() => new Set(required), [required]);
   const bonusSet = useMemo(() => new Set(bonus), [bonus]);
@@ -312,6 +313,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   const pct = totalPts ? Math.round((szoPointsTotal(foundReq) / totalPts) * 100) : 0;
   return (
     <div className="szo-game">
+      {!compact && (
       <div className="szo-top">
         <span className="szo-date">
           {dayNo > 0 && <span className="szo-dayno">#{dayNo} </span>}
@@ -319,11 +321,16 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         </span>
         <span className="timer">{fmt(elapsed)}</span>
       </div>
+      )}
       <div className="szo-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`Haladás: ${foundReq.length} / ${total} szó, ${szoPointsTotal(foundReq)} pont`}>
         <div className="szo-bar">
           <span style={{ width: `${pct}%` }} />
           <i className={`szo-star${stars >= 1 ? ' got' : ''}`} style={{ left: '33.3%' }} aria-hidden="true">★</i>
           <i className={`szo-star${stars >= 2 ? ' got' : ''}`} style={{ left: '66.6%' }} aria-hidden="true">★</i>
+          {/* A végén a kupa: az összes szó (a teljes pontszám) elérésekor színes. */}
+          <span className={`szo-cup${done ? ' got' : ''}`} aria-hidden="true">
+            🏆
+          </span>
         </div>
       </div>
       {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}

@@ -1730,8 +1730,6 @@ a.card.game-tile.game-tile-big{ min-height: 118px; }
 /* Kisokos: a játékválasztó és a vissza gomb egy sorban; a vissza gomb jobbra, más színnel. */
 .kisokos-tabrow{ display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; }
 .kisokos-tabrow .rejtveny-tabs{ margin: 0; }
-a.back-home-btn.kisokos-back{ margin-left: auto; padding: 6px 12px; font-size: 13px; background: var(--accent2-soft); border-color: var(--accent2); color: var(--accent2-text); }
-@media (prefers-color-scheme: dark){ a.back-home-btn.kisokos-back{ color: var(--ink); } }
 /* A csempe logója fix méretű négyzet, alul-felül kis margóval kitöltve a csempét. */
 .game-tile .game-tile-icon{ width: 72px; height: 72px; align-self: center; }
 .game-tile.game-tile-big .game-tile-icon{ width: 94px; height: 94px; }
@@ -1762,13 +1760,8 @@ a.card.game-tile{ min-height: 0; }
 .szo-board .szo-hit{ font-weight: 600; font-size: clamp(34px, 12.5vw, 54px); }
 
 /* Korábbi rejtvények fejléce: hosszú változat, ha elfér; különben KORÁBBIAK. */
-.brand-korabbi .kor-short{ display: none; }
-.topnav-c .brand-link.brand-link-flow:has(.brand-korabbi){ font-size: min(calc((100vw - 110px) / 11.6), 46px); }
-@media (max-width: 560px){
-  .brand-korabbi .kor-long{ display: none; }
-  .brand-korabbi .kor-short{ display: inline; }
-  .topnav-c .brand-link.brand-link-flow:has(.brand-korabbi){ font-size: min(calc((100vw - 110px) / 6.6), 50px); }
-}
+.brand-korabbi .kor-long{ display: none; }
+.topnav-c .brand-link.brand-link-flow:has(.brand-korabbi){ font-size: min(calc((100vw - 110px) / 6.6), 50px); }
 /* Értesítések: legfeljebb kb. 20 sor magas, görgethető. */
 .notif-pop .notif-scroll{ max-height: min(27em, 60vh) !important; overflow-y: auto; overscroll-behavior: contain; }
 
@@ -1779,10 +1772,11 @@ a.card.game-tile{ min-height: 0; }
    sarokban (lila) hány szó kezdődik a betűvel, jobb felső sarokban (zöld) hány szó tartalmazza. */
 .szo-cell.faded .szo-hit{ opacity: 0.32; filter: saturate(0.4); }
 .szo-hit{ position: relative; }
-.szo-n{ position: absolute; top: 6%; min-width: 1.35em; height: 1.35em; padding: 0 0.2em; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: clamp(11px, 3.4vw, 14px); font-weight: 800; line-height: 1; font-family: var(--font-nunito), Nunito, sans-serif; color: #fff; }
-.szo-n-start{ left: 7%; background: var(--btn-primary); }
-.szo-n-has{ right: 7%; background: #2e8b57; }
-@media (prefers-color-scheme: dark){ .szo-n-has{ background: #3aa56c; } }
+.szo-n{ position: absolute; top: 7%; font-size: clamp(13px, 4vw, 17px); font-weight: 800; line-height: 1; font-family: var(--font-baloo), 'Baloo 2', sans-serif; }
+/* Bal felső: a paletta szilvalila színe; jobb felső: a paletta kékes-lila színe (mindkettő jól olvasható). */
+.szo-n-start{ left: 9%; color: #8E3E78; }
+.szo-n-has{ right: 9%; color: #4A4FB0; }
+@media (prefers-color-scheme: dark){ .szo-n-start{ color: #E9A9D6; } .szo-n-has{ color: #B3B6FF; } }
 /* Heti Mini: megfejtés után is látszik, hol áll a kijelölés. */
 .mini-sq.solved.word{ background: var(--mini-word); }
 .mini-sq.solved.active{ background: var(--mini-active); }
@@ -1794,10 +1788,41 @@ a.card.game-tile{ min-height: 0; }
 
 /* Főoldal: teljesítve pipa a csempe jobb szélén; a „Hamarosan…” csempe halvány kérdőjellel. */
 .game-tile-done{ position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: flex; }
-.game-tile.game-tile-big:has(.game-tile-done) .game-tile-text{ padding-right: 30px; }
+.game-tile.game-tile-big:has(.game-tile-done) .game-tile-text{ padding-right: 40px; }
 .card.game-tile.game-tile-soon{ position: relative; display: flex; align-items: center; justify-content: center; min-height: 120px; box-sizing: border-box; margin: 0; overflow: hidden; border-style: dashed; }
 .soon-mark{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-fredoka), Fredoka, sans-serif; font-weight: 700; font-size: 110px; line-height: 1; color: var(--accent2); opacity: 0.18; }
 .soon-text{ position: relative; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: 0.04em; color: var(--accent-text); }
 .admin-szo-add{ display: flex; gap: 8px; margin: 10px 0 0; }
 .admin-szo-add input{ flex: 1; text-transform: none; }
 .admin-szo-up-words{ flex-basis: 100%; }
+
+.stat-game{ margin: 10px 0 0; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 15px; color: var(--accent-text); }
+/* Az Ő ékezetei: a kivágó doboz (ami maga is span) se kapja meg a felirat általános színét. */
+.brand .acc-letter .acc-clip{ color: inherit; }
+
+/* A haladásjelző végén a kupa: eléréskor színes. */
+.szo-cup{ position: absolute; right: -4px; top: 50%; transform: translate(50%, -50%); font-size: 22px; line-height: 1; display: flex; filter: grayscale(1); opacity: 0.45; transition: filter 0.3s ease, opacity 0.3s ease; }
+.szo-cup.got{ filter: none; opacity: 1; }
+.szo-bar{ margin-right: 12px; }
+
+/* Korábbi szókeresők: év és hónap szerinti bontás. */
+.szo-arch-y{ font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 20px; color: var(--accent-text); margin: 4px 0 8px; }
+.szo-arch-month{ margin-bottom: 10px; }
+.szo-arch-month > .archive-month-head{ display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px; }
+
+/* A vissza (Játék) / Főoldal gomb az aloldalak sorában: ugyanolyan, mint a játékok gombsorának
+   gombjai, a sor jobb szélén. */
+.kisokos-tabrow .back-pill{ margin-left: auto; flex-shrink: 0; }
+/* A profil gomb minden oldalon ugyanott áll (nem igazodik a felirat magasságához). */
+.topnav-c .topnav-account{ align-self: start; margin-top: 6px; }
+@media (min-width: 640px){ .topnav-c .topnav-account{ margin-top: 12px; } }
+
+/* Heti Mini fejléc: a kos keret nélkül (a gyűrű helye ugyanakkora marad). */
+.brand-c .brand-o.brand-o-bare{ border-color: transparent; }
+/* KÖZÖSSÉGI: az Ö két pontja a kos gyűrűje fölött. */
+.brand-o .acc-clip > span{ color: var(--ink); }
+/* A gombsor gombjai mindig egyforma magasak (csak ikon vagy ikon + felirat). */
+@media (max-width: 420px){ .quick-pill{ min-height: 29px; box-sizing: border-box; } }
+/* Nagyon keskeny kijelzőn, három választó mellett a Játék gombon csak a nyíl marad, hogy kiférjen. */
+@media (max-width: 380px){ .kisokos-tabrow:has(.rejtveny-tabs > :nth-child(3)) .back-pill .bp-label{ display: none; } }
+.kisokos-tabrow{ flex-wrap: nowrap; }

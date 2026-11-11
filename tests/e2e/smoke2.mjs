@@ -938,7 +938,7 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   const media2 = posts().slice(before3).find((g) => g.path === '/178/media');
   check('módosítás után: a szövegben az új rejtvény és a beküldő', r.status === 200 && photo2?.body.caption.includes('„Javított szöveg posztolás előtt.”') && /\nBeküldte: Beküldő Béla\n/.test(photo2.body.caption) && /Beküldte: Beküldő Béla/.test(media2?.body.caption || ''), photo2?.body.caption);
   check('módosítás után: új képcím (más lenyomat)', photo2 && photo2.body.url !== oldUrl);
-  check('a poszt "Mai rejtvényünk" sorral, dátummal kezdődik, és benne a nehézség', /^🔐 Mai rejtvényünk – \d{4}\. [a-zé]+ \d{1,2}\.\n/.test(photo2?.body.caption || '') && /\nNehézség: 4\/5\n/.test(photo2.body.caption) && /\nNehézség: 4\/5\n/.test(media2?.body.caption || ''), photo2?.body.caption);
+  check('a poszt "Mai rejtvényünk" sorral, dátummal kezdődik, és benne a nehézség', /^Mai rejtvényünk – \d{4}\. [a-zé]+ \d{1,2}\.\n/.test(photo2?.body.caption || '') && /\nNehézség: 4\/5\n/.test(photo2.body.caption) && /\nNehézség: 4\/5\n/.test(media2?.body.caption || ''), photo2?.body.caption);
   const live = await getPuzzle();
   check('a napi rejtvény API-ja a nehézséget is adja', live.puzzle.difficulty === 4, String(live.puzzle.difficulty));
   const newPng = Buffer.from(await (await fetch(photo2.body.url)).arrayBuffer());

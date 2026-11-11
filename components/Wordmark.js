@@ -4,17 +4,18 @@ import Logo from './Logo';
 // szó között (kisebb kerettel, hogy ne lehessen O-nak olvasni). A Fredoka betűtípusból hiányzik az
 // Ő, ezért az ékezeteket magából a betűtípus Ó betűjéből vágjuk ki (csak az ékezet látszik belőle),
 // így pontosan olyanok, mint a TITKOSÍRÁS Í és Á ékezetei.
-const Ring = ({ acute = false, small = false }) => (
-  <span className={`brand-o${small ? ' brand-o-small' : ''}`}>
+const Ring = ({ acute = false, umlaut = false, small = false, bare = false }) => (
+  <span className={`brand-o${small ? ' brand-o-small' : ''}${bare ? ' brand-o-bare' : ''}`}>
     <Logo size={null} className="brand-o-logo" />
     {acute && <Accent />}
+    {umlaut && <Accent ch="Ö" />}
   </span>
 );
 
 // A betűtípus Ó ékezete (a betű alsó része levágva).
-const Accent = ({ cls = '' }) => (
+const Accent = ({ cls = '', ch = 'Ó' }) => (
   <span className={`acc-clip ${cls}`} aria-hidden="true">
-    <span>Ó</span>
+    <span>{ch}</span>
   </span>
 );
 
@@ -66,11 +67,22 @@ export function SzoWordmark({ ring = true }) {
 }
 
 export function MiniWordmark({ ring = true }) {
+  if (!ring)
+    return (
+      <div className="brand brand-flow brand-heti brand-plain" aria-hidden="true">
+        <span className="bf-ink">HETI</span>
+        <span className="bf-accent">MINI</span>
+      </div>
+    );
+  // A fejlécben: a kos középen, ugyanott és ugyanakkora, mint a TITKOSÍRÁS-ban, csak keret nélkül
+  // (nem O betű), a két szó mellette, ugyanakkora betűkkel.
   return (
-    <div className={`brand brand-flow brand-heti${ring ? ' brand-c' : ' brand-plain'}`} aria-hidden="true">
-      <span className="bf-ink">HETI</span>
-      {ring && <Ring small />}
-      <span className="bf-accent">MINI</span>
+    <div className="brand brand-mid brand-c" aria-hidden="true">
+      <span className="bm-left">HETI</span>
+      <Ring bare />
+      <span className="bm-right">
+        <span>MINI</span>
+      </span>
     </div>
   );
 }
@@ -110,6 +122,33 @@ export function KorabbiWordmark() {
       <span className="bf-ink">RÁBBI</span>
       <span className="bf-accent kor-long">&nbsp;REJTVÉNYEK</span>
       <span className="bf-accent kor-short">AK</span>
+    </div>
+  );
+}
+
+// PROFIL: a TITKOSÍRÁS és a KISOKOS méretében, a kos az O helyén.
+export function ProfilWordmark() {
+  return (
+    <div className="brand brand-mid brand-c" aria-hidden="true">
+      <span className="bm-left">PR</span>
+      <Ring />
+      <span className="bm-right">
+        <span>FIL</span>
+      </span>
+    </div>
+  );
+}
+
+// KÖZÖSSÉGI: a második Ö a kos (a gyűrű fölött a betűtípus Ö-jének két pontja), a TITKOSÍRÁS
+// méretében és elrendezésében.
+export function KozossegiWordmark() {
+  return (
+    <div className="brand brand-mid brand-c" aria-hidden="true">
+      <span className="bm-left">KÖZ</span>
+      <Ring umlaut />
+      <span className="bm-right">
+        <span>SSÉGI</span>
+      </span>
     </div>
   );
 }
