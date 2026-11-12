@@ -40,7 +40,7 @@ export default function AchievementsModal() {
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card has-close-tl" onClick={(e) => e.stopPropagation()}>
-        {/* Bal felső sarokban bezárás (mobilon és asztali gépen is); a többi bezárási mód is megmarad. */}
+        {/* Jobb felső sarokban bezárás, egy sorban a címmel (mobilon és asztali gépen is). */}
         <button type="button" className="modal-close-tl" aria-label="Bezárás" onClick={() => setOpen(false)}>
           ×
         </button>

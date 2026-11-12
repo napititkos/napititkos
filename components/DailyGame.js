@@ -23,6 +23,7 @@ import { HINT_HELP } from '../lib/puzzleLogic';
 import FieldHelp from './FieldHelp';
 import GameBar from './GameBar';
 import { useFirstVisit } from '../lib/firstVisit';
+import { useWinWave } from '../lib/winWave';
 import GameFooter from './GameFooter';
 
 const HINT_LABELS = {
@@ -109,6 +110,7 @@ export default function DailyGame() {
   const [avgHints, setAvgHints] = useState(null);
   const [solverCount, setSolverCount] = useState(null);
   const [toast, setToast] = useState('');
+  const [wave, playWave] = useWinWave();
   const [showIntro, setShowIntro] = useState(false);
   const [showHintModal, setShowHintModal] = useState(false);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
@@ -490,6 +492,7 @@ export default function DailyGame() {
     clearActiveTimer();
     clearInProgress();
     fireConfetti();
+    playWave(String(puzzle?.answer || '').length || 8);
 
     const totalHints = revealed.filter((t) => t !== 'betu').length + betuCount + (didGiveUp ? 1 : 0);
 
@@ -891,7 +894,7 @@ export default function DailyGame() {
           )}
 
           {answered && (
-            <div className="answer-row">
+            <div className={`answer-row${wave ? ' win-wave' : ''}`}>
               <LetterBoxes
                 answer={puzzle.answer}
                 value={guess}

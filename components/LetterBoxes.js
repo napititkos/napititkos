@@ -228,6 +228,7 @@ export default function LetterBoxes({ answer, value, locked, onChange, disabled,
       autoCapitalize="characters"
       spellCheck={false}
       className={`letter-box${locked[idx] ? ' locked' : ''}`}
+      style={{ '--d': idx }}
       disabled={disabled || locked[idx]}
       value={value[idx] || ''}
       // Kijelölés helyett a kurzor a betű mögé kerül: így mobilon nem jelenik meg a

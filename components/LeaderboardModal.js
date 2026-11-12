@@ -62,7 +62,7 @@ export default function LeaderboardModal() {
   return (
     <div className="modal-overlay lb-overlay" onClick={() => setOpen(false)}>
       <div className="modal-card has-close-tl" ref={cardRef} style={holdH ? { minHeight: holdH, boxSizing: 'border-box' } : undefined} onClick={(e) => e.stopPropagation()}>
-        {/* Bal felső sarokban bezárás (mobilon és asztali gépen is); a többi bezárási mód is megmarad. */}
+        {/* Jobb felső sarokban bezárás, egy sorban a címmel (mobilon és asztali gépen is). */}
         <button type="button" className="modal-close-tl" aria-label="Bezárás" onClick={() => setOpen(false)}>
           ×
         </button>

@@ -5,6 +5,7 @@ import { deviceId } from '../lib/device';
 import { fireConfetti } from './Confetti';
 import CopyResultButton from './CopyResultButton';
 import GameHead from './GameHead';
+import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { getIdentity } from '../lib/identity';
 
 // Napi mini sudoku (6x6). Saját számbillentyűzettel (1–6, Törlés, Vissza, Jegyzet), hogy mobilon ne
@@ -57,6 +58,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   const [history, setHistory] = useState([]);
   const [solved, setSolved] = useState(alreadySolved);
   const [msg, setMsg] = useState(null);
+  const [wave, playWave] = useWinWave();
   const [completedAt, setCompletedAt] = useState(saved.completedAt || null);
   const start = useRef(Date.now() - (solvedTime ?? saved.elapsed ?? 0));
   const [elapsed, setElapsed] = useState(solvedTime ?? saved.elapsed ?? 0);
@@ -85,6 +87,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     setSolved(true);
     setCompletedAt(Date.now());
     setSel(-1);
+    playWave(10);
     setElapsed(el);
     fireConfetti();
     if (preview) return;
@@ -180,7 +183,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
       {!compact && (
         <GameHead title="Napi Sudoku" number={number} level={level} dateLabel={dayLabel} time={fmt(elapsed)} />
       )}
-      <div className="sudoku-board" role="grid" aria-label="Sudoku rács">
+      <div className={`sudoku-board${wave ? ' win-wave' : ''}`} role="grid" aria-label="Sudoku rács">
         {[0, 1, 2, 3, 4, 5].map((r) => (
           <div key={r} role="row" className="sudoku-row">
             {grid.slice(r * 6, r * 6 + 6).map((v, k) => {
@@ -207,6 +210,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
                   aria-label={`${rowOf(i) + 1}. sor, ${colOf(i) + 1}. oszlop: ${v || 'üres'}${givens[i] ? ' (megadott)' : ''}${bad.has(i) ? ', ütközik' : ''}`}
                   aria-selected={isSel}
                   className={cls}
+                  style={{ '--d': diagFromBottomLeft(rowOf(i), colOf(i), 6) }}
                   onPointerDown={() => !solved && setSel(i)}
                   onPointerEnter={(e) => e.pointerType === 'mouse' && !solved && setSel(i)}
                 >

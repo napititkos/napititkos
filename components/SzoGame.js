@@ -6,6 +6,7 @@ import { fireConfetti } from './Confetti';
 import { recordSzoFull, recordSzoWord } from '../lib/gameProgress';
 import CopyResultButton from './CopyResultButton';
 import GameHead from './GameHead';
+import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { dayLevel } from '../lib/dayLevel';
 import { szoPointsOf, szoPointsTotal } from '../lib/szoPoints';
 
@@ -120,6 +121,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     ].join('\n');
   };
   const [msg, setMsg] = useState(null);
+  const [wave, playWave] = useWinWave();
   const [completedAt, setCompletedAt] = useState(saved.completedAt || null);
   const dragging = useRef(false);
   const moved = useRef(false);
@@ -255,6 +257,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         fireConfetti();
         if (!preview) recordSzoFull(date);
         setCompletedAt(Date.now());
+        playWave(5);
         if (!preview && onComplete) onComplete(el);
       }
     }
@@ -461,7 +464,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       </div>
       <div
         ref={boardRef}
-        className={`szo-board${done ? ' done' : ''}`}
+        className={`szo-board${done ? ' done' : ''}${wave ? ' win-wave' : ''}`}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={() => {
@@ -481,7 +484,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
               const faded = !done && !live.cells.has(i);
               return (
                 <span key={i} role="gridcell" className={`szo-cell${path.includes(i) ? ' on' : ''}${faded ? ' faded' : ''}`} aria-label={`${grid[i].toUpperCase()}${faded ? ' (már nincs hozzá szó)' : ''}`}>
-                  <span className="szo-hit" data-szo-cell={i} onPointerDown={(e) => onDown(e, i)}>
+                  <span className="szo-hit" data-szo-cell={i} style={{ '--d': diagFromBottomLeft(Math.floor(i / 3), i % 3, 3) }} onPointerDown={(e) => onDown(e, i)}>
                     {grid[i].toUpperCase()}
                     {stars >= 1 && !done && (
                       <span className="szo-n szo-n-start" title="Ennyi még meg nem talált szó kezdődik ezzel a betűvel">

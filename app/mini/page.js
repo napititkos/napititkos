@@ -91,7 +91,7 @@ export default function MiniPage() {
       <GameBar game="mini" />
       <h1 className="sr-only">Heti Mini</h1>
       <div className="card">
-        <MiniPlayer key={data.puzzle.id + (done ? '-kesz' : '')} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} solvedMsg={false} headTitle="Heti Mini" headNumber={Math.round((Date.parse(`${data.week}T12:00:00Z`) - Date.parse('2026-11-09T12:00:00Z')) / (7 * 86400000)) + 1} />
+        <MiniPlayer key={data.puzzle.id} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} solvedMsg={false} headTitle="Heti Mini" headNumber={Math.round((Date.parse(`${data.week}T12:00:00Z`) - Date.parse('2026-11-09T12:00:00Z')) / (7 * 86400000)) + 1} />
         {data.puzzle.author && <div className="mini-author">Készítette: {data.puzzle.author}</div>}
         {done && (
           <>
