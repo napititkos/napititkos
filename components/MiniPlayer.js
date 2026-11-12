@@ -1,5 +1,6 @@
 'use client';
 import GameHead from './GameHead';
+import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { afterType, arrowStep, backspaceStep, clickCell, firstEmpty, jumpWord, navModel, wordOf } from '../lib/miniNav';
 
@@ -48,6 +49,7 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
   const [solved, setSolved] = useState(already);
   const [start] = useState(() => Date.now() - (already ? solvedTime : 0));
   const [now, setNow] = useState(Date.now());
+  const [wave, playWave] = useWinWave();
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -57,7 +59,8 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
   }, [solved]);
 
   const curWord = wordOf(m, cur) || first;
-  const focusInput = () => inputRef.current?.focus({ preventScroll: true });
+  // Megfejtett rejtvénynél nem kérünk billentyűzetet (mobilon nem ugrik fel).
+  const focusInput = () => !solved && inputRef.current?.focus({ preventScroll: true });
   const isFull = (f) => f.every((row, r) => row.every((v, c) => isBlack(r, c) || v));
   const isCorrect = (f) => f.every((row, r) => row.every((v, c) => isBlack(r, c) || v === solution[r][c]));
 
@@ -77,6 +80,8 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
       setSolved(true);
       setNow(Date.now());
       setMarks({});
+      inputRef.current?.blur(); // megfejtve: mobilon ne maradjon nyitva a billentyűzet
+      playWave(rows.length + (rows[0]?.length || 5));
       setMsg(solvedMsg ? { ok: true, text: `Megfejtetted! Időd: ${fmt(t)}` } : null);
       onSolved && onSolved(t);
     } else {
@@ -201,7 +206,7 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
         </button>
       </div>
       <div className="mini-board-wrap">
-        <div className="mini-board" role="grid" aria-label="Mini keresztrejtvény" onClick={focusInput}>
+        <div className={`mini-board${wave ? ' win-wave' : ''}`} role="grid" aria-label="Mini keresztrejtvény" onClick={focusInput}>
           {rows.map((row, r) => (
             <div key={r} role="row" className="mini-board-row">
               {row.map((_, c) =>
@@ -213,6 +218,7 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
                     role="gridcell"
                     aria-selected={r === cur.r && c === cur.c}
                     aria-label={`${nums[`${r},${c}`] ? nums[`${r},${c}`] + '. ' : ''}${fill[r][c] || 'üres'}${marks[`${r},${c}`] === 'bad' ? ', hibás' : marks[`${r},${c}`] === 'ok' ? ', jó' : ''}`}
+                    style={{ '--d': diagFromBottomLeft(r, c, rows.length) }}
                     className={`mini-sq${inWord(r, c) ? ' word' : ''}${r === cur.r && c === cur.c ? ' active' : ''}${marks[`${r},${c}`] ? ` ${marks[`${r},${c}`]}` : ''}${solved ? ' solved' : ''}`}
                     onPointerDown={(e) => {
                       e.preventDefault();
@@ -231,7 +237,9 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
           ref={inputRef}
           className="mini-hidden-input"
           aria-label="Betű beírása"
-          inputMode="text"
+          inputMode={solved ? 'none' : 'text'}
+          readOnly={solved}
+          tabIndex={solved ? -1 : 0}
           enterKeyHint="done"
           autoComplete="off"
           autoCorrect="off"
