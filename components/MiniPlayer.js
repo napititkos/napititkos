@@ -1,4 +1,5 @@
 'use client';
+import GameHead from './GameHead';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { afterType, arrowStep, backspaceStep, clickCell, firstEmpty, jumpWord, navModel, wordOf } from '../lib/miniNav';
 
@@ -26,7 +27,8 @@ function fmt(ms) {
 // solvedTime: ha már megfejtette (pl. korábban ezen a héten), a kitöltött rács és az ideje látszik.
 // solvedMsg: false esetén megfejtéskor nincs zöld „Megfejtetted!” üzenet (a heti mini oldalán a
 // statisztika mutatja az időt).
-export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null, dateLabel = '', solvedMsg = true }) {
+// headTitle/headNumber: a heti mini oldalán a többi játékkal egyező fejléc („Heti Mini #N”).
+export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null, dateLabel = '', solvedMsg = true, headTitle = '', headNumber = 0 }) {
   const m = useMemo(() => navModel(rows), [rows]);
   const { nums, words, order } = m;
   const isBlack = m.black;
@@ -175,10 +177,14 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
   return (
     <div className="mini-player">
       {/* Felül balra a hét hétfője, jobbra az időzítő; az Ellenőrzés gomb a rejtvény alatt középen. */}
-      <div className="mini-player-top">
-        <span className="mini-date">{dateLabel}</span>
-        <span className="timer">{fmt(now - start)}</span>
-      </div>
+      {headTitle ? (
+        <GameHead title={headTitle} number={headNumber} dateLabel={dateLabel} time={fmt(now - start)} />
+      ) : (
+        <div className="mini-player-top">
+          <span className="mini-date">{dateLabel}</span>
+          <span className="timer">{fmt(now - start)}</span>
+        </div>
+      )}
       <div className="mini-cluebar">
         <button type="button" className="mini-cluebar-nav" aria-label="Előző szó" onClick={() => jump(-1)}>
           ‹

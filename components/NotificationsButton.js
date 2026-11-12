@@ -48,10 +48,16 @@ export default function NotificationsButton() {
     // kijelzőn, tördelt gombsornál), annyival balra tolódik, hogy beférjen.
     const popWidth = popRef.current.offsetWidth;
     const wrapLeft = wrapRef.current ? wrapRef.current.getBoundingClientRect().left : 0;
-    const shift = Math.max(0, Math.round(wrapLeft + popWidth - (window.innerWidth - 8)));
-    setPopShift(Math.min(shift, Math.max(0, Math.round(wrapLeft - 8))));
+    // A doboz bal széle az alatta lévő tartalom (kártya) bal széléhez igazodik; ha így kilógna a
+    // képernyőről, annyival balrább kerül, hogy beférjen.
+    const card = document.querySelector('.wrap .card');
+    const target = card ? card.getBoundingClientRect().left : 8;
+    let shift = Math.max(0, Math.round(wrapLeft - target));
+    shift = Math.max(shift, Math.round(wrapLeft + popWidth - (window.innerWidth - 8)));
+    shift = Math.min(shift, Math.max(0, Math.round(wrapLeft - 8)));
+    setPopShift(shift);
     const btnCenter = btnRef.current.offsetLeft + btnRef.current.offsetWidth / 2;
-    setArrowRight(Math.round(popWidth - 2 - (btnCenter + Math.min(shift, Math.max(0, Math.round(wrapLeft - 8)))) - 12));
+    setArrowRight(Math.round(popWidth - 2 - (btnCenter + shift) - 12));
     // Legfeljebb 10 értesítés látszik egyszerre, a többihez görgetni kell.
     const sc = popRef.current.querySelector('.notif-scroll');
     const items = sc ? [...sc.querySelectorAll('.notif-item')] : [];

@@ -61,7 +61,11 @@ export default function LeaderboardModal() {
 
   return (
     <div className="modal-overlay lb-overlay" onClick={() => setOpen(false)}>
-      <div className="modal-card" ref={cardRef} style={holdH ? { minHeight: holdH, boxSizing: 'border-box' } : undefined} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card has-close-tl" ref={cardRef} style={holdH ? { minHeight: holdH, boxSizing: 'border-box' } : undefined} onClick={(e) => e.stopPropagation()}>
+        {/* Bal felső sarokban bezárás (mobilon és asztali gépen is); a többi bezárási mód is megmarad. */}
+        <button type="button" className="modal-close-tl" aria-label="Bezárás" onClick={() => setOpen(false)}>
+          ×
+        </button>
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
           <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
         </h2>
