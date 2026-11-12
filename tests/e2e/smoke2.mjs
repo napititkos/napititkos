@@ -1697,6 +1697,32 @@ section('Napi sudoku');
   r = await post('/api/admin/sudoku', { action: 'regenerate', date: fut.date }); check('admin: jogosultság nélkül 401', r.status === 401);
 }
 
+section('Javítások: bejelentkezés utáni haladás, vendégnév, megoldott sudoku');
+{
+  // szókereső: vendégként talált szavak bejelentkezés után is megvannak (ugyanazon az eszközön)
+  const sz = await (await fetch(BASE + '/api/szo')).json();
+  const dev = 'f'.repeat(32);
+  await post('/api/szo/progress', { date: sz.date, words: sz.required.slice(0, 2), elapsed: 9000, device: dev, name: 'Vendég Vera' });
+  j = await (await fetch(BASE + `/api/szo?device=${dev}`, { headers: { cookie: cA.header() } })).json();
+  check('szókereső: bejelentkezés után a vendégként talált szavak is az övéi', sz.required.slice(0, 2).every((w) => j.mine.found.includes(w)), JSON.stringify(j.mine));
+  // vendég neve a szókereső ranglistáján
+  j = await (await fetch(BASE + '/api/szo/leaderboard')).json();
+  check('szókereső ranglista: a vendég a vendégnevével szerepel', j.entries.some((e) => e.name === 'Vendég Vera'), JSON.stringify(j.entries.map((e) => e.name)));
+  // sudoku: vendégnév a ranglistán; a megoldott nap megoldása visszajön
+  const su = await (await fetch(BASE + '/api/sudoku')).json();
+  const st = JSON.parse(await redis.get('sudoku:puzzle:' + su.date));
+  const dev2 = '9'.repeat(32);
+  await post('/api/sudoku/solve', { date: su.date, grid: st.solution, elapsed: 77000, device: dev2, name: 'Vendég Viktor' });
+  j = await (await fetch(BASE + '/api/sudoku/leaderboard')).json();
+  check('sudoku ranglista: a vendég a vendégnevével szerepel', j.entries.some((e) => e.name === 'Vendég Viktor'), JSON.stringify(j.entries.map((e) => e.name)));
+  j = await (await fetch(BASE + `/api/sudoku?device=${dev2}`)).json();
+  check('sudoku: a megoldónak a megoldás is visszajön (más eszközön is kitöltve látja)', j.mine === 77000 && j.solution?.join() === st.solution.join());
+  j = await (await fetch(BASE + `/api/sudoku?device=${'8'.repeat(32)}`)).json();
+  check('sudoku: aki még nem oldotta meg, nem kapja meg a megoldást', !j.mine && !('solution' in j));
+  j = await (await fetch(BASE + `/api/sudoku?device=${dev2}`, { headers: { cookie: cA.header() } })).json();
+  check('sudoku: bejelentkezve az eszközön vendégként beküldött megoldás is az övé', j.mine === 77000 && j.solution?.length === 36);
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

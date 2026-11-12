@@ -1594,7 +1594,6 @@ a.card.game-tile:hover{ transform: translateY(-2px); }
 /* Főoldal: nagyobb, egyforma csempék; a titkosírás kosa befelé néz. */
 a.card.game-tile.game-tile-big{ min-height: 118px; padding: 12px 16px 12px 12px; }
 .game-tile-big .game-tile-word{ font-size: min(calc((100vw - 200px) / 6.4), 34px); }
-.game-tile-big .game-tile-icon .game-tile-logo img{ transform: scaleX(-1); }
 @media (prefers-color-scheme: light){ .game-tile-word .bf-accent{ color: var(--accent2-text); } }
 .game-footer{ margin-top: 6px; }
 .game-page-title{ display: block; text-align: center; margin: 4px auto 12px; }
@@ -1800,7 +1799,7 @@ a.card.game-tile{ min-height: 0; }
 .brand .acc-letter .acc-clip{ color: inherit; }
 
 /* A haladásjelző végén a kupa: eléréskor színes. */
-.szo-cup{ position: absolute; right: -4px; top: 50%; transform: translate(50%, -50%); font-size: 22px; line-height: 1; display: flex; filter: grayscale(1); opacity: 0.45; transition: filter 0.3s ease, opacity 0.3s ease; }
+.szo-cup{ position: absolute; right: -4px; top: 50%; transform: translate(50%, -50%); width: 24px; height: 24px; line-height: 0; display: block; filter: grayscale(1); opacity: 0.45; transition: filter 0.3s ease, opacity 0.3s ease; }
 .szo-cup.got{ filter: none; opacity: 1; }
 .szo-bar{ margin-right: 12px; }
 
@@ -1890,4 +1889,28 @@ button.sudoku-key:disabled{ opacity: 0.5; }
   .kisokos-tabrow:has(.rejtveny-tabs > :nth-child(4)) .rejtveny-tabs{ gap: 3px; }
   .kisokos-tabrow:has(.rejtveny-tabs > :nth-child(4)) .rejtveny-tabs button{ padding-left: 5px; padding-right: 5px; font-size: 11.5px; }
   .kisokos-tabrow:has(.rejtveny-tabs > :nth-child(4)) .back-pill{ padding-left: 7px; padding-right: 7px; }
+}
+
+/* Főoldal: a teljesítés jelzője – lekerekített fekete négyzet, benne szorosan a lila pipa. */
+.game-tile-check{ position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 9px; background: #1F1A2B; color: #C9A6DC; display: flex; align-items: center; justify-content: center; }
+.game-tile-check svg{ width: 100%; height: 100%; }
+@media (max-width: 560px){ .game-tile-check{ width: 26px; height: 26px; border-radius: 7px; right: 10px; } }
+@media (prefers-color-scheme: dark){ .game-tile-check{ background: #0E0B14; box-shadow: inset 0 0 0 1px var(--line); } }
+.game-tile.game-tile-big .game-tile-text{ margin-right: calc(94px + 12px); }
+@media (max-width: 560px){ .game-tile.game-tile-big .game-tile-text{ margin-right: 36px; } }
+.ach-filter{ display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-weight: 700; color: var(--ink-soft); }
+.ach-filter select{ flex: 1; max-width: 240px; }
+.szo-cup svg{ display: block; width: 24px; height: 24px; }
+/* A kupa nem a kitöltő sáv része: a sáv gyerek-span szabálya (100% magasság, háttér) ne vonatkozzon rá. */
+.szo-bar > .szo-cup{ height: 24px; width: 24px; background: none; border-radius: 0; }
+/* Mobilon a főoldali csempe logója és alcíme kicsit kisebb, hogy a jelölődoboz mellett se törjön az alcím. */
+@media (max-width: 420px){
+  .game-tile.game-tile-big .game-tile-icon{ width: 80px; height: 80px; }
+  .game-tile.game-tile-big .game-tile-sub{ font-size: 12.5px; }
+  .game-tile.game-tile-big .game-tile-text{ margin-right: 30px; }
+}
+@media (max-width: 370px){
+  .game-tile.game-tile-big .game-tile-icon{ width: 70px; height: 70px; }
+  .game-tile.game-tile-big .game-tile-sub{ font-size: 12px; }
+  a.card.game-tile.game-tile-big{ gap: 10px; padding-left: 10px; }
 }

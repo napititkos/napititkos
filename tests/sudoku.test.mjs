@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateSudoku, countSolutions, conflicts, solvableWith, sudokuLevel, PEERS } from '../lib/sudokuGen.js';
+import { generateSudoku, countSolutions, conflicts, solvableWith, solvableAdvanced, sudokuLevel, PEERS } from '../lib/sudokuGen.js';
 
 const week = ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22'];
 
@@ -19,13 +19,15 @@ test('sudoku: minden nap egyedi megoldású, szabályos rejtvény, ugyanarra a n
   }
 });
 
-test('sudoku: a nehezebb napokon kevesebb a megadott szám, és csak rejtett egyesekkel oldható', () => {
+test('sudoku: meredek nehézség – kevesebb szám és nehezebb lépések a hét vége felé', () => {
   const ps = week.map((d) => generateSudoku(d));
   const clues = ps.map((p) => p.clues);
   for (let i = 1; i < 7; i++) assert.ok(clues[i] <= clues[i - 1], JSON.stringify(clues));
-  assert.ok(clues[0] > clues[6] + 5, JSON.stringify(clues));
-  assert.ok(solvableWith(ps[0].givens, { hidden: false }));
-  assert.ok(!solvableWith(ps[6].givens, { hidden: false }) && solvableWith(ps[6].givens));
+  assert.ok(clues[0] >= 20 && clues[6] <= 10, JSON.stringify(clues));
+  // hétfő–csütörtök: csupasz egyesekkel; péntek–szombat: rejtett egyesek kellenek; vasárnap: egyesekkel nem, csak haladó lépésekkel
+  for (const i of [0, 1, 2, 3]) assert.ok(solvableWith(ps[i].givens, { hidden: false }), week[i]);
+  for (const i of [4, 5]) assert.ok(!solvableWith(ps[i].givens, { hidden: false }) && solvableWith(ps[i].givens), week[i]);
+  assert.ok(!solvableWith(ps[6].givens) && solvableAdvanced(ps[6].givens), week[6]);
 });
 
 test('sudoku: újragenerálásnál más rejtvény, ugyanazzal a nehézséggel', () => {

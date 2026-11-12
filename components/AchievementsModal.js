@@ -49,15 +49,18 @@ export default function AchievementsModal() {
         </h2>
         {/* Szűrő: Összes (alapból, játékonként csoportosítva) / Titkosírás / Szókereső / Mini. */}
         {multi && (
-          <div className="rejtveny-tabs" role="tablist" aria-label="Játék szerint">
-            {[['all', 'Összes'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['mini', 'Mini'], ['sudoku', 'Sudoku']].map(([v, label]) => (
-              <button key={v} type="button" role="tab" aria-selected={filter === v} className={filter === v ? 'primary small' : 'ghost small'} onClick={() => setFilter(v)}>
-                {label}
-              </button>
-            ))}
-          </div>
+          <label className="ach-filter">
+            <span>Játék:</span>
+            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Trófeák játék szerint">
+              {[['all', 'Összes'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']].map(([v, label]) => (
+                <option key={v} value={v}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
-        {(multi ? (filter === 'all' ? ['titkos', 'szo', 'mini', 'sudoku'] : [filter]) : ['titkos']).map((g) => (
+        {(multi ? (filter === 'all' ? ['titkos', 'szo', 'sudoku', 'mini'] : [filter]) : ['titkos']).map((g) => (
           <div key={g} className="ach-group">
             {multi && filter === 'all' && <h3 className="ach-group-title">{GAME_LABEL[g]}</h3>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

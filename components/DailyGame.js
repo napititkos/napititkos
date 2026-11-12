@@ -22,6 +22,7 @@ import NotificationsButton from './NotificationsButton';
 import { HINT_HELP } from '../lib/puzzleLogic';
 import FieldHelp from './FieldHelp';
 import GameBar from './GameBar';
+import { useFirstVisit } from '../lib/firstVisit';
 import GameFooter from './GameFooter';
 
 const HINT_LABELS = {
@@ -216,19 +217,15 @@ export default function DailyGame() {
   const [showExplain, setShowExplain] = useState(false);
   const toastTimeout = useRef(null);
 
+  // Üdvözlő ablak csak az első alkalommal (az eszközön és a fiókban is megjegyezve).
+  const [firstVisit, dismissFirstVisit] = useFirstVisit('titkos');
   useEffect(() => {
-    try {
-      if (!localStorage.getItem('titkositas_intro_seen')) {
-        setShowIntro(true);
-      }
-    } catch {}
-  }, []);
+    if (firstVisit) setShowIntro(true);
+  }, [firstVisit]);
 
   function dismissIntro() {
     setShowIntro(false);
-    try {
-      localStorage.setItem('titkositas_intro_seen', '1');
-    } catch {}
+    dismissFirstVisit();
   }
 
   useEffect(() => {

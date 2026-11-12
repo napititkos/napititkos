@@ -73,8 +73,8 @@ export default function LeaderboardModal() {
             {[
               ['daily', 'Titkosírás'],
               ['szo', 'Szókereső'],
-              ['mini', 'Heti Mini'],
               ['sudoku', 'Sudoku'],
+              ['mini', 'Heti Mini'],
             ].map(([v, label]) => (
               <button
                 key={v}

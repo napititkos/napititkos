@@ -100,14 +100,13 @@ export function KisokosWordmark() {
   );
 }
 
+// A főoldal főcíme: NAPITITKOS.HU, kos nélkül (a kos a játékok feliratain szerepel).
 export function NapiWordmark() {
   return (
-    <div className="brand brand-flow brand-c" aria-hidden="true">
+    <div className="brand brand-flow brand-plain brand-napi" aria-hidden="true">
       <span className="bf-accent">NAPI</span>
-      <span className="bf-ink">TITK</span>
-      <Ring />
-      <span className="bf-ink">S</span>
-      <span className="bf-accent bf-tld">.HU</span>
+      <span className="bf-ink">TITKOS</span>
+      <span className="bf-accent">.HU</span>
     </div>
   );
 }

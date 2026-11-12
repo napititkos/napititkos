@@ -24,9 +24,14 @@ export async function GET(req) {
   } catch {}
   const actor = actorFor(user?.id || null, sp.get('device'));
   const res = (await kv.raw().hgetall(sudokuResKey(date))) || {};
-  const mine = actor && res[actor] ? Number(res[actor]) : null;
+  // Bejelentkezve az ezen az eszközön vendégként beküldött megoldás is az övé.
+  const devActor = user?.id ? actorFor(null, sp.get('device')) : null;
+  const mineRaw = (actor && res[actor]) || (devActor && res[devActor]) || null;
+  if (mineRaw && actor && !res[actor]) await kv.raw().hset(sudokuResKey(date), actor, mineRaw);
+  const mine = mineRaw ? Number(mineRaw) : null;
   // A megoldók statisztikája csak annak jár, aki már megoldotta.
   const all = Object.values(res).map(Number).filter((x) => x > 0);
   const stats = mine ? { mine, avg: all.length ? Math.round(all.reduce((a, b) => a + b, 0) / all.length) : null, count: all.length } : null;
-  return Response.json({ live: true, ...publicSudoku(p), number: sudokuNumber(date), mine, stats }, { headers: noStore });
+  // Aki már megoldotta, megkapja a megoldást is (más eszközön is kitöltve látja a rácsot).
+  return Response.json({ live: true, ...publicSudoku(p), number: sudokuNumber(date), mine, stats, ...(mine ? { solution: p.solution } : {}) }, { headers: noStore });
 }
