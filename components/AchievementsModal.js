@@ -39,9 +39,9 @@ export default function AchievementsModal() {
 
   return (
     <div className="modal-overlay" onClick={() => setOpen(false)}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        {/* Mobilon jobbra fent is van bezárás gomb (görgetéskor is látszik). */}
-        <button type="button" className="modal-x" aria-label="Bezárás" onClick={() => setOpen(false)}>
+      <div className="modal-card has-close-tl" onClick={(e) => e.stopPropagation()}>
+        {/* Bal felső sarokban bezárás (mobilon és asztali gépen is); a többi bezárási mód is megmarad. */}
+        <button type="button" className="modal-close-tl" aria-label="Bezárás" onClick={() => setOpen(false)}>
           ×
         </button>
         <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>

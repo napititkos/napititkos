@@ -1,4 +1,5 @@
 'use client';
+import SolvedMark from './SolvedMark';
 import { useEffect, useState } from 'react';
 import SudokuGame from './SudokuGame';
 import { recordSudoku } from '../lib/gameProgress';
@@ -105,6 +106,7 @@ export default function SudokuArchive() {
                                 <span className="mini-list-chev" aria-hidden="true">
                                   {open === it.date ? '▴' : '▾'}
                                 </span>
+                                {(it.solvedMs) ? <SolvedMark /> : null}
                               </button>
                               {open === it.date && <div className="mini-list-body">{game?.givens ? <SudokuGame key={it.date} data={game} compact solvedTime={game.mine} onSolved={(el) => { recordSudoku(it.date); setItems((list) => list.map((x) => (x.date === it.date ? { ...x, solvedMs: el } : x))); }} /> : <p>Betöltés…</p>}</div>}
                             </div>

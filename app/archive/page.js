@@ -1,5 +1,6 @@
 'use client';
 import BackButton from '../../components/BackButton';
+import SolvedMark from '../../components/SolvedMark';
 import ResendVerification from '../../components/ResendVerification';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -137,10 +138,14 @@ export default function ArchivePage() {
             <p style={{ margin: 0, color: 'var(--ink-soft)' }}>Betöltés…</p>
           ) : (
             <>
-              {teaser && teaser.total > 0 ? (
+              {teaser && (teaser.all ?? teaser.total) > 0 ? (
                 <>
+                  {/* Tízesre lefelé kerekítve (pl. „60+”), az összes játék korábbi rejtvényei együtt. */}
                   <p className="teaser-total">
-                    <b>{teaser.total} korábbi titkosírás</b> vár megfejtésre.
+                    <b>
+                      {(teaser.all ?? teaser.total) >= 10 ? `${Math.floor((teaser.all ?? teaser.total) / 10) * 10}+` : teaser.all ?? teaser.total} rejtvény
+                    </b>{' '}
+                    <span className="teaser-wait">vár megfejtésre.</span>
                   </p>
                   <p style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>
                     Jelentkezz be, és újrajátszhatod őket tippekkel, és reagálhatsz is rájuk. Azt is
@@ -268,9 +273,16 @@ export default function ArchivePage() {
                                           ▴ Bezárás
                                         </button>
                                       ) : (
-                                        <button type="button" className="community-head" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
+                                        <button type="button" className="community-head archive-head-compact" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
+                                          {/* Kicsinyítve csak a kérdés látszik; ha megfejtette, jobbra egy pipa. */}
                                           <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" lines={8} />
-                                          <span className="community-meta archive-meta">
+                                          {solved && <SolvedMark />}
+                                        </button>
+                                      )}
+                                      {isPlaying && (
+                                        <div className="community-detail">
+                                          {/* Lenyitva: dátum, megfejtők száma, megfejtetted. */}
+                                          <div className="community-meta archive-meta archive-meta-open">
                                             <span className="community-rating-row">
                                               {solved && (
                                                 <span className="community-solved" title="Megfejtetted">
@@ -282,11 +294,7 @@ export default function ArchivePage() {
                                                 {it.totalSolvers != null && ` – ${it.totalSolvers} megfejtő`}
                                               </span>
                                             </span>
-                                          </span>
-                                        </button>
-                                      )}
-                                      {isPlaying && (
-                                        <div className="community-detail">
+                                          </div>
                                           <PuzzlePlayer
                                             puzzle={it}
                                             initiallySolved={solved}

@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { conflicts } from '../lib/sudokuGen';
 import { deviceId } from '../lib/device';
 import { fireConfetti } from './Confetti';
-import ShareButton from './ShareButton';
+import CopyResultButton from './CopyResultButton';
+import GameHead from './GameHead';
 import { getIdentity } from '../lib/identity';
 
 // Napi mini sudoku (6x6). Saját számbillentyűzettel (1–6, Törlés, Vissza, Jegyzet), hogy mobilon ne
@@ -50,11 +51,13 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     return local || givens.slice();
   });
   const [notes, setNotes] = useState(() => (saved.notes?.length === 36 ? saved.notes : Array.from({ length: 36 }, () => [])));
-  const [sel, setSel] = useState(() => givens.findIndex((g) => !g));
+  // Megoldott rácson nincs kijelölés (különben a bal felső cella kiemelése megtévesztő lenne).
+  const [sel, setSel] = useState(() => (alreadySolved ? -1 : givens.findIndex((g) => !g)));
   const [noteMode, setNoteMode] = useState(false);
   const [history, setHistory] = useState([]);
   const [solved, setSolved] = useState(alreadySolved);
   const [msg, setMsg] = useState(null);
+  const [completedAt, setCompletedAt] = useState(saved.completedAt || null);
   const start = useRef(Date.now() - (solvedTime ?? saved.elapsed ?? 0));
   const [elapsed, setElapsed] = useState(solvedTime ?? saved.elapsed ?? 0);
   const sending = useRef(false);
@@ -66,8 +69,8 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   }, [solved]);
   useEffect(() => {
     if (preview) return;
-    saveDay(date, { grid, notes, elapsed, solved });
-  }, [date, grid, notes, elapsed, solved, preview]);
+    saveDay(date, { grid, notes, elapsed, solved, completedAt });
+  }, [date, grid, notes, elapsed, solved, preview, completedAt]);
 
   const bad = useMemo(() => conflicts(grid), [grid]);
   const filled = grid.every(Boolean);
@@ -80,6 +83,8 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     // fogadná el, visszaáll a játék.
     const el = Date.now() - start.current;
     setSolved(true);
+    setCompletedAt(Date.now());
+    setSel(-1);
     setElapsed(el);
     fireConfetti();
     if (preview) return;
@@ -173,16 +178,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   return (
     <div className="sudoku-game">
       {!compact && (
-        <div className="szo-top sudoku-top">
-          <span className="szo-date">
-            {number > 0 && <span className="szo-dayno">#{number} </span>}
-            {dayLabel}
-          </span>
-          <span className="sudoku-level" aria-label={`Nehézség: ${level}/5`}>
-            Nehézség: <b>{level}/5</b>
-          </span>
-          <span className="timer">{fmt(elapsed)}</span>
-        </div>
+        <GameHead title="Napi Sudoku" number={number} level={level} dateLabel={dayLabel} time={fmt(elapsed)} />
       )}
       <div className="sudoku-board" role="grid" aria-label="Sudoku rács">
         {[0, 1, 2, 3, 4, 5].map((r) => (
@@ -211,7 +207,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
                   aria-label={`${rowOf(i) + 1}. sor, ${colOf(i) + 1}. oszlop: ${v || 'üres'}${givens[i] ? ' (megadott)' : ''}${bad.has(i) ? ', ütközik' : ''}`}
                   aria-selected={isSel}
                   className={cls}
-                  onPointerDown={() => setSel(i)}
+                  onPointerDown={() => !solved && setSel(i)}
                   onPointerEnter={(e) => e.pointerType === 'mouse' && !solved && setSel(i)}
                 >
                   {v ? (
@@ -261,7 +257,14 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
       )}
       {solved && !preview && (
         <div className="szo-share">
-          <ShareButton text={`Napi sudoku #${number}\nMegoldottam ${fmt(elapsed)} alatt (nehézség: ${level}/5)!\nPróbáld ki te is: https://napititkos.hu/sudoku`} />
+          <CopyResultButton
+            text={[
+              `Napi Sudoku #${number} – ${dayLabel}`,
+              `Nehézség: ${level}/5`,
+              `Megoldva ${new Date(saved.completedAt || completedAt || Date.now()).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Budapest' })}-kor, ${fmt(elapsed)} alatt`,
+              'napititkos.hu/sudoku',
+            ].join('\n')}
+          />
         </div>
       )}
     </div>

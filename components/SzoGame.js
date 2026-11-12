@@ -4,7 +4,9 @@ import { deviceId } from '../lib/device';
 import { getIdentity } from '../lib/identity';
 import { fireConfetti } from './Confetti';
 import { recordSzoFull, recordSzoWord } from '../lib/gameProgress';
-import ShareButton from './ShareButton';
+import CopyResultButton from './CopyResultButton';
+import GameHead from './GameHead';
+import { dayLevel } from '../lib/dayLevel';
 import { szoPointsOf, szoPointsTotal } from '../lib/szoPoints';
 
 // Napi szókereső (3x3, a Squaredle mintájára). Szomszédos (átlósan is szomszédos) betűkön húzva
@@ -65,7 +67,6 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   const saved = useMemo(() => (preview ? {} : loadAll()[date] || {}), [date, preview]);
   const [found, setFound] = useState(() => (preview ? [] : [...new Set([...(saved.found || []), ...(data.mine?.found || [])])]));
   const [elapsed, setElapsed] = useState(saved.elapsed || data.mine?.elapsed || 0);
-  const [stars, setStars] = useState(saved.stars || 0); // hány csillagot (segítséget) kapott már
   // A két jelölőnégyzet beállítása megmarad a napok (játékok) között is.
   const prefs = (() => {
     try {
@@ -105,13 +106,21 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   const dayLabel = /^\d{4}-\d{2}-\d{2}$/.test(date)
     ? new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' })
     : 'Gyakorlás';
+  // Az eredmény szövege (vágólapra): nap, időpont, idő, pontok / max pont, nehézség.
   const shareText = () => {
-    const d = new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' });
     const pts = szoPointsTotal(foundReq);
-    const tail = done ? `Megtaláltam mind a ${total} szót ${fmt(elapsed)} alatt, ${pts} pont! 🎉` : `${foundReq.length}/${total} szó, ${pts} pont eddig.`;
-    return `🔤 Napi szókereső – ${d}\n${tail}\nPróbáld ki te is: https://napititkos.hu/szokereso`;
+    const max = szoPointsTotal(required);
+    const at = new Date(completedAt || Date.now()).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Budapest' });
+    return [
+      `Napi Szókereső #${dayNo} – ${dayLabel}`,
+      `Nehézség: ${dayLevel(date)}/5`,
+      done ? `Teljesítve ${at}-kor, ${fmt(elapsed)} alatt` : `Állás ${at}-kor, ${fmt(elapsed)} után`,
+      `Pontok: ${pts}/${max} · Szavak: ${foundReq.length}/${total}`,
+      'napititkos.hu/szokereso',
+    ].join('\n');
   };
   const [msg, setMsg] = useState(null);
+  const [completedAt, setCompletedAt] = useState(saved.completedAt || null);
   const dragging = useRef(false);
   const moved = useRef(false);
   const boardRef = useRef(null);
@@ -120,6 +129,13 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
 
   const foundReq = found.filter((w) => reqSet.has(w));
   const foundBonus = found.filter((w) => bonusSet.has(w));
+  // A csillagok a megtalált szavak pontjaiból számolódnak (így újratöltés, másik eszköz vagy
+  // teljesítés után is színesek maradnak).
+  const stars = (() => {
+    const pts = szoPointsTotal(foundReq);
+    const all = szoPointsTotal(required);
+    return all ? (pts * 3 >= all ? 1 : 0) + (pts * 3 >= 2 * all ? 1 : 0) : 0;
+  })();
   // A még meg nem talált kötelező szavak összes lehetséges útja (egy szónak több útja is lehet):
   // ebből számoljuk, mely betűkhöz tartozik még szó (a többi kifakul), és a csillagok jutalmát:
   // hány szó kezdődik az adott négyzettel, és hány szó tartalmazza (szavanként egyszer számolva).
@@ -163,8 +179,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
 
   useEffect(() => {
     if (preview) return;
-    saveDay(date, { found, elapsed, stars, abc, outer });
-  }, [date, found, elapsed, stars, abc, outer]);
+    saveDay(date, { found, elapsed, stars, abc, outer, completedAt });
+  }, [date, found, elapsed, stars, abc, outer, completedAt]);
 
   // A haladás mentése a szerverre (kis késleltetéssel összevonva). Ha a játékos közben elhagyja az
   // oldalt, a függő mentés azonnal elmegy (sendBeacon), így az utolsó szavak sem vesznek el.
@@ -231,7 +247,6 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       const all = szoPointsTotal(required);
       const earned = (pts * 3 >= all ? 1 : 0) + (pts * 3 >= 2 * all ? 1 : 0);
       if (earned > stars) {
-        setStars(earned);
         onStars && onStars(earned);
       }
       if (earned > stars && n < total) flash(`+${szoPointsOf(w)} pont · Jutalom: számok a betűkön!`, 'good', 3200);
@@ -239,6 +254,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       if (n >= total) {
         fireConfetti();
         if (!preview) recordSzoFull(date);
+        setCompletedAt(Date.now());
         if (!preview && onComplete) onComplete(el);
       }
     }
@@ -346,13 +362,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   return (
     <div className="szo-game">
       {!compact && (
-      <div className="szo-top">
-        <span className="szo-date">
-          {dayNo > 0 && <span className="szo-dayno">#{dayNo} </span>}
-          {dayLabel}
-        </span>
-        <span className="timer">{fmt(elapsed)}</span>
-      </div>
+      <GameHead title="Napi Szókereső" number={dayNo} level={dayNo > 0 ? dayLevel(date) : 1} dateLabel={dayLabel} time={fmt(elapsed)} />
       )}
       <div className="szo-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`Haladás: ${foundReq.length} / ${total} szó, ${szoPointsTotal(foundReq)} pont`}>
         <div className="szo-bar">
@@ -492,7 +502,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       </div>
       {!preview && (foundReq.length > 0 || done) && (
         <div className="szo-share">
-          <ShareButton text={shareText()} />
+          <CopyResultButton text={shareText()} />
         </div>
       )}
     </div>
