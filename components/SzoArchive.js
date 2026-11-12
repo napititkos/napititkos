@@ -1,4 +1,5 @@
 'use client';
+import SolvedMark from './SolvedMark';
 import { useEffect, useState } from 'react';
 import SzoGame from './SzoGame';
 import { deviceId } from '../lib/device';
@@ -104,6 +105,7 @@ export default function SzoArchive() {
                                 <span className="mini-list-chev" aria-hidden="true">
                                   {open === it.date ? '▴' : '▾'}
                                 </span>
+                                {(it.total && it.count >= it.total) ? <SolvedMark /> : null}
                               </button>
                               {open === it.date && <div className="mini-list-body">{game?.grid ? <SzoGame key={it.date} data={game} compact /> : <p>Betöltés…</p>}</div>}
                             </div>

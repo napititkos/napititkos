@@ -11,7 +11,7 @@ const STEPS = [
   { target: '.sudoku-kisokos .sudoku-pad', text: 'Válassz egy cellát, majd nyomj egy számra. Gépen a billentyűzettel is beírhatod. A Törlés kitörli a cellát, a Vissza visszavonja az utolsó lépést, és egy beírt számot bármikor felülírhatsz.' },
   { target: '.sudoku-kisokos .sudoku-key.note', text: 'A Jegyzet bekapcsolásával kis számokat írhatsz egy cellába: azokat, amelyek még szóba jöhetnek.' },
   { target: '.sudoku-kisokos .sudoku-board', text: 'Ha egy szám ütközik egy másikkal (ugyanaz a szám egy sorban, oszlopban vagy dobozban), pirossal jelöljük.' },
-  { target: '.sudoku-kisokos .sudoku-level', text: 'A rács fölött látod a nehézséget: hétfőn és kedden 1/5, szerdán és csütörtökön 2/5, pénteken 3/5, szombaton 4/5, vasárnap 5/5.' },
+  { target: '.sudoku-kisokos .gh-level', text: 'A rács fölött látod a nehézséget: hétfőn és kedden 1/5, szerdán és csütörtökön 2/5, pénteken 3/5, szombaton 4/5, vasárnap 5/5.' },
 ];
 
 export default function SudokuKisokos() {

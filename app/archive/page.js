@@ -1,5 +1,6 @@
 'use client';
 import BackButton from '../../components/BackButton';
+import SolvedMark from '../../components/SolvedMark';
 import ResendVerification from '../../components/ResendVerification';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -268,9 +269,16 @@ export default function ArchivePage() {
                                           ▴ Bezárás
                                         </button>
                                       ) : (
-                                        <button type="button" className="community-head" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
+                                        <button type="button" className="community-head archive-head-compact" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
+                                          {/* Kicsinyítve csak a kérdés látszik; ha megfejtette, jobbra egy pipa. */}
                                           <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" lines={8} />
-                                          <span className="community-meta archive-meta">
+                                          {solved && <SolvedMark />}
+                                        </button>
+                                      )}
+                                      {isPlaying && (
+                                        <div className="community-detail">
+                                          {/* Lenyitva: dátum, megfejtők száma, megfejtetted. */}
+                                          <div className="community-meta archive-meta archive-meta-open">
                                             <span className="community-rating-row">
                                               {solved && (
                                                 <span className="community-solved" title="Megfejtetted">
@@ -282,11 +290,7 @@ export default function ArchivePage() {
                                                 {it.totalSolvers != null && ` – ${it.totalSolvers} megfejtő`}
                                               </span>
                                             </span>
-                                          </span>
-                                        </button>
-                                      )}
-                                      {isPlaying && (
-                                        <div className="community-detail">
+                                          </div>
                                           <PuzzlePlayer
                                             puzzle={it}
                                             initiallySolved={solved}

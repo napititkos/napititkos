@@ -1,4 +1,5 @@
 'use client';
+import SolvedMark from './SolvedMark';
 import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
 import MiniThumb from './MiniThumb';
@@ -51,6 +52,7 @@ export default function MiniArchive() {
                 <span>{it.solvedMs != null ? `Megfejtve · ${fmt(it.solvedMs)}` : 'Még nem fejtetted meg'}</span>
               </span>
               <span className="mini-list-chev" aria-hidden="true">{open ? '▴' : '▾'}</span>
+                                {(it.solvedMs != null) ? <SolvedMark /> : null}
             </button>
             {open && (
               <div className="mini-list-body">
