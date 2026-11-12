@@ -166,17 +166,35 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     saveDay(date, { found, elapsed, stars, abc, outer });
   }, [date, found, elapsed, stars, abc, outer]);
 
+  // A haladás mentése a szerverre (kis késleltetéssel összevonva). Ha a játékos közben elhagyja az
+  // oldalt, a függő mentés azonnal elmegy (sendBeacon), így az utolsó szavak sem vesznek el.
+  const pendingSync = useRef(null);
   function sync(words, el) {
     if (preview) return;
     clearTimeout(syncT.current);
-    syncT.current = setTimeout(() => {
-      fetch('/api/szo/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, words, elapsed: el, device: deviceId(), name: getIdentity().name }),
-      }).catch(() => {});
-    }, 400);
+    pendingSync.current = JSON.stringify({ date, words, elapsed: el, device: deviceId(), name: getIdentity().name });
+    syncT.current = setTimeout(flushSync, 400);
   }
+  function flushSync(beacon = false) {
+    const body = pendingSync.current;
+    if (!body) return;
+    pendingSync.current = null;
+    clearTimeout(syncT.current);
+    if (beacon && navigator.sendBeacon && navigator.sendBeacon('/api/szo/progress', new Blob([body], { type: 'application/json' }))) return;
+    fetch('/api/szo/progress', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+  }
+  useEffect(() => {
+    const out = () => flushSync(true);
+    const vis = () => document.visibilityState === 'hidden' && flushSync(true);
+    window.addEventListener('pagehide', out);
+    document.addEventListener('visibilitychange', vis);
+    return () => {
+      window.removeEventListener('pagehide', out);
+      document.removeEventListener('visibilitychange', vis);
+      flushSync();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Visszajelzés: külön sorban a szó fölött, halványodva tűnik el (a hossza nem tolja el a rácsot).
   function flash(text, kind = 'info', ms = 1900) {
@@ -343,7 +361,11 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
           <i className={`szo-star${stars >= 2 ? ' got' : ''}`} style={{ left: '66.6%' }} aria-hidden="true">★</i>
           {/* A végén a kupa: az összes szó (a teljes pontszám) elérésekor színes. */}
           <span className={`szo-cup${done ? ' got' : ''}`} aria-hidden="true">
-            🏆
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path d="M7 3h10v5a5 5 0 0 1-10 0V3z" fill="#F2B632" stroke="#B9831A" strokeWidth="1.2" strokeLinejoin="round" />
+              <path d="M7 5H4.2v1.4A3.4 3.4 0 0 0 7.6 9.8M17 5h2.8v1.4a3.4 3.4 0 0 1-3.4 3.4" fill="none" stroke="#B9831A" strokeWidth="1.6" strokeLinecap="round" />
+              <path d="M12 13v3.6M8.6 20.6h6.8l-.9-3.9H9.5z" fill="#F2B632" stroke="#B9831A" strokeWidth="1.2" strokeLinejoin="round" />
+            </svg>
           </span>
         </div>
       </div>

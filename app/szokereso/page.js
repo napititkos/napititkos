@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import SzoGame from '../../components/SzoGame';
 import GameBar from '../../components/GameBar';
+import { useFirstVisit } from '../../lib/firstVisit';
 import Icon from '../../components/Icon';
 import Logo from '../../components/Logo';
 import GameFooter from '../../components/GameFooter';
@@ -11,18 +12,8 @@ import { deviceId } from '../../lib/device';
 export default function SzokeresoPage() {
   const [data, setData] = useState(null);
   // Első látogatáskor üdvözlő ablak (mint a titkosírásnál), a Kisokosra mutató gombbal.
-  const [intro, setIntro] = useState(false);
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem('szo_intro_seen')) setIntro(true);
-    } catch {}
-  }, []);
-  const dismissIntro = () => {
-    setIntro(false);
-    try {
-      localStorage.setItem('szo_intro_seen', '1');
-    } catch {}
-  };
+  // Üdvözlő ablak csak az első alkalommal (az eszközön és a fiókban is megjegyezve).
+  const [intro, dismissIntro] = useFirstVisit('szo');
   // A rejtvényt azonnal betöltjük (a bejelentkezési süti a kéréssel együtt megy, nem kell
   // megvárni a munkamenet állapotát), így a rejtvény jelenik meg elsőként.
   useEffect(() => {

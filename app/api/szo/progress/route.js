@@ -14,7 +14,8 @@ import { SZO_FOUND_TTL, SZO_LB_TTL, szoFoundKey, szoForDate, szoLbKey, szoLbName
 // szavait fogadja el; a kötelező szavak száma és az idő (amikor az utolsó új szót megtalálta)
 // kerül a ranglistára (csak a mai napon) és a saját eredmények közé (az archívumhoz).
 export async function POST(req) {
-  if (await isLimited('szo:progress:ip', clientIp(req), 600, 3600)) return tooMany(3600);
+  // Egy IP mögött (pl. munkahelyen) többen is játszhatnak, és minden új szó egy mentés: bőven hagyunk keretet.
+  if (await isLimited('szo:progress:ip', clientIp(req), 3000, 3600)) return tooMany(3600);
   if (!miniLive()) return Response.json({ error: 'not-live' }, { status: 404 });
   const body = (await readJson(req, 20000)) || {};
   const date = String(body.date || '');

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import SudokuGame from '../../components/SudokuGame';
 import GameBar from '../../components/GameBar';
+import { useFirstVisit } from '../../lib/firstVisit';
 import GameFooter from '../../components/GameFooter';
 import Icon from '../../components/Icon';
 import Logo from '../../components/Logo';
@@ -17,18 +18,8 @@ const fmt = (ms) => {
 export default function SudokuPage() {
   const [data, setData] = useState(null);
   const [stats, setStats] = useState(null);
-  const [intro, setIntro] = useState(false);
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem('sudoku_intro_seen')) setIntro(true);
-    } catch {}
-  }, []);
-  const dismissIntro = () => {
-    setIntro(false);
-    try {
-      localStorage.setItem('sudoku_intro_seen', '1');
-    } catch {}
-  };
+  // Üdvözlő ablak csak az első alkalommal (az eszközön és a fiókban is megjegyezve).
+  const [intro, dismissIntro] = useFirstVisit('sudoku');
   useEffect(() => {
     const dev = deviceId();
     fetch(`/api/sudoku${dev ? `?device=${dev}` : ''}`, { cache: 'no-store' })

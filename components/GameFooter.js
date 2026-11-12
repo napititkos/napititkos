@@ -19,17 +19,15 @@ export function GameTile({ game, isNew = false, big = false, done = false }) {
   const g = GAMES[game];
   return (
     <a className={`card game-tile${big ? ' game-tile-big' : ''}`} href={g.href} aria-label={`${g.title} – ${g.sub}`}>
-      {isNew && (
-        <span className="game-tile-new" aria-hidden="true">
-          ÚJ!
-        </span>
-      )}
       <span className="game-tile-icon">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : game === 'sudoku' ? <SudokuIcon size={null} /> : <MiniIcon size={null} />}</span>
-      {done && (
-        <span className="game-tile-done" role="img" aria-label="Teljesítve">
-          <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
-            <path d="M4 12.8l5 5L20.5 6" fill="none" stroke="var(--btn-primary)" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      {/* Főoldalon: lekerekített sarkú fekete négyzet a csempe jobb szélén; teljesítéskor benne a pipa. */}
+      {big && (
+        <span className={`game-tile-check${done ? ' done' : ''}`} role="img" aria-label={done ? 'Teljesítve' : 'Még nincs teljesítve'}>
+          {done && (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6.2 12.6l3.7 3.7 7.9-8.4" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
         </span>
       )}
       <span className="game-tile-text">

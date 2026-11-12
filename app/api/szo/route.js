@@ -31,6 +31,19 @@ export async function GET(req) {
   try {
     mineFound = found ? JSON.parse(found) : [];
   } catch {}
+  // Ha bejelentkezve jön, de ezen az eszközön előtte vendégként már talált szavakat, azok is az
+  // övéi (különben bejelentkezés után „elveszne” a haladás).
+  const devActor = uid ? actorFor(null, sp.get('device')) : null;
+  if (devActor) {
+    try {
+      const dev = JSON.parse((await r.hget(szoFoundKey(date), devActor)) || '[]');
+      const merged = [...new Set([...mineFound, ...dev])];
+      if (merged.length > mineFound.length) {
+        mineFound = merged;
+        await r.hset(szoFoundKey(date), actor, JSON.stringify(merged));
+      }
+    } catch {}
+  }
   const [c, e, pts] = res ? String(res).split(':').map(Number) : [null, null, null];
   return Response.json(
     {
