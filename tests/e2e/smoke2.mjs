@@ -1723,6 +1723,31 @@ section('Javítások: bejelentkezés utáni haladás, vendégnév, megoldott sud
   check('sudoku: bejelentkezve az eszközön vendégként beküldött megoldás is az övé', j.mine === 77000 && j.solution?.length === 36);
 }
 
+section('Szókereső: a mai rácsból kitiltott szó levonódik a ranglistáról');
+{
+  const sz = await (await fetch(BASE + '/api/szo')).json();
+  const pts = (w) => ({ 3: 3, 4: 5, 5: 10, 6: 15, 7: 25, 8: 40, 9: 65 })[Array.from(w).length] || 0;
+  const cand = sz.required.filter((w) => w !== sz.word);
+  const victim = cand[cand.length - 1];
+  const other = cand.filter((w) => w !== victim).slice(0, 2);
+  const devA = 'd1'.repeat(16); const devB = 'd2'.repeat(16);
+  await post('/api/szo/progress', { date: sz.date, words: [victim, ...other], elapsed: 41000, device: devA, name: 'Levonandó Lili' });
+  await post('/api/szo/progress', { date: sz.date, words: other, elapsed: 52000, device: devB, name: 'Érintetlen Ernő' });
+  const row = async (n) => (await (await fetch(BASE + '/api/szo/leaderboard')).json()).entries.find((e) => e.name === n);
+  const a0 = await row('Levonandó Lili'); const b0 = await row('Érintetlen Ernő');
+  r = await post('/api/admin/szo', { action: 'ban', word: victim }, adm);
+  check('tiltás a mai rácsból: 200', r.status === 200);
+  const a1 = await row('Levonandó Lili'); const b1 = await row('Érintetlen Ernő');
+  check('akinél megvolt, annál a szó pontja és darabja levonódik, az idő marad', a1 && a1.points === a0.points - pts(victim) && a1.count === a0.count - 1 && a1.elapsed === a0.elapsed, JSON.stringify({ a0, a1, victim }));
+  check('akinél nem volt meg, annak az eredménye nem változik', b1 && b1.points === b0.points && b1.count === b0.count, JSON.stringify({ b0, b1 }));
+  const res = await redis.hgetall('szo:res:' + sz.date);
+  const resA = Object.values(res).find((v) => v.endsWith(`:${a1.points}`) && v.startsWith(`${a1.count}:`));
+  check('a saját eredmény (archívum) is újraszámolódik', !!resA, JSON.stringify(res));
+  const foundA = Object.values(await redis.hgetall('szo:found:' + sz.date)).map((v) => JSON.parse(v));
+  check('a kitiltott szó a megtalált szavak közül is kikerül', foundA.every((ws) => !ws.includes(victim)));
+  await post('/api/admin/szo', { action: 'unban', word: victim }, adm);
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

@@ -11,7 +11,7 @@ function addDays(d, n) {
   x.setUTCDate(x.getUTCDate() + n);
   return x.toISOString().slice(0, 10);
 }
-import { SZO_KEYS, normSzo, regenerateSzo, szoForDate, szoLists, szoPuzzleKey } from '../../../../lib/szo';
+import { SZO_KEYS, normSzo, regenerateSzo, szoForDate, szoLists, szoPuzzleKey, szoRecount } from '../../../../lib/szo';
 import { SZO_BONUS, SZO_PROFANE, SZO_REQUIRED } from '../../../../lib/szoData';
 
 // Admin: napi szókereső. GET ?q=<keresés>: a mai rács (élesítés előtt is), a listák mérete, és a
@@ -133,6 +133,9 @@ export async function POST(req) {
         const paths = { ...p.paths };
         delete paths[word];
         await kv.set(key, { ...p, required: p.required.filter((w) => w !== word), bonus: p.bonus.filter((w) => w !== word), paths });
+        // A mai (és az esetleg már játszott) nap ranglistája és eredményei újraszámolódnak: a kitiltott
+        // szó pontja levonódik azoknál, akik megtalálták.
+        if (i === 0) await szoRecount(p.date || addDays(todayStr(), 0));
       }
     }
     return 'ok';

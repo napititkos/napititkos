@@ -9,6 +9,7 @@ import GameHead from './GameHead';
 import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { dayLevel } from '../lib/dayLevel';
 import { szoPointsOf, szoPointsTotal } from '../lib/szoPoints';
+import { minimalCells } from '../lib/szoCells';
 
 // Napi szókereső (3x3, a Squaredle mintájára). Szomszédos (átlósan is szomszédos) betűkön húzva
 // vagy koppintva lehet szavakat kirakni; húzás közben vonal köti össze a betűket. Egy szóban
@@ -138,25 +139,28 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
     const all = szoPointsTotal(required);
     return all ? (pts * 3 >= all ? 1 : 0) + (pts * 3 >= 2 * all ? 1 : 0) : 0;
   })();
-  // A még meg nem talált kötelező szavak összes lehetséges útja (egy szónak több útja is lehet):
-  // ebből számoljuk, mely betűkhöz tartozik még szó (a többi kifakul), és a csillagok jutalmát:
-  // hány szó kezdődik az adott négyzettel, és hány szó tartalmazza (szavanként egyszer számolva).
+  // A még meg nem talált kötelező szavak útjai: ebből számoljuk, mely betűkhöz tartozik még szó (a
+  // többi kifakul), és a csillagok jutalmát: hány szó kezdődik az adott négyzettel, és hány szó
+  // tartalmazza (szavanként egyszer számolva). Ha egy betű többször is szerepel a rácsban (pl. két O),
+  // egy szónak több útja is lehet; ilyenkor a lehető legkevesebb négyzetet tartjuk meg, amelyeken
+  // MINDEN hátralévő szó kirakható (a többi kifakul). Ha több ilyen legkisebb választás van, az előzőleg
+  // megtartott négyzetek közül választunk (így semmi nem villan vissza), különben a nap szerint
+  // véletlenszerűen. A kifakult négyzet továbbra is használható, csak halványabb.
+  const keptRef = useRef(null);
   const live = useMemo(() => {
     const starts = Array(9).fill(0);
     const has = Array(9).fill(0);
-    const cells = new Set();
-    for (const w of required) {
-      if (found.includes(w)) continue;
-      const rs = allRoutes(grid, w);
-      const st = new Set(rs.map((r) => r[0]));
-      const hs = new Set(rs.flat());
-      st.forEach((i) => starts[i]++);
-      hs.forEach((i) => {
-        has[i]++;
-        cells.add(i);
-      });
-    }
-    return { starts, has, cells };
+    const left = required.filter((w) => !found.includes(w));
+    const routes = left.map((w) => allRoutes(grid, w));
+    const kept = minimalCells(routes, keptRef.current, `${date}|${left.length}`);
+    keptRef.current = kept;
+    routes.forEach((rs) => {
+      const inside = rs.filter((r) => r.every((i) => kept.has(i)));
+      new Set(inside.map((r) => r[0])).forEach((i) => starts[i]++);
+      new Set(inside.flat()).forEach((i) => has[i]++);
+    });
+    return { starts, has, cells: kept };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grid, required, found]);
   const total = required.length;
   const done = foundReq.length >= total && total > 0;
