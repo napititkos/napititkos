@@ -19,8 +19,8 @@ export default function GameBar({ game = 'titkos' }) {
       window.removeEventListener('progress-synced', upd);
     };
   }, []);
-  // Ha a gombsor nem fér ki egy sorban: előbb a trófeaszámláló tűnik el (csak az ikon marad),
-  // ha így sem fér ki, a Főoldal gombon is csak a házikó látszik.
+  // Ha a gombsor nem fér ki egy sorban: előbb a Főoldal felirat tűnik el (csak a házikó marad), mert
+  // az hosszabb; ha így sem fér ki, a trófeaszámláló is (csak az ikon marad).
   const rowRef = useRef(null);
   const [compact, setCompact] = useState(0);
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function GameBar({ game = 'titkos' }) {
   const lbTab = ['mini', 'szo', 'sudoku'].includes(game) ? game : undefined;
   const kisokos = ['mini', 'szo', 'sudoku'].includes(game) ? `/kisokos?tab=${game}` : '/kisokos';
   return (
-    <div ref={rowRef} className={`quick-row game-bar${compact >= 1 ? ' compact-trophy' : ''}${compact >= 2 ? ' compact-home' : ''}${compact >= 3 ? ' compact-tight' : ''}`}>
+    <div ref={rowRef} className={`quick-row game-bar${compact >= 1 ? ' compact-home' : ''}${compact >= 2 ? ' compact-trophy' : ''}${compact >= 3 ? ' compact-tight' : ''}`}>
       <NotificationsButton />
       <button className="pill quick-pill" type="button" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: lbTab ? { tab: lbTab } : {} }))}>
         <Icon src="/icons/Ranglista.png" size={16} className="quick-ico" /> Ranglista

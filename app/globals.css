@@ -1957,16 +1957,16 @@ button.community-head.archive-head-compact{ display: flex; flex-direction: row; 
 .archive-meta-open{ margin: 0 0 8px; }
 .mini-list-head .solved-mark{ margin-left: 4px; }
 /* Keskeny kijelzőn a gombsor eleve tömörített (így betöltéskor sem lóg ki egy pillanatra sem):
-   a trófeaszámláló és a Főoldal felirat helyett csak az ikon. */
+   előbb a (hosszabb) Főoldal felirat, aztán a trófeaszámláló helyett is csak az ikon. */
 @media (max-width: 420px){
-  .quick-row.game-bar .gb-trophy-count, .quick-row.game-bar .gb-home-label{ display: none; }
+  .quick-row.game-bar .gb-home-label{ display: none; }
 }
-@media (max-width: 470px){ .quick-row.game-bar .gb-trophy-count{ display: none; } }
+@media (max-width: 470px){ .quick-row.game-bar .gb-home-label{ display: none; } }
 @media (max-width: 345px){
   .quick-row.game-bar{ gap: 4px; }
   .quick-row.game-bar .quick-pill{ padding-left: 8px; padding-right: 8px; font-size: 12.5px; }
 }
-@media (max-width: 445px){ .quick-row.game-bar .gb-home-label{ display: none; } }
+@media (max-width: 374px){ .quick-row.game-bar .gb-trophy-count{ display: none; } }
 
 /* A napi játékok címe a titkosírás „Napi titkosírás #N” címének méretében, mindenhol ugyanott. */
 .gh-title.puzzle-title{ margin: 0; }
@@ -1992,3 +1992,36 @@ button.community-head.archive-head-compact{ display: flex; flex-direction: row; 
   animation: win-wave 620ms ease-in-out 2; animation-delay: calc(var(--d, 0) * 80ms); position: relative; z-index: 1;
 }
 @media (prefers-reduced-motion: reduce){ .win-wave .sudoku-cell, .win-wave .szo-hit, .win-wave .mini-sq, .win-wave .letter-box{ animation: none; } }
+
+/* Keretes ablak (ranglista, trófeák): a kijelző teljes magasságát kitölti; fent rögzített fejléc,
+   középen keretben a görgethető lista, a lap alján rögzített lábléc (Bezárás, Játszom). */
+.modal-overlay.framed-overlay{ align-items: stretch; padding: 20px 20px max(20px, env(safe-area-inset-bottom)); }
+.modal-card.framed-modal{ display: flex; flex-direction: column; max-height: none; height: auto; overflow: hidden; padding: 22px 22px 16px; margin: 0 auto; box-sizing: border-box; }
+.fm-head{ flex: none; }
+.modal-card.has-close-tl .fm-head > h2{ padding-right: 46px; min-height: 34px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fm-title{ font-family: var(--font-baloo), 'Baloo 2', sans-serif; color: var(--accent-text); margin-top: 0; letter-spacing: 0.015em; }
+.fm-title .fm-count{ font-family: var(--font-nunito), Nunito, sans-serif; letter-spacing: 0; margin-left: 4px; }
+.fm-body{
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; position: relative; overscroll-behavior: contain;
+  border: 2px solid var(--line); border-radius: 14px; padding: 8px; background: var(--card);
+}
+.fm-body:focus-visible{ outline: 3px solid var(--accent2); outline-offset: 2px; }
+.fm-foot{ flex: none; display: flex; gap: 10px; margin-top: 14px; }
+.fm-foot > button{ flex: 1 1 0; }
+.fm-loading, .fm-empty{ margin: 6px 4px; color: var(--ink-soft); }
+.fm-body .ach-group + .ach-group{ margin-top: 14px; }
+.fm-body .ach-group-title{ margin-top: 2px; }
+.lb-list{ display: flex; flex-direction: column; gap: 6px; }
+.lb-entry{ display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; font-weight: 500; }
+.lb-entry.mine{ background: var(--accent-soft); font-weight: 700; }
+.lb-entry-res{ font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.framed-modal .lb-tabs{ flex-wrap: wrap; }
+@media (max-width: 420px){
+  .modal-overlay.framed-overlay{ padding: 10px 10px max(10px, env(safe-area-inset-bottom)); }
+  .modal-card.framed-modal{ padding: 16px 14px 12px; }
+  .modal-card.framed-modal button.modal-close-tl{ top: 14px; right: 12px; }
+  .fm-body{ padding: 6px; }
+  /* A négy ranglista-fül keskeny kijelzőn is egy sorban fér el. */
+  .framed-modal .lb-tabs{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .framed-modal .lb-tabs button.small{ padding: 5px 2px; font-size: 12px; white-space: nowrap; min-width: 0; }
+}

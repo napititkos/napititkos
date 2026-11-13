@@ -1,10 +1,11 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, achievementProgress, gameOf, statsFromProgress } from '../lib/achievements';
 
 const GAME_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', sudoku: 'Sudoku' };
 import { loadProgress } from '../lib/progress';
 import Icon from './Icon';
+import FramedModal, { GAME_HREF } from './FramedModal';
 
 export default function AchievementsModal() {
   const [open, setOpen] = useState(false);
@@ -13,10 +14,14 @@ export default function AchievementsModal() {
   // A játékonkénti szűrő csak a mini/szókereső élesítése után látszik; addig csak a titkosírás trófeái.
   const [filter, setFilter] = useState('all');
   const [multi, setMulti] = useState(false);
+  // Melyik játék oldaláról nyitották (a Játszom gombhoz, ha az „Összes” van kiválasztva).
+  const [from, setFrom] = useState('titkos');
+  const bodyRef = useRef(null);
 
   useEffect(() => {
-    function handleOpen() {
+    function handleOpen(e) {
       setFilter('all');
+      setFrom(GAME_LABEL[e?.detail?.game] ? e.detail.game : 'titkos');
       fetch('/api/mini/status')
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => setMulti(!!d?.live))
@@ -37,21 +42,38 @@ export default function AchievementsModal() {
 
   if (!open) return null;
 
+  const close = () => setOpen(false);
+  const games = multi ? (filter === 'all' ? ['titkos', 'szo', 'sudoku', 'mini'] : [filter]) : ['titkos'];
+  const shown = ACHIEVEMENTS.filter((a) => games.includes(gameOf(a)));
+  const got = shown.filter((a) => unlocked.includes(a.id)).length;
   return (
-    <div className="modal-overlay" onClick={() => setOpen(false)}>
-      <div className="modal-card has-close-tl" onClick={(e) => e.stopPropagation()}>
-        {/* Jobb felső sarokban bezárás, egy sorban a címmel (mobilon és asztali gépen is). */}
-        <button type="button" className="modal-close-tl" aria-label="Bezárás" onClick={() => setOpen(false)}>
-          ×
-        </button>
-        <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em' }}>
+    <FramedModal
+      ref={bodyRef}
+      labelId="ach-title"
+      bodyLabel="Trófeák listája"
+      onClose={close}
+      playHref={GAME_HREF[filter === 'all' ? from : filter]}
+      title={
+        <>
           <Icon src="/icons/Trofeak.png" size={24} /> Trófeák
-        </h2>
-        {/* Szűrő: Összes (alapból, játékonként csoportosítva) / Titkosírás / Szókereső / Mini. */}
-        {multi && (
+          <span className="ach-progress fm-count" aria-label={`${got} / ${shown.length} megszerezve`}>
+            {got}/{shown.length}
+          </span>
+        </>
+      }
+      head={
+        /* Szűrő: Összes (alapból, játékonként csoportosítva) / Titkosírás / Szókereső / Sudoku / Mini. */
+        multi && (
           <label className="ach-filter">
             <span>Játék:</span>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Trófeák játék szerint">
+            <select
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                if (bodyRef.current) bodyRef.current.scrollTop = 0;
+              }}
+              aria-label="Trófeák játék szerint"
+            >
               {[['all', 'Összes'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']].map(([v, label]) => (
                 <option key={v} value={v}>
                   {label}
@@ -59,8 +81,10 @@ export default function AchievementsModal() {
               ))}
             </select>
           </label>
-        )}
-        {(multi ? (filter === 'all' ? ['titkos', 'szo', 'sudoku', 'mini'] : [filter]) : ['titkos']).map((g) => (
+        )
+      }
+    >
+        {games.map((g) => (
           <div key={g} className="ach-group">
             {multi && filter === 'all' && <h3 className="ach-group-title">{GAME_LABEL[g]}</h3>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -101,12 +125,6 @@ export default function AchievementsModal() {
             </div>
           </div>
         ))}
-        <div className="actions" style={{ marginTop: 18 }}>
-          <button className="primary" onClick={() => setOpen(false)}>
-            Bezárás
-          </button>
-        </div>
-      </div>
-    </div>
+    </FramedModal>
   );
 }

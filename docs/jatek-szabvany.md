@@ -15,7 +15,7 @@ léteznek, újra kell használni őket, nem újat írni.
    `variant` és `BRAND_LABEL` részébe kell felvenni.
 2. **Gombsor** (`components/GameBar.js`, `game="<kulcs>"`): balra Értesítések, majd Ranglista
    (a játék fülén nyílik), Kisokos (`/kisokos?tab=<kulcs>`), Trófeák, jobbra Főoldal. Keskeny
-   kijelzőn magától tömörít (először a trófeaszámláló, aztán a Főoldal felirat tűnik el).
+   kijelzőn magától tömörít (először a hosszabb Főoldal felirat, aztán a trófeaszámláló tűnik el).
 3. **A játék kártyája** (`<div className="card">`), benne:
    - **Fejléc** (`components/GameHead.js`): balra fent a cím a titkosírás „Napi titkosírás #N”
      stílusában (`puzzle-title`), pl. „Napi Sudoku #12”. Napi nehézséggel: jobbra fent a dátum
@@ -63,6 +63,11 @@ léteznek, újra kell használni őket, nem újat írni.
   `select.pretty-select`), soha alapértelmezett böngészős legördülő.
 - Ablakok (modal): bezáró X jobbra fent, egy sorban a címmel (`.has-close-tl` +
   `.modal-close-tl`), mellette a meglévő bezárási módok is maradnak.
+- Listás ablakok (Ranglista, Trófeák): `components/FramedModal.js`. A kijelző teljes magasságát
+  kitölti: fent rögzített fejléc (cím, számláló, választó), középen keretben a görgethető lista, a lap
+  alján rögzített lábléc két gombbal (Bezárás, Játszom – az aktuális játékhoz visz). Váltáskor csak a
+  középső rész (és ami a fejlécben változik) töltődik újra. A ranglista a saját eredményhez ugrik,
+  lehetőleg középre. Új játéknál a `GAME_HREF` listába is fel kell venni.
 - Világos és sötét mód, 320–1280 px szélesség, és a kontrasztellenőrzés (WCAG AA) mindig teljesüljön.
 - Nehézség: hétfő, kedd 1/5 · szerda, csütörtök 2/5 · péntek 3/5 · szombat 4/5 · vasárnap 5/5
   (`lib/dayLevel.js`).
