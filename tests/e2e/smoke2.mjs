@@ -1638,13 +1638,34 @@ section('Mini admin: várólistás rejtvény szerkesztése a helyén, készítő
   r = await post('/api/admin/mini/drafts', { action: 'editQueued', id: 'q2' }, adm); j = await r.json();
   check('várólistás mini szerkesztése: piszkozat lesz belőle', r.status === 200 && j.id);
   const did = j.id;
-  check('a várólistáról közben kikerül', JSON.parse(await redis.get('mini:queue')).map((x) => x.id).join() === 'q1,q3');
+  check('szerkesztés közben a várólistán a helyén marad', JSON.parse(await redis.get('mini:queue')).map((x) => x.id).join() === 'q1,q2,q3');
+  r = await post('/api/admin/mini/drafts', { action: 'editQueued', id: 'q2' }, adm); j = await r.json();
+  check('ugyanahhoz a minihez a meglévő piszkozat nyílik meg (nem lesz kettő)', j.id === did);
   r = await fetch(BASE + `/api/admin/mini/drafts?id=${did}`, { headers: adm }); const dj = await r.json();
   const d = dj.draft || dj;
   check('a piszkozatban a rács és a kérdések', d.rows?.[0]?.[0] === 'k' && d.clues?.['A:0:0']?.clue === 'Q kert', JSON.stringify(d).slice(0, 200));
-  r = await post('/api/admin/mini/drafts', { action: 'publish', id: did, rev: d.rev }, adm); j = await r.json();
+  // a kérdés átírása, majd mentés a helyén
+  const input = { title: d.title, rows: d.rows, clues: { ...d.clues, 'A:0:0': { clue: 'Átírt kérdés', word: 'kert' } } };
+  r = await post('/api/admin/mini/drafts', { action: 'save', id: did, rev: d.rev, ...input }, adm); const sj = await r.json();
+  const rev2 = sj.draft?.rev ?? d.rev;
+  r = await post('/api/admin/mini/drafts', { action: 'publish', id: did, rev: rev2 }, adm); j = await r.json();
   const q = JSON.parse(await redis.get('mini:queue'));
-  check('beemeléskor a régi helyére (2.) tér vissza, a készítő nevével', r.status === 200 && q.length === 3 && q[1].author === 'Második' && q[0].id === 'q1', JSON.stringify(q.map((x) => x.id + ':' + (x.author || ''))));
+  check('mentéskor a helyén (2.) cserélődik: ugyanaz az azonosító, a készítő neve és az új kérdés', r.status === 200 && j.where === 'queue' && q.length === 3 && q[1].id === 'q2' && q[1].author === 'Második' && q[1].entries.find((e) => e.dir === 'A').clue === 'Átírt kérdés' && q[0].id === 'q1', JSON.stringify({ j, q: q.map((x) => x.id + ':' + (x.author || '')) , sj }).slice(0, 300));
+  check('a piszkozat megszűnt', (await (await fetch(BASE + '/api/admin/mini/drafts', { headers: adm })).json()).drafts.every((x) => x.id !== did));
+  // már megjelent (aktuális heti) mini szerkesztése: a hetén marad
+  const pubBefore = JSON.parse((await redis.get('mini:published')) || '[]');
+  await redis.set('mini:published', JSON.stringify([...pubBefore, { id: 'pszerk', rows: rowsQ, entries: entQ, week: '2026-11-16', publishedAt: '2026-11-16T00:00:00Z' }]));
+  const pubList = JSON.parse(await redis.get('mini:published'));
+  const target = pubList[pubList.length - 1];
+  r = await post('/api/admin/mini/drafts', { action: 'editQueued', id: target.id }, adm); j = await r.json();
+  check('megjelent mini is szerkeszthető', r.status === 200 && j.id);
+  const pd = (await (await fetch(BASE + `/api/admin/mini/drafts?id=${j.id}`, { headers: adm })).json()).draft;
+  const firstKey = Object.keys(pd.clues)[0];
+  r = await post('/api/admin/mini/drafts', { action: 'save', id: pd.id, rev: pd.rev, title: pd.title, rows: pd.rows, clues: { ...pd.clues, [firstKey]: { ...pd.clues[firstKey], clue: 'Megjelent, átírva' } } }, adm); const ps = await r.json();
+  r = await post('/api/admin/mini/drafts', { action: 'publish', id: pd.id, rev: ps.draft?.rev ?? pd.rev }, adm); j = await r.json();
+  const pubAfter = JSON.parse(await redis.get('mini:published'));
+  const t2 = pubAfter.find((x) => x.id === target.id);
+  check('megjelent mini mentése a hetén marad, a várólista nem változik', r.status === 200 && j.where === 'published' && t2.week === target.week && t2.entries.some((e) => e.clue === 'Megjelent, átírva') && pubAfter.length === pubList.length && JSON.parse(await redis.get('mini:queue')).length === 3, JSON.stringify(j));
   r = await post('/api/admin/mini/drafts', { action: 'editQueued', id: 'nincs' }, adm); check('nem létező várólistás elem: 404', r.status === 404);
 }
 

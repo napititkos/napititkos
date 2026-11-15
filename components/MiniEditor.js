@@ -302,7 +302,8 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
 
   async function publish() {
     if (!ready || busy) return;
-    if (!confirm('Beemeled a várólistára? A piszkozat megszűnik, a várólistán már csak kipróbálni és törölni lehet.')) return;
+    const inPlace = !!initial.fromMini?.id;
+    if (!confirm(inPlace ? (initial.fromMini.week ? `Elmented a(z) ${initial.fromMini.week} kezdetű héten megjelent minit? A játékosok mostantól az új változatot látják.` : 'Elmented a várólistás minit? A helyén marad a sorban.') : 'Beemeled a várólistára? A piszkozat megszűnik; a várólistán később is szerkesztheted.')) return;
     let { id, rev } = meta;
     if (dirty || !id) {
       const d = await save();
@@ -314,7 +315,7 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
     setBusy(false);
     if (ok) {
       onChanged?.();
-      onClose?.('published');
+      onClose?.(inPlace ? 'saved-in-place' : 'published');
       return;
     }
     if (status === 409) setConflict(data.draft);
@@ -589,7 +590,7 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
           Kipróbálom
         </button>
         <button className="primary" onClick={publish} disabled={!ready || busy}>
-          Beemelés a várólistára
+          {initial.fromMini?.id ? (initial.fromMini.week ? 'Mentés a megjelent minibe' : 'Mentés a helyén (várólista)') : 'Beemelés a várólistára'}
         </button>
         <button className="ghost" onClick={close}>
           Bezárás

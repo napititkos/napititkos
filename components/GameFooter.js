@@ -46,12 +46,15 @@ export function GameTile({ game, isNew = false, big = false, done = false, href 
       {tile}
       <div className="game-tile-checks">
         {checks.map((c) => (
-          <a key={c.label} className="game-tile-check-item" href={c.href} aria-label={`${g.title} ${c.label} – ${c.done ? 'teljesítve' : 'még nincs teljesítve'}`}>
-            <span className={`game-tile-check${c.done ? ' done' : ''}`} aria-hidden="true">
+          <span key={c.label} className="game-tile-check-item">
+            <span className={`game-tile-check${c.done ? ' done' : ''}`} role="img" aria-label={`${c.label}: ${c.done ? 'teljesítve' : 'még nincs teljesítve'}`}>
               {c.done && <CheckMark />}
             </span>
-            <span className="game-tile-check-label">{c.label}</span>
-          </a>
+            {/* A szokásos buborék maga a gomb (a saját rejtvényére visz). */}
+            <a className="pill game-tile-check-label" href={c.href} aria-label={`${g.title} ${c.label}`}>
+              {c.label}
+            </a>
+          </span>
         ))}
       </div>
     </div>
