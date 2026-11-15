@@ -327,10 +327,11 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       tapLast.current = null;
       return;
     }
-    // Koppintás: ha a már kijelölt utolsó betűre koppintott újra, beküldjük.
-    if (p.length >= 3 && i === p[p.length - 1] && tapLast.current === i) {
-      submit(p);
-      setP([]);
+    // Koppintás: ha a már kijelölt utolsó betűre koppintott újra, 3+ betűnél beküldjük; rövidebbnél
+    // (pl. csak az első betű van kijelölve) erről a betűről is eltűnik a kijelölés, nem ragad be.
+    if (p.length && i === p[p.length - 1] && tapLast.current === i) {
+      if (p.length >= 3) submit(p);
+      setP(p.length >= 3 ? [] : p.slice(0, -1));
       tapLast.current = null;
       return;
     }

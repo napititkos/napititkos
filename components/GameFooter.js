@@ -19,7 +19,8 @@ export function GameTile({ game, isNew = false, big = false, done = false }) {
   const g = GAMES[game];
   return (
     <a className={`card game-tile${big ? ' game-tile-big' : ''}`} href={g.href} aria-label={`${g.title} – ${g.sub}`}>
-      <span className="game-tile-icon">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : game === 'sudoku' ? <SudokuIcon size={null} /> : <MiniIcon size={null} />}</span>
+      {/* A logók betűrácsai és a díszfeliratok ne kerüljenek a keresők találati szövegébe. */}
+      <span className="game-tile-icon" data-nosnippet="">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : game === 'sudoku' ? <SudokuIcon size={null} /> : <MiniIcon size={null} />}</span>
       {/* Főoldalon: lekerekített sarkú fekete négyzet a csempe jobb szélén; teljesítéskor benne a pipa. */}
       {big && (
         <span className={`game-tile-check${done ? ' done' : ''}`} role="img" aria-label={done ? 'Teljesítve' : 'Még nincs teljesítve'}>
@@ -31,7 +32,7 @@ export function GameTile({ game, isNew = false, big = false, done = false }) {
         </span>
       )}
       <span className="game-tile-text">
-        <span className="game-tile-word">{game === 'titkos' ? <TitkosWordmark ring={false} /> : game === 'szo' ? <SzoWordmark ring={false} /> : game === 'sudoku' ? <SudokuWordmark ring={false} /> : <MiniWordmark ring={false} />}</span>
+        <span className="game-tile-word" data-nosnippet="">{game === 'titkos' ? <TitkosWordmark ring={false} /> : game === 'szo' ? <SzoWordmark ring={false} /> : game === 'sudoku' ? <SudokuWordmark ring={false} /> : <MiniWordmark ring={false} />}</span>
         <span className="game-tile-sub">{g.sub}</span>
       </span>
     </a>

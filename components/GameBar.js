@@ -7,7 +7,8 @@ import { loadProgress } from '../lib/progress';
 
 // A játékok gombsora (a játék logója alatt): balra az Értesítések, Ranglista (a játék fülén nyílik),
 // Kisokos (a játék részére visz), Trófeák, jobbra a Főoldal.
-export default function GameBar({ game = 'titkos' }) {
+// lbSize: a sudokunál a ranglista ezzel a mérettel (6 vagy 9) nyílik.
+export default function GameBar({ game = 'titkos', lbSize = null }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const upd = () => setCount((loadProgress().unlocked || []).filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length);
@@ -74,9 +75,9 @@ export default function GameBar({ game = 'titkos' }) {
   const lbTab = ['mini', 'szo', 'sudoku'].includes(game) ? game : undefined;
   const kisokos = ['mini', 'szo', 'sudoku'].includes(game) ? `/kisokos?tab=${game}` : '/kisokos';
   return (
-    <div ref={rowRef} className={`quick-row game-bar${compact >= 1 ? ' compact-home' : ''}${compact >= 2 ? ' compact-trophy' : ''}${compact >= 3 ? ' compact-tight' : ''}`}>
+    <div ref={rowRef} data-nosnippet="" className={`quick-row game-bar${compact >= 1 ? ' compact-home' : ''}${compact >= 2 ? ' compact-trophy' : ''}${compact >= 3 ? ' compact-tight' : ''}`}>
       <NotificationsButton />
-      <button className="pill quick-pill" type="button" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: lbTab ? { tab: lbTab } : {} }))}>
+      <button className="pill quick-pill" type="button" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: lbTab ? { tab: lbTab, size: lbSize } : {} }))}>
         <Icon src="/icons/Ranglista.png" size={16} className="quick-ico" /> Ranglista
       </button>
       <a className="pill quick-pill" href={kisokos}>

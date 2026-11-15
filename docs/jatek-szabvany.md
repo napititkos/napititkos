@@ -69,5 +69,11 @@ léteznek, újra kell használni őket, nem újat írni.
   középső rész (és ami a fejlécben változik) töltődik újra. A ranglista a saját eredményhez ugrik,
   lehetőleg középre. Új játéknál a `GAME_HREF` listába is fel kell venni.
 - Világos és sötét mód, 320–1280 px szélesség, és a kontrasztellenőrzés (WCAG AA) mindig teljesüljön.
+- Több méretű játék (pl. Sudoku 6×6 / 9×9): a méretváltó gombok a nehézség sorának bal szélén
+  (`GameHead` `lead`), a kiválasztott kiemelve; a méret a címben is (`?m=9`). A ranglistán a méretváltó
+  a kereten belül, felül, rögzítve, teljes szélességben kettéosztva (a fejléc nem változik); az
+  archívumban a lenyitott nap alatt. Mindkét méretnek külön ranglistája, eredménye és trófeái vannak.
+- Keresők: a díszfeliratok és a logók betűrácsai `data-nosnippet` jelölést kapnak; minden játékoldalnak
+  saját `layout.js`-ben címe és leírása van (`metadata`).
 - Nehézség: hétfő, kedd 1/5 · szerda, csütörtök 2/5 · péntek 3/5 · szombat 4/5 · vasárnap 5/5
   (`lib/dayLevel.js`).

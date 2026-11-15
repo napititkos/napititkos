@@ -11,7 +11,11 @@ const FramedModal = forwardRef(function FramedModal({ title, head, children, pla
   const pathname = usePathname();
   function play() {
     onClose();
-    if (playHref && pathname !== playHref) router.push(playHref);
+    if (!playHref) return;
+    // Ha már a játék oldalán vagyunk, nem töltjük újra: az oldal az eseményből tudja meg, mit kell
+    // mutatnia (pl. a sudoku a 9x9-est, ha a 9x9-es ranglistáról jöttünk).
+    if (pathname === playHref.split('?')[0]) window.dispatchEvent(new CustomEvent('framed-play', { detail: { href: playHref } }));
+    else router.push(playHref);
   }
   return (
     <div className="modal-overlay framed-overlay" onClick={onClose}>

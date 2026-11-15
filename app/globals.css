@@ -1837,8 +1837,9 @@ a.card.game-tile{ min-height: 0; }
 .sudoku-top{ display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .sudoku-level{ font-size: 13.5px; color: var(--ink-soft); font-weight: 700; white-space: nowrap; }
 .sudoku-level b{ color: var(--accent-text); }
+/* A sorok magassága rögzített (1fr): egy üres sor sem csúszhat össze (régen az üres sorok laposabbak lettek). */
 .sudoku-board{
-  display: grid; grid-template-columns: repeat(6, 1fr); width: min(100%, 360px); margin: 0 auto; aspect-ratio: 1;
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(0, 1fr)); width: min(100%, 360px); margin: 0 auto; aspect-ratio: 1;
   border: 3px solid var(--mini-black); border-radius: 10px; overflow: hidden; background: var(--mini-black); gap: 1px;
   user-select: none; -webkit-user-select: none; touch-action: manipulation;
 }
@@ -2025,3 +2026,41 @@ button.community-head.archive-head-compact{ display: flex; flex-direction: row; 
   .framed-modal .lb-tabs{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
   .framed-modal .lb-tabs button.small{ padding: 5px 2px; font-size: 12px; white-space: nowrap; min-width: 0; }
 }
+
+/* Sudoku 9x9: 3x3-as dobozok, a rács a kártya szélességéig nőhet (mobilon is kifér), kisebb számok. */
+.sudoku-board.s9{ grid-template-columns: repeat(9, minmax(0, 1fr)); grid-template-rows: repeat(9, minmax(0, 1fr)); width: min(100%, 450px); border-radius: 8px; }
+.sudoku-board.s9 .sudoku-cell{ font-size: clamp(17px, 5.2vw, 25px); }
+.sudoku-board.s9 .sudoku-notes{ inset: 1px; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font-size: clamp(7px, 2vw, 10px); }
+.sudoku-pad.p9{ grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; width: min(100%, 450px); }
+.sudoku-pad.p9 button.sudoku-key{ height: 46px; font-size: 22px; border-radius: 10px; }
+.sudoku-pad.p9 button.sudoku-key.alt{ font-size: 17px; }
+.sudoku-pad.p9 button.sudoku-key.alt small{ font-size: 10.5px; }
+.sudoku-pad.p9 button.sudoku-key.undo{ grid-column: span 2; }
+.sudoku-pad.p9 button.sudoku-key.note{ height: 38px; font-size: 14.5px; }
+@media (max-width: 420px){
+  .sudoku-pad.p9 button.sudoku-key{ height: 42px; font-size: 20px; }
+  .sudoku-pad.p9 button.sudoku-key.note{ height: 36px; }
+}
+/* Méretváltó (6×6 / 9×9) a nehézség sorának bal szélén. */
+.gh-left{ display: inline-flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
+.sudoku-sizes{ display: inline-flex; gap: 4px; }
+button.sudoku-size{ padding: 5px 10px; font-size: 13px; font-weight: 800; border-radius: 999px; border: 2px solid var(--accent2); background: transparent; color: var(--accent2-text); white-space: nowrap; }
+button.sudoku-size.on{ background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; }
+@media (max-width: 400px){
+  button.sudoku-size{ padding: 4px 7px; font-size: 12px; }
+  .gh-left .pill.gh-level{ padding-left: 9px; padding-right: 9px; font-size: 12.5px; }
+}
+.szo-share.sudoku-share{ gap: 8px; flex-wrap: wrap; }
+/* Ranglista: a sudoku mérete (6×6 / 9×9) a keret tetején, rögzítve, a teljes szélességben kettéosztva. */
+.lb-subtabs{ position: sticky; top: -8px; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: -8px -8px 8px; padding: 8px; background: var(--card); border-bottom: 2px solid var(--line); }
+.lb-subtabs button{ padding: 6px 8px; font-size: 13.5px; font-weight: 800; border-radius: 10px; border: 2px solid var(--line); background: transparent; color: var(--ink-soft); }
+.lb-subtabs button.on{ background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; }
+@media (max-width: 420px){ .lb-subtabs{ top: -6px; margin: -6px -6px 8px; padding: 6px; } }
+.framed-modal .fm-title{ margin-bottom: 4px; }
+.framed-modal .lb-countdown{ margin: 0 0 10px; }
+/* Korábbi sudokuk: a lenyitott nap alatt 6×6 / 9×9 választó. */
+.sudoku-arch-sizes{ display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
+.sudoku-thumb.t9{ grid-template-columns: repeat(9, 7px); }
+.sudoku-thumb.t9 span{ height: 7px; font-size: 5.5px; }
+/* Főoldal: a mai dátum a napititkos.hu felirat alatt, középen, kisebb betűvel. */
+.hub-date{ text-align: center; margin: -6px 0 12px; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }

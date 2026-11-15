@@ -96,7 +96,9 @@ export default function Nav() {
     <>
       {/* Fejléc: a hamburger menü megszűnt. Balra a profil gomb, középen a TITKOSÍRÁS felirat a
           logóval, jobbra (adminnak) az admin felület gombja. */}
-      <nav className="topnav topnav-c">
+      {/* A díszített felirat betűi (kivágott ékezetek, kos-O) a keresők találati szövegébe ne
+          kerüljenek bele (data-nosnippet). */}
+      <nav className="topnav topnav-c" data-nosnippet="">
         {/* A profil gomb mindig látszik (betöltés közben is), így oldalváltáskor nem villan fel:
             amíg a bejelentkezés állapota nem ismert, a Profilom oldalra mutat (az vendégnek a
             bejelentkezést kínálja). */}

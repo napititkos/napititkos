@@ -50,3 +50,29 @@ test('sudoku: ütközésvizsgálat (sor, oszlop, 2x3-as doboz)', () => {
   assert.equal(conflicts(k).size, 0);
   assert.equal(PEERS[0].length, 12);
 });
+
+test('sudoku 9x9: egyedi megoldású, szabályos, a 6x6-ossal azonos nehézség, ugyanarra a napra ugyanaz', () => {
+  const week9 = week.map((d) => generateSudoku(d, { size: 9 }));
+  week9.forEach((p, i) => {
+    assert.equal(p.size, 9);
+    assert.equal(p.givens.length, 81);
+    assert.equal(p.level, sudokuLevel(week[i]));
+    assert.equal(countSolutions(p.givens, 2), 1, week[i]);
+    assert.equal(conflicts(p.solution).size, 0, week[i]);
+    assert.ok(p.givens.every((g, k) => !g || g === p.solution[k]), week[i]);
+  });
+  assert.deepEqual(generateSudoku(week[0], { size: 9 }).givens, week9[0].givens);
+  const clues = week9.map((p) => p.clues);
+  for (let i = 1; i < 7; i++) assert.ok(clues[i] <= clues[i - 1], JSON.stringify(clues));
+  assert.ok(solvableWith(week9[0].givens, { hidden: false }), 'hétfő: csupasz egyesekkel');
+  assert.ok(!solvableWith(week9[6].givens) && solvableAdvanced(week9[6].givens), 'vasárnap: csak haladó lépésekkel');
+});
+
+test('sudoku 9x9: ütközés a 3x3-as dobozban', () => {
+  const g = Array(81).fill(0);
+  g[0] = 7; g[20] = 7; // 0. sor 0. oszlop és 2. sor 2. oszlop: azonos doboz
+  assert.deepEqual([...conflicts(g)].sort((a, b) => a - b), [0, 20]);
+  const h = Array(81).fill(0);
+  h[0] = 7; h[30] = 7; // 3. sor 3. oszlop: más doboz
+  assert.equal(conflicts(h).size, 0);
+});
