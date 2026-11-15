@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../lib/progress';
 import { computeNewAchievements, statsFromProgress } from '../lib/achievements';
 import { loadTutorialProgress } from '../lib/tutorial';
+import { markAllDoneToday } from '../lib/dailyDone';
 
 // Utólagos trófea-ellenőrzés oldalbetöltéskor (munkamenetenként egyszer): a helyben tárolt
 // haladásból (megfejtések, legjobb sorozat) és bejelentkezve a szerveren nyilvántartott tényekből
@@ -19,7 +20,10 @@ async function runCheck(status) {
   const prog = loadProgress();
   // A Kisokos bevezetőjét (Kezdetek) a trófea bevezetése előtt teljesítők is megkapják.
   if (!prog.introDone && (loadTutorialProgress().kezdetek || 0) >= 1) prog.introDone = true;
+  // Ha ma minden napi rejtvény kész, a nap bekerül a teljes napok közé (és ez elmentődik).
+  const allDay = markAllDoneToday(prog);
   const { unlocked, newly } = computeNewAchievements(statsFromProgress(prog, facts), prog.unlocked);
+  if (allDay && !newly.length) saveProgress(prog);
   if (newly.length) {
     prog.unlocked = unlocked;
     saveProgress(prog);

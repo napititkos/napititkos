@@ -63,8 +63,9 @@ export default function AdminMini() {
   const openNew = (extra = {}) =>
     setEditing({ key: `new-${Date.now()}`, initial: { title: '', rows: Array.from({ length: N }, () => Array(N).fill('')), clues: {}, ...extra } });
 
-  // Várólistás rejtvény szerkesztése: piszkozattá alakítjuk, és megnyitjuk a szerkesztőben;
-  // beemeléskor a várólistán a régi helyére kerül vissza.
+  // Várólistás vagy már megjelent mini szerkesztése bármikor: a rejtvény a helyén marad (a várólistán
+  // a sorrendjében, a megjelentek között a hetén); a szerkesztés egy hozzá kötött piszkozatban zajlik,
+  // és mentéskor a helyén cserélődik.
   async function editQueued(id) {
     const res = await fetch('/api/admin/mini/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'editQueued', id }) });
     const d = await res.json().catch(() => ({}));
@@ -160,6 +161,7 @@ export default function AdminMini() {
           onClose={(reason) => {
             setEditing(null);
             if (reason === 'published') setMsg({ ok: true, text: 'Beemelve a várólistára. Az új vagy átírt kérdések bekerültek a bankba.' });
+            if (reason === 'saved-in-place') setMsg({ ok: true, text: 'Elmentve a helyén. Az új vagy átírt kérdések bekerültek a bankba.' });
             load();
           }}
         />
@@ -260,6 +262,40 @@ export default function AdminMini() {
           ))}
         </div>
       </div>
+      )}
+      {(editing || tab === 'boards') && state?.published?.length > 0 && (
+        <div className="card">
+          <b>Megjelent minik (az utolsó {state.published.length})</b>
+          <p className="mini-muted" style={{ margin: '4px 0 8px', fontSize: 13 }}>
+            Ezek is bármikor szerkeszthetők; mentéskor a hetükön maradnak, és a játékosok az új változatot látják.
+          </p>
+          <div className="mini-queue">
+            {state.published.map((q) => (
+              <div key={q.id} className="mini-queue-item">
+                <MiniGrid rows={q.rows} small />
+                <div className="mini-queue-info">
+                  <span>
+                    <b>{weekLabel(q.week)}</b>
+                    {state.current?.id === q.id ? ' · aktuális' : ''}
+                    <br />
+                    <span className="mini-muted">
+                      {q.entries.map((e) => e.word.toUpperCase()).join(', ')}
+                      {q.author ? ` · készítette: ${q.author}` : ''}
+                    </span>
+                  </span>
+                  <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="ghost small" onClick={() => setTrying({ rows: q.rows, entries: q.entries })}>
+                      Kipróbálom
+                    </button>
+                    <button className="ghost small" onClick={() => editQueued(q.id)}>
+                      Szerkesztés
+                    </button>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
       {/* Kipróbálás: a rejtvény úgy, ahogy a játékosok látni fogják. */}
       {trying && (

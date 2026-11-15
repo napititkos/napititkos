@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, achievementProgress, gameOf, statsFromProgress } from '../lib/achievements';
 
 const GAME_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', sudoku: 'Sudoku' };
+// Csoportcímek: az „Összes” nézetben legfelül az általános (minden játékra szóló) trófeák.
+const GROUP_LABEL = { altalanos: 'Általános', ...GAME_LABEL };
 import { loadProgress } from '../lib/progress';
 import Icon from './Icon';
 import FramedModal, { GAME_HREF } from './FramedModal';
@@ -43,7 +45,7 @@ export default function AchievementsModal() {
   if (!open) return null;
 
   const close = () => setOpen(false);
-  const games = multi ? (filter === 'all' ? ['titkos', 'szo', 'sudoku', 'mini'] : [filter]) : ['titkos'];
+  const games = multi ? (filter === 'all' ? ['altalanos', 'titkos', 'szo', 'sudoku', 'mini'] : [filter]) : ['titkos'];
   const shown = ACHIEVEMENTS.filter((a) => games.includes(gameOf(a)));
   const got = shown.filter((a) => unlocked.includes(a.id)).length;
   return (
@@ -52,7 +54,7 @@ export default function AchievementsModal() {
       labelId="ach-title"
       bodyLabel="Trófeák listája"
       onClose={close}
-      playHref={GAME_HREF[filter === 'all' ? from : filter]}
+      playHref={GAME_HREF[filter === 'all' || filter === 'altalanos' ? from : filter]}
       title={
         <>
           <Icon src="/icons/Trofeak.png" size={24} /> Trófeák
@@ -74,7 +76,7 @@ export default function AchievementsModal() {
               }}
               aria-label="Trófeák játék szerint"
             >
-              {[['all', 'Összes'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']].map(([v, label]) => (
+              {[['all', 'Összes'], ['altalanos', 'Általános'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']].map(([v, label]) => (
                 <option key={v} value={v}>
                   {label}
                 </option>
@@ -86,7 +88,7 @@ export default function AchievementsModal() {
     >
         {games.map((g) => (
           <div key={g} className="ach-group">
-            {multi && filter === 'all' && <h3 className="ach-group-title">{GAME_LABEL[g]}</h3>}
+            {multi && filter === 'all' && <h3 className="ach-group-title">{GROUP_LABEL[g]}</h3>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {ACHIEVEMENTS.filter((a) => gameOf(a) === g).map((a) => {
             const done = unlocked.includes(a.id);

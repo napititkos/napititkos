@@ -15,20 +15,23 @@ const GAMES = {
 
 // Játékcsempe (a főoldalon és a játékok alján): balra a játék logója, a csempét alul-felül
 // kitöltve; mellette középen a játék neve a címbetűtípussal és színekkel (kos nélkül), alatta az alcím.
-export function GameTile({ game, isNew = false, big = false, done = false }) {
+// checks: több jelölődoboz (pl. sudoku 6×6 és 9×9), alattuk felirattal; mindegyik a saját rejtvényére
+// visz. Ezek a csempe linkjén kívül vannak (link a linkben nem lehet), de ugyanott jelennek meg.
+const CheckMark = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M6.2 12.6l3.7 3.7 7.9-8.4" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+export function GameTile({ game, isNew = false, big = false, done = false, href = null, checks = null }) {
   const g = GAMES[game];
-  return (
-    <a className={`card game-tile${big ? ' game-tile-big' : ''}`} href={g.href} aria-label={`${g.title} – ${g.sub}`}>
+  const tile = (
+    <a className={`card game-tile${big ? ' game-tile-big' : ''}`} href={href || g.href} aria-label={`${g.title} – ${g.sub}`}>
       {/* A logók betűrácsai és a díszfeliratok ne kerüljenek a keresők találati szövegébe. */}
       <span className="game-tile-icon" data-nosnippet="">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : game === 'sudoku' ? <SudokuIcon size={null} /> : <MiniIcon size={null} />}</span>
       {/* Főoldalon: lekerekített sarkú fekete négyzet a csempe jobb szélén; teljesítéskor benne a pipa. */}
-      {big && (
+      {big && !checks && (
         <span className={`game-tile-check${done ? ' done' : ''}`} role="img" aria-label={done ? 'Teljesítve' : 'Még nincs teljesítve'}>
-          {done && (
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6.2 12.6l3.7 3.7 7.9-8.4" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
+          {done && <CheckMark />}
         </span>
       )}
       <span className="game-tile-text">
@@ -36,6 +39,25 @@ export function GameTile({ game, isNew = false, big = false, done = false }) {
         <span className="game-tile-sub">{g.sub}</span>
       </span>
     </a>
+  );
+  if (!big || !checks) return tile;
+  return (
+    <div className="game-tile-wrap">
+      {tile}
+      <div className="game-tile-checks">
+        {checks.map((c) => (
+          <span key={c.label} className="game-tile-check-item">
+            <span className={`game-tile-check${c.done ? ' done' : ''}`} role="img" aria-label={`${c.label}: ${c.done ? 'teljesítve' : 'még nincs teljesítve'}`}>
+              {c.done && <CheckMark />}
+            </span>
+            {/* A szokásos buborék maga a gomb (a saját rejtvényére visz). */}
+            <a className="pill game-tile-check-label" href={c.href} aria-label={`${g.title} ${c.label}`}>
+              {c.label}
+            </a>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 

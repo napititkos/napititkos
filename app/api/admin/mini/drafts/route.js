@@ -27,7 +27,7 @@ function reply(result) {
   if (!result) return Response.json({ error: 'busy' }, { status: 503, headers: NO_STORE });
   switch (result.status) {
     case 200:
-      return Response.json({ ok: true, ...(result.draft ? { draft: result.draft } : {}), ...(result.id ? { id: result.id } : {}) }, { headers: NO_STORE });
+      return Response.json({ ok: true, ...(result.draft ? { draft: result.draft } : {}), ...(result.id ? { id: result.id } : {}), ...(result.where ? { where: result.where } : {}) }, { headers: NO_STORE });
     case 404:
       return Response.json({ error: 'not-found', message: 'Ez a piszkozat már nem létezik.' }, { status: 404, headers: NO_STORE });
     case 409:

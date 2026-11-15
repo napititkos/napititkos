@@ -67,6 +67,10 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   // Megoldott rácson nincs kijelölés (különben a bal felső cella kiemelése megtévesztő lenne).
   const [sel, setSel] = useState(() => (alreadySolved ? -1 : givens.findIndex((g) => !g)));
   const [noteMode, setNoteMode] = useState(false);
+  // Kijelölés mód: egyszerre több cella jelölhető ki (koppintással ki-be), és a beírás mindegyikbe
+  // bekerül (számnál és jegyzetnél is).
+  const [multiMode, setMultiMode] = useState(false);
+  const [multi, setMulti] = useState([]);
   const [history, setHistory] = useState([]);
   const [solved, setSolved] = useState(alreadySolved);
   const [msg, setMsg] = useState(null);
@@ -99,6 +103,8 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     setSolved(true);
     setCompletedAt(Date.now());
     setSel(-1);
+    setMultiMode(false);
+    setMulti([]);
     playWave(10);
     setElapsed(el);
     fireConfetti();
@@ -120,25 +126,60 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
       .finally(() => (sending.current = false));
   }, [filled, bad, solved, grid, date, preview, onSolved]);
 
+  // A beírás célcellái: kijelölés módban az összes kijelölt (a megadottak kivételével), egyébként a
+  // kijelölt cella.
+  const targets = useMemo(() => {
+    const list = multiMode ? multi : sel >= 0 ? [sel] : [];
+    return list.filter((i) => i >= 0 && !givens[i]);
+  }, [multiMode, multi, sel, givens]);
   const put = useCallback(
     (d) => {
-      if (solved || sel < 0 || givens[sel]) return;
+      if (solved || !targets.length) return;
       setMsg(null);
+      const T = new Set(targets);
       if (noteMode && d) {
-        if (grid[sel]) return;
+        const empty = targets.filter((i) => !grid[i]);
+        if (!empty.length) return;
+        // Ha minden kijelölt üres cellában megvan a jelölt, kikerül; különben mindegyikbe bekerül.
+        const all = empty.every((i) => notes[i].includes(d));
         setHistory((h) => [...h, { grid, notes }].slice(-200));
-        setNotes((ns) => ns.map((n, i) => (i === sel ? (n.includes(d) ? n.filter((x) => x !== d) : [...n, d].sort()) : n)));
+        setNotes((ns) => ns.map((n, i) => (!T.has(i) || grid[i] ? n : all ? n.filter((x) => x !== d) : n.includes(d) ? n : [...n, d].sort())));
         return;
       }
-      if (grid[sel] === d && !notes[sel].length) return;
+      if (targets.every((i) => grid[i] === d && !notes[i].length)) return;
       setHistory((h) => [...h, { grid, notes }].slice(-200));
-      setGrid((g) => g.map((v, i) => (i === sel ? d : v)));
-      // Szám beírásakor a cella jegyzetei törlődnek, és a társaiból kikerül ez a jelölt.
-      if (d) setNotes((ns) => ns.map((n, i) => (i === sel ? [] : rowOf(i) === rowOf(sel) || colOf(i) === colOf(sel) || boxOf(i) === boxOf(sel) ? n.filter((x) => x !== d) : n)));
-      else setNotes((ns) => ns.map((n, i) => (i === sel ? [] : n)));
+      setGrid((g) => g.map((v, i) => (T.has(i) ? d : v)));
+      // Szám beírásakor a cellák jegyzetei törlődnek, és a társaikból kikerül ez a jelölt.
+      const peer = (i) => targets.some((t) => rowOf(i) === rowOf(t) || colOf(i) === colOf(t) || boxOf(i) === boxOf(t));
+      if (d) setNotes((ns) => ns.map((n, i) => (T.has(i) ? [] : peer(i) ? n.filter((x) => x !== d) : n)));
+      else setNotes((ns) => ns.map((n, i) => (T.has(i) ? [] : n)));
     },
-    [solved, sel, givens, noteMode, grid, notes, rowOf, colOf, boxOf],
+    [solved, targets, noteMode, grid, notes, rowOf, colOf, boxOf],
   );
+  function toggleMulti() {
+    setMultiMode((m) => {
+      if (m) {
+        setMulti([]);
+        return false;
+      }
+      setMulti(sel >= 0 && !givens[sel] ? [sel] : []);
+      return true;
+    });
+  }
+  function pick(i) {
+    if (solved) return;
+    if (!multiMode) return setSel(i);
+    setSel(i);
+    if (givens[i]) return;
+    setMulti((m) => (m.includes(i) ? m.filter((x) => x !== i) : [...m, i]));
+  }
+  const clearBoard = useCallback(() => {
+    if (solved) return;
+    setMsg(null);
+    setHistory((h) => [...h, { grid, notes }].slice(-200));
+    setGrid(givens.slice());
+    setNotes(Array.from({ length: NN }, () => []));
+  }, [solved, grid, notes, givens, NN]);
   const undo = useCallback(() => {
     if (solved || !history.length) return;
     const last = history[history.length - 1];
@@ -167,6 +208,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
         return put(0);
       }
       if (e.key === 'n' || e.key === 'N') return setNoteMode((m) => !m);
+      if (e.key === 'k' || e.key === 'K') return toggleMulti();
       const mv = { ArrowUp: -N, ArrowDown: N, ArrowLeft: -1, ArrowRight: 1 }[e.key];
       if (mv) {
         e.preventDefault();
@@ -217,8 +259,8 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
           <div key={r} role="row" className="sudoku-row">
             {grid.slice(r * N, r * N + N).map((v, k) => {
               const i = r * N + k;
-              const isSel = i === sel;
-              const zone = sel >= 0 && !isSel && (rowOf(i) === rowOf(sel) || colOf(i) === colOf(sel) || boxOf(i) === boxOf(sel));
+              const isSel = multiMode ? multi.includes(i) : i === sel;
+              const zone = !multiMode && sel >= 0 && !isSel && (rowOf(i) === rowOf(sel) || colOf(i) === colOf(sel) || boxOf(i) === boxOf(sel));
               const same = !isSel && selVal && v === selVal;
               const cls = [
                 'sudoku-cell',
@@ -240,8 +282,8 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
                   aria-selected={isSel}
                   className={cls}
                   style={{ '--d': diagFromBottomLeft(rowOf(i), colOf(i), N) }}
-                  onPointerDown={() => !solved && setSel(i)}
-                  onPointerEnter={(e) => e.pointerType === 'mouse' && !solved && setSel(i)}
+                  onPointerDown={() => pick(i)}
+                  onPointerEnter={(e) => e.pointerType === 'mouse' && !solved && !multiMode && setSel(i)}
                 >
                   {v ? (
                     v
@@ -285,8 +327,23 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
             <span aria-hidden="true">↶</span>
             <small>Vissza</small>
           </button>
-          <button type="button" className={`sudoku-key note${noteMode ? ' on' : ''}`} aria-pressed={noteMode} onClick={() => setNoteMode((m) => !m)}>
-            ✎ Jegyzet {noteMode ? 'bekapcsolva' : 'kikapcsolva'}
+          {/* Fél-fél szélességben: Jegyzet és Kijelölés (több cella egyszerre); bekapcsolva kiemelve. */}
+          <button type="button" className={`sudoku-key note half${noteMode ? ' on' : ''}`} aria-pressed={noteMode} onClick={() => setNoteMode((m) => !m)}>
+            <span aria-hidden="true">✎</span> Jegyzet
+          </button>
+          <button type="button" className={`sudoku-key note half multi${multiMode ? ' on' : ''}`} aria-pressed={multiMode} onClick={toggleMulti}>
+            <svg className="sudoku-multi-ico" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.2" fill="currentColor" />
+              <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <rect x="9" y="9" width="5.5" height="5.5" rx="1.2" fill="currentColor" />
+            </svg>{' '}
+            Kijelölés
+          </button>
+          {/* A tábla törlése: minden beírt szám és jegyzet törlődik (a Vissza gombbal visszahozható).
+              Megfejtés után a billentyűzettel együtt eltűnik. */}
+          <button type="button" className="sudoku-key note clear" onClick={clearBoard} disabled={!grid.some((v, i) => v && !givens[i]) && !notes.some((n) => n.length)}>
+            Tábla törlése
           </button>
         </div>
       )}
