@@ -2063,7 +2063,7 @@ button.sudoku-size.on{ background: var(--btn-primary); border-color: var(--btn-p
 .sudoku-thumb.t9{ grid-template-columns: repeat(9, 7px); }
 .sudoku-thumb.t9 span{ height: 7px; font-size: 5.5px; }
 /* A dátum csak egy picivel kisebb a napititkos.hu feliratnál (ugyanúgy a kijelzőhöz méretezve). */
-.hub-date{ text-align: center; margin: -16px 0 0; line-height: 1; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: min(calc((100vw - 110px) / 9.4), 40px); font-weight: 400; letter-spacing: 0.06em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.hub-date{ text-align: center; margin: -16px 0 0; line-height: 1; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: min(calc((100vw - 110px) / 10.2), 37px); font-weight: 700; letter-spacing: 0.06em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 /* Főoldal, Sudoku csempe: két jelölődoboz (6×6, 9×9), a dobozok közepe ugyanott, ahol a többi csempén a
    doboz (a szöveget nem tolják el); alattuk középen a felirat. Mindegyik a saját rejtvényére visz. */
 .game-tile-wrap{ position: relative; }
@@ -2072,7 +2072,14 @@ button.sudoku-size.on{ background: var(--btn-primary); border-color: var(--btn-p
 .game-tile-checks .game-tile-check{ position: static; transform: none; }
 /* A felirat a szokásos buborékban, és maga a buborék a gomb; a doboznál kicsit szélesebb, középen. */
 a.pill.game-tile-check-label{ font-size: 12px; font-weight: 800; line-height: 1; padding: 4px 8px; white-space: nowrap; text-decoration: none; }
-a.pill.game-tile-check-label:hover{ filter: brightness(0.96); }
+/* A buborék olyan lila, mint a csempén a SUDOKU „OKU” betűi; egérrel fölé érve megemelkedik. */
+a.pill.game-tile-check-label{ background: var(--accent2-text); color: #fff; transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease; }
+a.pill.game-tile-check-label:hover{ transform: translateY(-2px); box-shadow: 0 3px 8px rgba(31, 26, 43, 0.28); filter: brightness(1.12); }
+a.pill.game-tile-check-label:active{ transform: translateY(0); box-shadow: none; }
+@media (prefers-color-scheme: dark){
+  a.pill.game-tile-check-label{ background: var(--brand-iras); color: #1F1A2B; }
+  a.pill.game-tile-check-label:hover{ box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5); filter: brightness(1.08); }
+}
 a.pill.game-tile-check-label:focus-visible{ outline: 3px solid var(--accent2); outline-offset: 2px; }
 @media (max-width: 560px){
   .game-tile-checks{ right: 10px; transform: translateY(-13px); gap: 12px; }
