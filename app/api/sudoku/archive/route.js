@@ -6,7 +6,7 @@ import { todayStr } from '../../../../lib/date';
 import { miniLive, miniStart } from '../../../../lib/mini';
 import { SUDOKU_FIRST, sudokuNumber, sudokuResKey } from '../../../../lib/sudoku';
 
-// A korábbi napok sudokui (az indulás óta), a saját idővel. Bejelentkezve, mint a többi korábbi
+// A korábbi napok sudokui (az indulás óta), a saját idővel (6x6 és 9x9 külön). Bejelentkezve, mint a többi korábbi
 // rejtvény.
 export async function GET() {
   const noStore = { 'Cache-Control': 'private, no-store' };
@@ -24,15 +24,17 @@ export async function GET() {
   for (const d of dates) {
     pl.get(`sudoku:puzzle:${d}`);
     pl.hget(sudokuResKey(d), `u:${uid}`);
+    pl.hget(sudokuResKey(d, 9), `u:${uid}`);
   }
   const res = dates.length ? await pl.exec() : [];
   const items = dates.map((d, i) => {
     let p = null;
     try {
-      p = JSON.parse(res[i * 2]?.[1] || 'null');
+      p = JSON.parse(res[i * 3]?.[1] || 'null');
     } catch {}
-    const mine = res[i * 2 + 1]?.[1];
-    return { date: d, number: sudokuNumber(d), level: p?.level || 1, givens: p?.givens || [], solvedMs: mine ? Number(mine) : null };
+    const mine = res[i * 3 + 1]?.[1];
+    const mine9 = res[i * 3 + 2]?.[1];
+    return { date: d, number: sudokuNumber(d), level: p?.level || 1, givens: p?.givens || [], solvedMs: mine ? Number(mine) : null, solved9Ms: mine9 ? Number(mine9) : null };
   });
   return Response.json({ live: true, items }, { headers: noStore });
 }

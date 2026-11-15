@@ -18,6 +18,13 @@ function weekStartOf(d) {
 export default function Hub() {
   const { status } = useSession();
   const [done, setDone] = useState({});
+  // A mai dátum csak a böngészőben (a budapesti idő szerint), hogy éjfél körül se legyen eltérés.
+  const [today, setToday] = useState(null);
+  useEffect(() => {
+    setToday(todayStr());
+    const t = setInterval(() => setToday(todayStr()), 60000);
+    return () => clearInterval(t);
+  }, []);
   useEffect(() => {
     if (status !== 'authenticated') return setDone({});
     const read = () => {
@@ -32,7 +39,7 @@ export default function Hub() {
         titkos: !!prog.history?.[today]?.correct,
         szo: (prog.szoFullDays || []).includes(today),
         mini: (prog.miniWeeks || []).includes(week) || miniLocal?.week === week,
-        sudoku: (prog.sudokuDays || []).includes(today),
+        sudoku: (prog.sudokuDays || []).includes(today) || (prog.sudoku9Days || []).includes(today),
       });
     };
     read();
@@ -41,6 +48,11 @@ export default function Hub() {
   }, [status]);
   return (
     <div className="wrap">
+      {/* A mai dátum (éééé.hh.nn) a napititkos.hu felirat alatt, középen. */}
+      <p className="hub-date" suppressHydrationWarning>
+        {today ? today.replace(/-/g, '.') : '\u00a0'}
+      </p>
+      <h1 className="sr-only">napititkos.hu – napi magyar rejtvények: Titkosírás, Szókereső, Sudoku és Heti Mini</h1>
       <div className="hub">
         <GameTile game="titkos" big done={done.titkos} />
         <GameTile game="szo" big isNew done={done.szo} />

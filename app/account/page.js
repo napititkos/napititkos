@@ -176,7 +176,11 @@ export default function AccountPage() {
               <div className="stats" style={{ justifyContent: 'flex-start', gap: 18, margin: '6px 0 12px' }}>
                 <div className="stat">
                   <b>{(prog.sudokuDays || []).length}</b>
-                  <span>megoldva</span>
+                  <span>6×6 megoldva</span>
+                </div>
+                <div className="stat">
+                  <b>{(prog.sudoku9Days || []).length}</b>
+                  <span>9×9 megoldva</span>
                 </div>
               </div>
               <h4 className="stat-game">Heti Mini</h4>

@@ -1748,6 +1748,50 @@ section('Szókereső: a mai rácsból kitiltott szó levonódik a ranglistáról
   await post('/api/admin/szo', { action: 'unban', word: victim }, adm);
 }
 
+section('Sudoku 9x9: külön rejtvény, ranglista, archívum, admin');
+{
+  const s6 = await (await fetch(BASE + '/api/sudoku')).json();
+  const s9 = await (await fetch(BASE + '/api/sudoku?size=9')).json();
+  check('9x9: 81 mező, a 6x6-ossal azonos nehézség és sorszám', s9.size === 9 && s9.givens?.length === 81 && s9.level === s6.level && s9.number === s6.number && s6.size === 6, JSON.stringify({ l6: s6.level, l9: s9.level }));
+  check('9x9: a megoldás nem megy ki', !('solution' in s9));
+  const st9 = JSON.parse(await redis.get('sudoku9:puzzle:' + s9.date));
+  const dev9 = '7a'.repeat(16);
+  let rr = await post('/api/sudoku/solve', { date: s9.date, size: 9, grid: st9.solution.map((x, i) => (i === 0 ? (x % 9) + 1 : x)), elapsed: 300000, device: dev9, name: 'Kilences Klára' });
+  check('9x9: hibás rács: 400', rr.status === 400);
+  rr = await post('/api/sudoku/solve', { date: s9.date, size: 9, grid: st9.solution.slice(0, 36), elapsed: 300000, device: dev9, name: 'Kilences Klára' });
+  check('9x9: 36 elemű rács a 9x9-esre: 400', rr.status === 400);
+  rr = await post('/api/sudoku/solve', { date: s9.date, size: 9, grid: st9.solution, elapsed: 300000, device: dev9, name: 'Kilences Klára' });
+  const rj9 = await rr.json();
+  check('9x9: helyes megoldás elfogadva, statisztikával', rr.status === 200 && rj9.stats?.mine === 300000, JSON.stringify(rj9));
+  const lb9 = await (await fetch(BASE + '/api/sudoku/leaderboard?size=9')).json();
+  const lb6 = await (await fetch(BASE + '/api/sudoku/leaderboard')).json();
+  check('9x9: a saját ranglistáján szerepel, a 6x6-oson nem', lb9.size === 9 && lb9.entries.some((e) => e.name === 'Kilences Klára') && !lb6.entries.some((e) => e.name === 'Kilences Klára'));
+  const again = await (await fetch(BASE + `/api/sudoku?size=9&device=${dev9}`)).json();
+  check('9x9: a megoldó megkapja a megoldást és az idejét', again.mine === 300000 && again.solution?.length === 81);
+  const mine6 = await (await fetch(BASE + `/api/sudoku?device=${dev9}`)).json();
+  check('9x9: a 6x6-os eredményét nem érinti', !mine6.mine);
+  // korábbi nap 9x9-ese utólag is elkészül (az indulás óta), jövőbeli nem
+  const past = '2026-11-12';
+  const p9 = await (await fetch(BASE + `/api/sudoku?size=9&date=${past}`)).json();
+  check('9x9: korábbi nap 9x9-ese utólag is elérhető, azonos nehézséggel', p9.givens?.length === 81 && p9.level === 2, JSON.stringify(p9).slice(0, 120));
+  const early = await fetch(BASE + '/api/sudoku?size=9&date=2026-11-01');
+  check('9x9: az indulás előtti napra nincs', early.status === 404);
+  // admin
+  const a9 = await (await fetch(BASE + '/api/admin/sudoku?size=9', { headers: adm })).json();
+  check('admin: a 9x9-esek a mai és a következő 7 napra', a9.size === 9 && a9.days?.length === 8 && a9.days.every((d) => d.givens.length === 81));
+  const fut9 = a9.days[2];
+  rr = await post('/api/admin/sudoku', { action: 'regenerate', date: fut9.date, size: 9 }, adm);
+  const after9 = JSON.parse(await redis.get('sudoku9:puzzle:' + fut9.date));
+  check('admin: jövőbeli 9x9-es cseréje', rr.status === 200 && after9.givens.join() !== fut9.givens.join() && after9.level === fut9.level);
+  // archívum: bejelentkezve külön 6x6 és 9x9 idő
+  const arcDate = '2026-11-12';
+  await redis.set('sudoku:puzzle:' + arcDate, JSON.stringify({ date: arcDate, level: 2, givens: Array(36).fill(0), solution: Array(36).fill(1), clues: 0 }));
+  await redis.hset('sudoku9:res:' + arcDate, 'u:' + (await (await fetch(BASE + '/api/auth/session', { headers: { cookie: cA.header() } })).json()).user.id, '123000');
+  const arc = await (await fetch(BASE + '/api/sudoku/archive', { headers: { cookie: cA.header() } })).json();
+  const it = (arc.items || []).find((x) => x.date === arcDate);
+  check('archívum: a 9x9-es idő külön jön vissza', it && it.solved9Ms === 123000 && it.solvedMs == null, JSON.stringify(it));
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

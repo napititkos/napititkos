@@ -21,6 +21,8 @@ export default function LeaderboardModal() {
   // Két ranglista (a mini élesítése után): Titkosírás (mai) és Keresztrejtvény (heti, idő szerint).
   const [tab, setTab] = useState('daily');
   const [miniLive, setMiniLive] = useState(false);
+  // Sudoku: 6x6 / 9x9 választó a kereten belül (a fejléc nem változik); 9x9-ből nyitva a 9x9-es.
+  const [sudSize, setSudSize] = useState(6);
   // Visszaszámláló a nullázódásig (titkosírás: éjfél, óra:perc:mp; mini: hétfő 0:00, nap/óra/perc).
   const [tick, setTick] = useState(Date.now());
   useEffect(() => {
@@ -31,10 +33,10 @@ export default function LeaderboardModal() {
 
   // Fülváltáskor csak a keretben lévő lista töltődik újra (a fejléc és a lábléc helyben marad).
   const bodyRef = useRef(null);
-  function load(t) {
+  function load(t, sz = sudSize) {
     setEntries(null);
     if (bodyRef.current) bodyRef.current.scrollTop = 0;
-    fetch(t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : t === 'sudoku' ? '/api/sudoku/leaderboard' : '/api/leaderboard', { cache: 'no-store' })
+    fetch(t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : t === 'sudoku' ? `/api/sudoku/leaderboard?size=${sz}` : '/api/leaderboard', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setEntries(d.entries || []))
       .catch(() => setEntries([]));
@@ -45,15 +47,20 @@ export default function LeaderboardModal() {
     if (!box || !entries?.length) return;
     const me = box.querySelector('[data-me="1"]');
     if (!me) return;
-    box.scrollTop = Math.max(0, me.offsetTop - box.clientHeight / 2 + me.offsetHeight / 2);
+    // A rögzített felső sor (sudokunál a méretválasztó) alatti látható rész közepére.
+    const bar = box.querySelector('.lb-subtabs');
+    const top = bar ? bar.offsetHeight : 0;
+    box.scrollTop = Math.max(0, me.offsetTop - top - (box.clientHeight - top) / 2 + me.offsetHeight / 2);
   }, [entries]);
 
   useEffect(() => {
     function handleOpen(e) {
       setMyName(session?.user?.name || getIdentity().name);
       const t = ['mini', 'szo', 'sudoku'].includes(e?.detail?.tab) ? e.detail.tab : 'daily';
+      const sz = Number(e?.detail?.size) === 9 ? 9 : 6;
       setTab(t);
-      load(t);
+      setSudSize(sz);
+      load(t, sz);
       fetch('/api/mini/status')
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => setMiniLive(!!d?.live))
@@ -79,7 +86,7 @@ export default function LeaderboardModal() {
       labelId="lb-title"
       bodyLabel="Ranglista eredményei"
       onClose={close}
-      playHref={GAME_HREF[tab]}
+      playHref={tab === 'sudoku' && sudSize === 9 ? '/sudoku?m=9' : GAME_HREF[tab]}
       title={
         <>
           <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
@@ -113,6 +120,26 @@ export default function LeaderboardModal() {
         </>
       }
     >
+      {tab === 'sudoku' && (
+        <div className="lb-subtabs" role="tablist" aria-label="Sudoku mérete">
+          {[6, 9].map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="tab"
+              aria-selected={sudSize === n}
+              className={sudSize === n ? 'on' : ''}
+              onClick={() => {
+                if (sudSize === n) return;
+                setSudSize(n);
+                load('sudoku', n);
+              }}
+            >
+              {n}×{n}
+            </button>
+          ))}
+        </div>
+      )}
       {entries === null && <p className="fm-loading">Betöltés...</p>}
       {entries && entries.length === 0 && (
         <p className="fm-empty">{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : tab === 'szo' ? 'Ma még senki nem talált szót - légy te az első!' : tab === 'sudoku' ? 'Ma még senki nem oldotta meg - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>

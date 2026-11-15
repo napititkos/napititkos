@@ -17,8 +17,10 @@ export default function AdminSudoku() {
   const [trying, setTrying] = useState(null);
   const [regen, setRegen] = useState(null);
   const [msg, setMsg] = useState(null);
-  const load = () =>
-    fetch('/api/admin/sudoku', { cache: 'no-store' })
+  // 6x6 / 9x9 nézet (minden nap mindkét méret elkészül, azonos nehézséggel).
+  const [size, setSize] = useState(6);
+  const load = (sz = size) =>
+    fetch(`/api/admin/sudoku?size=${sz}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then(setData)
       .catch(() => {});
@@ -28,7 +30,7 @@ export default function AdminSudoku() {
   async function regenerate(date) {
     if (!confirm(`Lecseréled a(z) ${date} napi sudokut egy újra?`)) return;
     setRegen(date);
-    const r = await fetch('/api/admin/sudoku', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'regenerate', date }) });
+    const r = await fetch('/api/admin/sudoku', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'regenerate', date, size }) });
     const d = await r.json().catch(() => ({}));
     setRegen(null);
     setMsg(r.ok ? { ok: true, text: `${date}: új rejtvény (${d.clues} megadott szám).` } : { ok: false, text: d.message || 'Nem sikerült.' });
@@ -44,13 +46,32 @@ export default function AdminSudoku() {
       )}
       <div className="card">
         <b>A mai és a következő 7 nap</b>
+        <div className="sudoku-sizes" role="group" aria-label="Rács mérete" style={{ margin: '8px 0 4px' }}>
+          {[6, 9].map((n) => (
+            <button
+              key={n}
+              type="button"
+              className={`sudoku-size${size === n ? ' on' : ''}`}
+              aria-pressed={size === n}
+              onClick={() => {
+                if (size === n) return;
+                setSize(n);
+                setTrying(null);
+                setData(null);
+                load(n);
+              }}
+            >
+              {n}×{n}
+            </button>
+          ))}
+        </div>
         <p className="mini-muted" style={{ margin: '4px 0 8px' }}>
           A nehézség a hét napjától függ (hétfő, kedd 1/5 · szerda, csütörtök 2/5 · péntek 3/5 · szombat 4/5 · vasárnap 5/5). A játékosok mindig csak az adott napon kapják meg a rejtvényt; a maiat már nem lehet cserélni.
         </p>
         <ul className="admin-szo-upcoming">
           {data.days.map((u, i) => (
             <li key={u.date}>
-              <span className="sudoku-thumb" aria-hidden="true">
+              <span className={`sudoku-thumb${u.givens.length === 81 ? " t9" : ""}`} aria-hidden="true">
                 {u.givens.map((n, k) => (
                   <span key={k}>{n || ''}</span>
                 ))}
