@@ -2062,5 +2062,22 @@ button.sudoku-size.on{ background: var(--btn-primary); border-color: var(--btn-p
 .sudoku-arch-sizes{ display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
 .sudoku-thumb.t9{ grid-template-columns: repeat(9, 7px); }
 .sudoku-thumb.t9 span{ height: 7px; font-size: 5.5px; }
-/* Főoldal: a mai dátum a napititkos.hu felirat alatt, középen, kisebb betűvel. */
-.hub-date{ text-align: center; margin: -6px 0 12px; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* A dátum csak egy picivel kisebb a napititkos.hu feliratnál (ugyanúgy a kijelzőhöz méretezve). */
+.hub-date{ text-align: center; margin: -16px 0 0; line-height: 1; font-family: var(--font-baloo), 'Baloo 2', sans-serif; font-size: min(calc((100vw - 110px) / 9.4), 40px); font-weight: 700; letter-spacing: 0.06em; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* Főoldal, Sudoku csempe: két jelölődoboz (6×6, 9×9), a dobozok közepe ugyanott, ahol a többi csempén a
+   doboz (a szöveget nem tolják el); alattuk középen a felirat. Mindegyik a saját rejtvényére visz. */
+.game-tile-wrap{ position: relative; }
+.game-tile-checks{ position: absolute; right: 14px; top: 50%; transform: translateY(-17px); display: flex; gap: 8px; z-index: 1; }
+.game-tile-check-item{ display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: var(--ink-soft); }
+.game-tile-checks .game-tile-check{ position: static; transform: none; }
+.game-tile-check-label{ font-size: 12px; font-weight: 800; line-height: 1; }
+.game-tile-check-item:hover .game-tile-check-label{ color: var(--accent-text); text-decoration: underline; }
+.game-tile-check-item:focus-visible{ outline: 3px solid var(--accent2); outline-offset: 3px; border-radius: 9px; }
+@media (max-width: 560px){
+  .game-tile-checks{ right: 10px; transform: translateY(-13px); gap: 6px; }
+  .game-tile-check-label{ font-size: 11px; }
+}
+/* Sudoku: a „Tábla törlése” a Jegyzet gomb alatt, ugyanakkora. */
+button.sudoku-key.note.clear{ color: var(--ink-soft); }
+.hub-date ~ .hub{ margin-top: 8px; }
+.wrap > .hub-date{ margin-top: -7px; }

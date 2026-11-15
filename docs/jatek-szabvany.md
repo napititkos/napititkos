@@ -51,6 +51,12 @@ léteznek, újra kell használni őket, nem újat írni.
 - **Korábbiak** fül (`app/archive/page.js`): év és hónap szerinti dobozok, „x/y megfejtve”,
   kicsinyítve csak a lényeg és jobbra a pipa (`components/SolvedMark.js`), lenyitva a részletek.
 - **Trófeák** (`lib/achievements.js`, `game: '<kulcs>'`), a trófeák ablakában saját csoport.
+- **Teljes nap** (`lib/dailyDone.js`): ha egy napon minden napi rejtvény kész, a nap a haladás
+  `allDoneDays` listájába kerül (Általános trófeák: 1/5/10 teljes nap). Új játéknál a `dailyDone`
+  függvénybe is fel kell venni; a lista csak bővül, így a korábbi teljes napok nem vesznek el.
+- **Több méret egy játékon belül** (pl. Sudoku 6×6 / 9×9): a főoldali csempén méretenként egy
+  jelölődoboz, alatta a méret felirata (`GameTile` `checks`), mindegyik a saját rejtvényére visz; ha az
+  egyik kész, maga a csempe a másikra visz.
 - **Profil**: játékonkénti statisztika (`app/account/page.js`).
 - **Megosztási kép** (`app/<útvonal>/opengraph-image.js` + `lib/ogWordmark.js`).
 - **Admin** csempe és oldal: a mai és a következő 7 nap előnézete, kipróbálás, „Új kérése”.

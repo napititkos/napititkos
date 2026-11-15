@@ -139,6 +139,13 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     },
     [solved, sel, givens, noteMode, grid, notes, rowOf, colOf, boxOf],
   );
+  const clearBoard = useCallback(() => {
+    if (solved) return;
+    setMsg(null);
+    setHistory((h) => [...h, { grid, notes }].slice(-200));
+    setGrid(givens.slice());
+    setNotes(Array.from({ length: NN }, () => []));
+  }, [solved, grid, notes, givens, NN]);
   const undo = useCallback(() => {
     if (solved || !history.length) return;
     const last = history[history.length - 1];
@@ -287,6 +294,11 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
           </button>
           <button type="button" className={`sudoku-key note${noteMode ? ' on' : ''}`} aria-pressed={noteMode} onClick={() => setNoteMode((m) => !m)}>
             ✎ Jegyzet {noteMode ? 'bekapcsolva' : 'kikapcsolva'}
+          </button>
+          {/* A tábla törlése: minden beírt szám és jegyzet törlődik (a Vissza gombbal visszahozható).
+              Megfejtés után a billentyűzettel együtt eltűnik. */}
+          <button type="button" className="sudoku-key note clear" onClick={clearBoard} disabled={!grid.some((v, i) => v && !givens[i]) && !notes.some((n) => n.length)}>
+            Tábla törlése
           </button>
         </div>
       )}

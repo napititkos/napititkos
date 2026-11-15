@@ -4,17 +4,12 @@ import { useSession } from 'next-auth/react';
 import { GameTile } from './GameFooter';
 import { loadProgress } from '../lib/progress';
 import { todayStr } from '../lib/date';
+import { dailyDone } from '../lib/dailyDone';
 
 // Főoldal: a három játék egyforma csempéje, egymás alatt, a megszokott tartalomszélességben, alattuk
 // a napi sudoku. A kos csak a NAPITITKOS.HU főcímben szerepel. Bejelentkezve a már
 // teljesített rejtvények (a mai titkosírás, a mai szókereső minden szava, a heti mini) csempéjén
 // jobbra egy lila pipa jelenik meg.
-function weekStartOf(d) {
-  const x = new Date(`${d}T12:00:00Z`);
-  x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7));
-  return x.toISOString().slice(0, 10);
-}
-
 export default function Hub() {
   const { status } = useSession();
   const [done, setDone] = useState({});
@@ -28,19 +23,8 @@ export default function Hub() {
   useEffect(() => {
     if (status !== 'authenticated') return setDone({});
     const read = () => {
-      const prog = loadProgress();
-      const today = todayStr();
-      let miniLocal = null;
-      try {
-        miniLocal = JSON.parse(localStorage.getItem('titkositas_mini_v1') || 'null');
-      } catch {}
-      const week = weekStartOf(today);
-      setDone({
-        titkos: !!prog.history?.[today]?.correct,
-        szo: (prog.szoFullDays || []).includes(today),
-        mini: (prog.miniWeeks || []).includes(week) || miniLocal?.week === week,
-        sudoku: (prog.sudokuDays || []).includes(today) || (prog.sudoku9Days || []).includes(today),
-      });
+      const d = dailyDone(loadProgress(), todayStr());
+      setDone({ titkos: d.titkos, szo: d.szo, mini: d.mini, sudoku6: d.sudoku6, sudoku9: d.sudoku9 });
     };
     read();
     window.addEventListener('progress-synced', read);
@@ -56,7 +40,18 @@ export default function Hub() {
       <div className="hub">
         <GameTile game="titkos" big done={done.titkos} />
         <GameTile game="szo" big isNew done={done.szo} />
-        <GameTile game="sudoku" big isNew done={done.sudoku} />
+        {/* Sudoku: két jelölődoboz (6×6 és 9×9), alattuk a méret, mindkettő a saját rejtvényére
+            visz; ha az egyik kész, maga a csempe a másikra visz. */}
+        <GameTile
+          game="sudoku"
+          big
+          isNew
+          href={done.sudoku6 && !done.sudoku9 ? '/sudoku?m=9' : '/sudoku'}
+          checks={[
+            { label: '6×6', done: !!done.sudoku6, href: '/sudoku' },
+            { label: '9×9', done: !!done.sudoku9, href: '/sudoku?m=9' },
+          ]}
+        />
         <GameTile game="mini" big isNew done={done.mini} />
       </div>
     </div>
