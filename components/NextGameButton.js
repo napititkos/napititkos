@@ -13,7 +13,8 @@ export default function NextGameButton({ current }) {
     <div className="result-action">
       <button type="button" className="primary round-btn" onClick={go} aria-label="Következő játék">
         <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Tömzsi, vastag, lekerekített végű nyíl (a főoldali pipa stílusában). */}
+          <path d="M6.5 12h10M12.4 7.4 17 12l-4.6 4.6" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       <span>Következő játék</span>

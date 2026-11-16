@@ -25,8 +25,10 @@ export default function CopyResultButton({ text, label = 'Eredmény másolása',
         ta.remove();
       } catch {}
     }
-    setMsg(ok ? 'Vágólapra másolva!' : 'Nem sikerült másolni.');
-    setTimeout(() => setMsg(''), 2200);
+    // A titkosíráséval azonos felugró üzenet (alul középen, magától eltűnik).
+    setMsg(ok ? 'Eredmény vágólapra másolva!' : 'Nem sikerült másolni.');
+    clearTimeout(window.__copyToastT);
+    window.__copyToastT = setTimeout(() => setMsg(''), 2600);
   }
   if (round)
     return (
@@ -35,11 +37,9 @@ export default function CopyResultButton({ text, label = 'Eredmény másolása',
           <Icon src="/icons/Megosztas.png" size={20} className="icon-on-accent" />
         </button>
         <span>{label}</span>
-        {msg && (
-          <span className="share-msg result-action-msg" role="status">
-            {msg}
-          </span>
-        )}
+        <div className={`toast ${msg ? 'show' : ''}`} role="status">
+          {msg}
+        </div>
       </div>
     );
   return (
@@ -51,11 +51,9 @@ export default function CopyResultButton({ text, label = 'Eredmény másolása',
         </svg>{' '}
         {label}
       </button>
-      {msg && (
-        <span className="share-msg" role="status">
-          {msg}
-        </span>
-      )}
+      <div className={`toast ${msg ? 'show' : ''}`} role="status">
+        {msg}
+      </div>
     </span>
   );
 }

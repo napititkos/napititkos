@@ -86,7 +86,7 @@ export default function SudokuPage() {
         </div>
       )}
       <GameBar game="sudoku" lbSize={size || 6} />
-      <h1 className="sr-only">Sudoku</h1>
+      <h1 className="sr-only">Napititkos.hu - Minden nap új sudoku!</h1>
       <div className="card">
         {!data ? (
           <p>Betöltés…</p>

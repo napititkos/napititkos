@@ -91,7 +91,7 @@ export default function CommunityMinis() {
               {open && (
                 <div className="mini-list-body">
                   {loggedIn ? (
-                    <MiniPlayer key={it.id} rows={it.rows} entries={it.entries} solvedTime={it.solvedMs} onSolved={(t) => solved(it, t)} />
+                    <MiniPlayer key={it.id} rows={it.rows} entries={it.entries} solvedTime={it.solvedMs} onSolved={(t) => solved(it, t)} headTitle="Közösségi mini" dateLabel={day(it.createdAt)} author={it.name && it.name !== 'Névtelen' ? it.name : ''} />
                   ) : (
                     <p>
                       A megfejtéshez <a href="/login?callbackUrl=/kozossegi">jelentkezz be</a>.

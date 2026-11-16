@@ -29,7 +29,8 @@ function fmt(ms) {
 // solvedMsg: false esetén megfejtéskor nincs zöld „Megfejtetted!” üzenet (a heti mini oldalán a
 // statisztika mutatja az időt).
 // headTitle/headNumber: a heti mini oldalán a többi játékkal egyező fejléc („Heti Mini #N”).
-export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null, dateLabel = '', solvedMsg = true, headTitle = '', headNumber = 0 }) {
+// author: a beküldő/készítő neve (a fejlécben jobbra, „Beküldte: …”).
+export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null, dateLabel = '', solvedMsg = true, headTitle = '', headNumber = 0, author = '' }) {
   const m = useMemo(() => navModel(rows), [rows]);
   const { nums, words, order } = m;
   const isBlack = m.black;
@@ -183,7 +184,7 @@ export default function MiniPlayer({ rows, entries, onSolved, solvedTime = null,
     <div className="mini-player">
       {/* Felül balra a hét hétfője, jobbra az időzítő; az Ellenőrzés gomb a rejtvény alatt középen. */}
       {headTitle ? (
-        <GameHead title={headTitle} number={headNumber} dateLabel={dateLabel} time={fmt(now - start)} />
+        <GameHead title={headTitle} number={headNumber} dateLabel={dateLabel} time={fmt(now - start)} author={author} />
       ) : (
         <div className="mini-player-top">
           <span className="mini-date">{dateLabel}</span>

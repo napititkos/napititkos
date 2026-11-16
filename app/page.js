@@ -8,11 +8,11 @@ export const dynamic = 'force-dynamic';
 
 // A főoldal címsora (böngészőfül): napititkos.hu
 export const metadata = {
-  title: { absolute: 'napititkos.hu' },
-  description: 'Napi magyar rejtvények egy helyen: kriptikus Titkosírás, Szókereső, 6×6-os és 9×9-es Sudoku és Heti Mini keresztrejtvény. Minden nap új feladványok, ranglistával és trófeákkal.',
+  title: { absolute: 'Napititkos.hu - Minden nap új rejtvények!' },
+  description: 'Napititkos.hu - Minden nap új rejtvények! Kriptikus rejtvény, Szókereső, Sudoku, Mini keresztrejtvény',
   alternates: { canonical: '/' },
-  openGraph: { title: 'napititkos.hu – napi magyar rejtvények', description: 'Napi magyar rejtvények egy helyen: kriptikus Titkosírás, Szókereső, 6×6-os és 9×9-es Sudoku és Heti Mini keresztrejtvény. Minden nap új feladványok, ranglistával és trófeákkal.', url: 'https://napititkos.hu', siteName: 'napititkos.hu', locale: 'hu_HU', type: 'website' },
-  twitter: { card: 'summary_large_image', title: 'napititkos.hu – napi magyar rejtvények', description: 'Napi magyar rejtvények egy helyen: kriptikus Titkosírás, Szókereső, 6×6-os és 9×9-es Sudoku és Heti Mini keresztrejtvény. Minden nap új feladványok, ranglistával és trófeákkal.' },
+  openGraph: { title: 'Napititkos.hu - Minden nap új rejtvények!', description: 'Napititkos.hu - Minden nap új rejtvények! Kriptikus rejtvény, Szókereső, Sudoku, Mini keresztrejtvény', url: 'https://napititkos.hu', siteName: 'napititkos.hu', locale: 'hu_HU', type: 'website' },
+  twitter: { card: 'summary_large_image', title: 'Napititkos.hu - Minden nap új rejtvények!', description: 'Napititkos.hu - Minden nap új rejtvények! Kriptikus rejtvény, Szókereső, Sudoku, Mini keresztrejtvény' },
 };
 
 export default function HomePage() {

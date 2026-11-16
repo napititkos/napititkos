@@ -48,7 +48,7 @@ export default function SzokeresoPage() {
         </div>
       )}
       <GameBar game="szo" />
-      <h1 className="sr-only">Szókereső</h1>
+      <h1 className="sr-only">Napititkos.hu - Minden nap új szókereső!</h1>
       <div className="card">
         {!data ? (
           <p>Betöltés…</p>

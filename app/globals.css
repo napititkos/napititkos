@@ -2122,3 +2122,11 @@ button.sudoku-key.complete{ opacity: 0.38; filter: saturate(0.3); }
 .mini-queue-ctrl input{ max-width: 180px; padding: 6px 10px; font-size: 14px; text-transform: none; }
 .mini-queue-ctrl select{ max-width: 280px; padding-top: 6px; padding-bottom: 6px; font-size: 14px; }
 .mini-sched-badge{ display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; background: var(--btn-primary); color: #fff; }
+/* Egységes játékfejléc (GameHead) a titkosírás mintájára: a dátum, az időmérő és a nehézség
+   buborékja, valamint a beküldő ugyanúgy néz ki, mint a titkosírásnál. */
+.game-head .szo-date{ font-size: 13px; font-weight: 400; color: var(--ink-soft); white-space: nowrap; }
+.game-head .gh-left{ flex-shrink: 0; }
+.game-head .gh-left .timer{ padding: 4px 11px; font-size: 13px; }
+.game-head .gh-row:last-child{ flex-wrap: wrap; row-gap: 4px; }
+.gh-right{ display: inline-flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; justify-content: flex-end; flex-wrap: wrap; }
+.gh-right .submitted-by{ font-size: 13px; text-align: right; margin: 0; }
