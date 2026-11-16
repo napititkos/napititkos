@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import MiniPlayer from '../../components/MiniPlayer';
 import DailyReactions from '../../components/DailyReactions';
 import GameBar from '../../components/GameBar';
-import ShareButton from '../../components/ShareButton';
+import CopyResultButton from '../../components/CopyResultButton';
+import NextGameButton from '../../components/NextGameButton';
 import { weekLabel } from '../../lib/isoWeek';
 import GameFooter from '../../components/GameFooter';
 import { deviceId } from '../../lib/device';
@@ -101,8 +102,10 @@ export default function MiniPage() {
               <span className="pill">Teljesítések: {stats?.count ?? '–'}</span>
             </div>
             <DailyReactions date={data.week} scope="mini" interactive />
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-              <ShareButton text={`🧩 Heti mini keresztrejtvény\nMegfejtettem ${fmt(myTime)} alatt!\nPróbáld ki te is: https://napititkos.hu/mini`} />
+            {/* Mint a titkosírásnál: kerek „Eredmény másolása”, mellette a következő napi játék. */}
+            <div className="result-actions game-result-actions">
+              <CopyResultButton round text={`🧩 Heti mini keresztrejtvény\nMegfejtettem ${fmt(myTime)} alatt!\nPróbáld ki te is: https://napititkos.hu/mini`} />
+              <NextGameButton current="mini" />
             </div>
           </>
         )}

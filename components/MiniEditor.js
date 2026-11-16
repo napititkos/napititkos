@@ -4,6 +4,10 @@ import MiniPlayer from './MiniPlayer';
 import { HU, N, gridWarnings, numbering } from '../lib/miniGrid';
 import { assemble } from '../lib/miniDraft';
 import { afterType, arrowStep, backspaceStep, clickCell, jumpWord, navModel } from '../lib/miniNav';
+import { addWeeks } from '../lib/miniSchedule';
+import { weekStartOf } from '../lib/dailyDone';
+import { todayStr } from '../lib/date';
+import { weekLabel } from '../lib/isoWeek';
 
 // Mini keresztrejtvény szerkesztő (admin). Egy tábla elmenthető akkor is, ha még nincs kész:
 // a mentés piszkozatot készít, amit bármelyik admin megnyithat és folytathat. A tábla kézzel is
@@ -32,6 +36,13 @@ function when(iso) {
 export default function MiniEditor({ initial, onClose, onChanged }) {
   const [meta, setMeta] = useState({ id: initial.id || null, rev: initial.rev ?? null, updatedAt: initial.updatedAt || null, updatedBy: initial.updatedBy || null });
   const [title, setTitle] = useState(initial.title || '');
+  // A készítő (a heti mini jobb alsó sarkában jelenik meg) és az ütemezett hét (üres = sorban).
+  const [author, setAuthor] = useState(initial.author ?? initial.createdBy?.name ?? '');
+  const [schedWeek, setSchedWeek] = useState(initial.scheduledWeek || '');
+  const weekOptions = useMemo(() => {
+    const first = weekStartOf(todayStr());
+    return Array.from({ length: 27 }, (_, i) => addWeeks(first, i));
+  }, []);
   const [rows, setRows] = useState(initial.rows || blank());
   const [clues, setClues] = useState(initial.clues || {});
   const [dirty, setDirty] = useState(!!initial.dirty);
@@ -213,6 +224,8 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
   const adopt = useCallback((d) => {
     setMeta({ id: d.id, rev: d.rev, updatedAt: d.updatedAt, updatedBy: d.updatedBy });
     setTitle(d.title || '');
+    setAuthor(d.author ?? d.createdBy?.name ?? '');
+    setSchedWeek(d.scheduledWeek || '');
     setRows(d.rows);
     setClues(d.clues || {});
     setDirty(false);
@@ -224,7 +237,7 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
     setMsg(null);
     const keys = new Set(slots.map((s) => s.key));
     const kept = Object.fromEntries(Object.entries(clues).filter(([k]) => keys.has(k)));
-    const payload = { action: 'save', title: (asCopy ? `${title.trim() || 'Névtelen tábla'} (másolat)` : title.trim()) || 'Névtelen tábla', rows, clues: kept };
+    const payload = { action: 'save', title: (asCopy ? `${title.trim() || 'Névtelen tábla'} (másolat)` : title.trim()) || 'Névtelen tábla', rows, clues: kept, author: author.trim(), scheduledWeek: schedWeek };
     if (meta.id && !asCopy) {
       payload.id = meta.id;
       payload.rev = overwriteRev ?? meta.rev;
@@ -437,6 +450,45 @@ export default function MiniEditor({ initial, onClose, onChanged }) {
           touch();
         }}
       />
+
+      <div className="mini-meta-fields">
+        <div>
+          <label className="field-label" htmlFor="mini-author">Készítette (a heti mini alatt jelenik meg; üresen hagyva nem látszik)</label>
+          <input
+            id="mini-author"
+            value={author}
+            maxLength={40}
+            placeholder="pl. Kovács Anna"
+            style={{ textTransform: 'none' }}
+            onChange={(e) => {
+              setAuthor(e.target.value);
+              touch();
+            }}
+          />
+        </div>
+        {!initial.fromMini?.week && (
+          <div>
+            <label className="field-label" htmlFor="mini-sched">Ütemezve (opcionális – ha kiválasztod, pontosan azon a héten jelenik meg; üresen a várólista sorrendjében)</label>
+            <select
+              id="mini-sched"
+              className="pretty-select"
+              value={schedWeek}
+              onChange={(e) => {
+                setSchedWeek(e.target.value);
+                touch();
+              }}
+            >
+              <option value="">Automatikus (a várólista sorrendjében)</option>
+              {weekOptions.map((w) => (
+                <option key={w} value={w}>
+                  {weekLabel(w)} – {new Date(`${w}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}, hétfő
+                </option>
+              ))}
+              {schedWeek && !weekOptions.includes(schedWeek) && <option value={schedWeek}>{weekLabel(schedWeek)} (elmúlt hét)</option>}
+            </select>
+          </div>
+        )}
+      </div>
 
       {conflict && (
         <div className="feedback hint mini-conflict" style={{ marginLeft: 0, marginTop: 12 }} role="alert">

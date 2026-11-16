@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
 import { weekLabel } from '../lib/isoWeek';
+import { addWeeks } from '../lib/miniSchedule';
 import MiniEditor from './MiniEditor';
 import MiniBank from './MiniBank';
 import { N, numbering } from '../lib/miniGrid';
@@ -103,6 +104,22 @@ export default function AdminMini() {
     load();
   }
 
+  // Várólista: sorrend (↑ ↓), ütemezett hét és készítő – mint a titkosírásoknál.
+  async function moveQueued(id, to) {
+    await api({ action: 'moveQueued', id, to });
+    load();
+  }
+  async function patchQueued(id, patch) {
+    const res = await api({ action: 'patchQueued', id, ...patch });
+    if (!res.ok) setMsg({ ok: false, text: res.data?.message || 'Nem sikerült menteni.' });
+    load();
+  }
+  const weekOptions = (() => {
+    const first = state?.week;
+    if (!first) return [];
+    return Array.from({ length: 27 }, (_, i) => addWeeks(first, i));
+  })();
+
   async function removeQueued(id) {
     if (!confirm('Biztosan törlöd ezt a rejtvényt a várólistáról?')) return;
     await api({ action: 'removeQueued', id });
@@ -122,7 +139,7 @@ export default function AdminMini() {
             <br />
             {state.start ? (
               <>
-                Új rejtvény hetente, vasárnap éjfélkor (hétfő 00:00) kerül ki a várólista elejéről, a(z) {state.start} kezdetű héttől.{' '}
+                Új rejtvény hetente, vasárnap éjfélkor (hétfő 00:00) kerül ki: az arra a hétre ütemezett, különben a várólista első (nem későbbre ütemezett) eleme, a(z) {state.start} kezdetű héttől.{' '}
                 {state.current ? `Az aktuális a ${state.current.week} kezdetű hété.` : 'Még nem jelent meg rejtvény.'}
               </>
             ) : (
@@ -240,10 +257,36 @@ export default function AdminMini() {
               <div className="mini-queue-info">
                 <span>
                   <b>{i + 1}.</b> {q.entries.map((e) => e.word.toUpperCase()).join(', ')}
+                  {q.scheduledWeek && <span className="mini-sched-badge" title="Erre a hétre ütemezve">ütemezve</span>}
                   <br />
                   <span className="mini-muted">
-                    Megjelenik: {state.scheduled?.[i] ? `${weekLabel(state.scheduled[i])} (${new Date(`${state.scheduled[i]}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}., hétfő)` : '–'}
-                    {q.author ? ` · készítette: ${q.author}` : ''}
+                    Megjelenik: {state.scheduled?.[i] ? `${weekLabel(state.scheduled[i])} (${new Date(`${state.scheduled[i]}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}, hétfő)` : '–'}
+                  </span>
+                  <span className="mini-queue-ctrl">
+                    <button className="ghost small" aria-label="Feljebb" disabled={i === 0} onClick={() => moveQueued(q.id, i - 1)}>
+                      ↑
+                    </button>
+                    <button className="ghost small" aria-label="Lejjebb" disabled={i === state.queue.length - 1} onClick={() => moveQueued(q.id, i + 1)}>
+                      ↓
+                    </button>
+                    <select className="pretty-select" aria-label="Ütemezés" value={q.scheduledWeek || ''} onChange={(e) => patchQueued(q.id, { scheduledWeek: e.target.value })}>
+                      <option value="">Automatikus (sorban)</option>
+                      {weekOptions.map((w) => (
+                        <option key={w} value={w}>
+                          {weekLabel(w)} – {new Date(`${w}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })}
+                        </option>
+                      ))}
+                      {q.scheduledWeek && !weekOptions.includes(q.scheduledWeek) && <option value={q.scheduledWeek}>{weekLabel(q.scheduledWeek)} (elmúlt)</option>}
+                    </select>
+                    <input
+                      key={`${q.id}-${q.author || ''}`}
+                      aria-label="Készítette"
+                      placeholder="Készítette…"
+                      defaultValue={q.author || ''}
+                      maxLength={40}
+                      onBlur={(e) => e.target.value.trim() !== (q.author || '') && patchQueued(q.id, { author: e.target.value })}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                    />
                   </span>
                 </span>
                 <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

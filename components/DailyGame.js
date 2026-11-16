@@ -10,6 +10,7 @@ import { deviceId } from '../lib/device';
 import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from './Icon';
+import NextGameButton from './NextGameButton';
 import Logo from './Logo';
 import LookupHint from './LookupHint';
 import LetterBoxes from './LetterBoxes';
@@ -938,6 +939,8 @@ export default function DailyGame() {
               </button>
               <span>Magyarázat</span>
             </div>
+            {/* A mai titkosírás után: a következő még nem teljesített napi játék. */}
+            <NextGameButton current="titkos" />
           </div>
           <div className="result-meta">
             <span className="pill result-streak">
