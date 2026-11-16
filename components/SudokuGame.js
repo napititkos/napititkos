@@ -291,7 +291,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
           level={level}
           dateLabel={dayLabel}
           time={fmt(elapsed)}
-          lead={
+          trailing={
             onSize ? (
               <span className="sudoku-sizes" role="group" aria-label="Rács mérete">
                 {[6, 9].map((n) => (

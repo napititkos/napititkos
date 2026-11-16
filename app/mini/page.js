@@ -76,7 +76,7 @@ export default function MiniPage() {
     return (
       <div className="wrap">
         {data.live && <GameBar game="mini" />}
-        <h1 className="sr-only">Heti Mini</h1>
+        <h1 className="sr-only">Napititkos.hu - Minden héten új Mini Keresztrejtvény</h1>
         <div className="card">
           <p>{data.live ? 'Ezen a héten még nincs új mini keresztrejtvény. Nézz vissza később!' : 'A mini keresztrejtvény hamarosan érkezik.'}</p>
         </div>
@@ -90,10 +90,9 @@ export default function MiniPage() {
   return (
     <div className="wrap mini-page mini-side">
       <GameBar game="mini" />
-      <h1 className="sr-only">Heti Mini</h1>
+      <h1 className="sr-only">Napititkos.hu - Minden héten új Mini Keresztrejtvény</h1>
       <div className="card">
-        <MiniPlayer key={data.puzzle.id} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} solvedMsg={false} headTitle="Heti Mini" headNumber={Math.round((Date.parse(`${data.week}T12:00:00Z`) - Date.parse('2026-11-09T12:00:00Z')) / (7 * 86400000)) + 1} />
-        {data.puzzle.author && <div className="mini-author">Készítette: {data.puzzle.author}</div>}
+        <MiniPlayer key={data.puzzle.id} rows={data.puzzle.rows} entries={data.puzzle.entries} onSolved={solved} solvedTime={done ? local.elapsed : null} dateLabel={weekLabel(data.week)} solvedMsg={false} headTitle="Heti Mini" headNumber={Math.round((Date.parse(`${data.week}T12:00:00Z`) - Date.parse('2026-11-09T12:00:00Z')) / (7 * 86400000)) + 1} author={data.puzzle.author || ''} />
         {done && (
           <>
             <div className="mini-stats" aria-label="Statisztika">

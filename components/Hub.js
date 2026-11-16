@@ -36,7 +36,7 @@ export default function Hub() {
       <p className="hub-date" suppressHydrationWarning>
         {today ? today.replace(/-/g, '.') : '\u00a0'}
       </p>
-      <h1 className="sr-only">napititkos.hu – napi magyar rejtvények: Titkosírás, Szókereső, Sudoku és Heti Mini</h1>
+      <h1 className="sr-only">Napititkos.hu - Minden nap új rejtvények! Kriptikus rejtvény, Szókereső, Sudoku, Mini keresztrejtvény</h1>
       <div className="hub">
         <GameTile game="titkos" big done={done.titkos} />
         <GameTile game="szo" big isNew done={done.szo} />

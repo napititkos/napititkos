@@ -393,6 +393,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       )}
       {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}
       <button type="button" className={`szo-words-btn${panel ? ' open' : ''}`} aria-haspopup="dialog" onClick={() => togglePanel(true)}>
+        {done ? 'Nyertél! - ' : ''}
         {foundReq.length}/{total} szó · {szoPointsTotal(foundReq)} pont
       </button>
       {panel && (
