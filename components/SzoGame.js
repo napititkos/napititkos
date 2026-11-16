@@ -5,6 +5,7 @@ import { getIdentity } from '../lib/identity';
 import { fireConfetti } from './Confetti';
 import { recordSzoFull, recordSzoWord } from '../lib/gameProgress';
 import CopyResultButton from './CopyResultButton';
+import NextGameButton from './NextGameButton';
 import GameHead from './GameHead';
 import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { dayLevel } from '../lib/dayLevel';
@@ -372,6 +373,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       {!compact && (
       <GameHead title="Napi Szókereső" number={dayNo} level={dayNo > 0 ? dayLevel(date) : 1} dateLabel={dayLabel} time={fmt(elapsed)} />
       )}
+      {/* A napi szókereső teljesítése után a haladássáv és az üzenetsor eltűnik, minden összébb húzódik. */}
+      {!(done && !compact) && (
       <div className="szo-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`Haladás: ${foundReq.length} / ${total} szó, ${szoPointsTotal(foundReq)} pont`}>
         <div className="szo-bar">
           <span style={{ width: `${pct}%` }} />
@@ -387,6 +390,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
           </span>
         </div>
       </div>
+      )}
       {/* Szavak: a két jelölőnégyzet, a szólista és a hibajelzés egy lenyíló panelben. */}
       <button type="button" className={`szo-words-btn${panel ? ' open' : ''}`} aria-haspopup="dialog" onClick={() => togglePanel(true)}>
         {foundReq.length}/{total} szó · {szoPointsTotal(foundReq)} pont
@@ -457,6 +461,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       )}
       {/* Két külön sor: fölül az üzenet (halványodva eltűnik), alatta a szó. A beírás mindig
           felülírja: amíg betűket húz, az üzenet nem látszik, a szó sorában a beírt betűk állnak. */}
+      {!(done && !compact) && (
       <div className="szo-say">
         <div className="szo-msg-line" aria-live="polite">
           {msg && !current && (
@@ -467,6 +472,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         </div>
         <div className={`szo-word-line${current ? ' typing' : lastWord ? ` ${lastWord.kind}` : ''}`}>{current || lastWord?.text || '\u00a0'}</div>
       </div>
+      )}
       <div
         ref={boardRef}
         className={`szo-board${done ? ' done' : ''}${wave ? ' win-wave' : ''}`}
@@ -509,8 +515,9 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         ))}
       </div>
       {!preview && (foundReq.length > 0 || done) && (
-        <div className="szo-share">
-          <CopyResultButton text={shareText()} />
+        <div className="result-actions game-result-actions">
+          <CopyResultButton round text={shareText()} />
+          {done && !compact && <NextGameButton current="szo" />}
         </div>
       )}
     </div>

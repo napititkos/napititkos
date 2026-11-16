@@ -1841,7 +1841,8 @@ a.card.game-tile{ min-height: 0; }
 .sudoku-board{
   display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(0, 1fr)); width: min(100%, 360px); margin: 0 auto; aspect-ratio: 1;
   border: 3px solid var(--mini-black); border-radius: 10px; overflow: hidden; background: var(--mini-black); gap: 1px;
-  user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  /* A rácson az ujj húzása cellákat jelöl ki, nem görget. */
+  user-select: none; -webkit-user-select: none; touch-action: none;
 }
 .sudoku-cell{
   position: relative; display: flex; align-items: center; justify-content: center; background: var(--mini-sq); color: var(--mini-ink);
@@ -2102,3 +2103,13 @@ button.sudoku-key.note.clear{ color: var(--ink-soft); }
 .sudoku-pad button.sudoku-key.note.half{ grid-column: span 2; display: flex; flex-direction: row; gap: 6px; }
 .sudoku-pad.p9 button.sudoku-key.note.half{ grid-column: span 3; }
 .sudoku-multi-ico{ width: 15px; height: 15px; }
+/* Korábbi rejtvények: a sudoku 6×6 / 9×9 választója a játékválasztó alatt. */
+.rejtveny-tabs.sudoku-arch-size{ margin: 0 0 12px; }
+/* Sudoku: ha egy számból már mind be van írva, a gombja kiszürkül (megnyomható marad). */
+button.sudoku-key.complete{ opacity: 0.38; filter: saturate(0.3); }
+/* A játékok eredménysora (Eredmény másolása, Következő játék) a titkosírás mintájára. */
+.result-actions.game-result-actions{ margin-top: 14px; }
+.result-action{ position: relative; }
+.result-action-msg{ position: absolute; top: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; margin-top: 2px; }
+/* Három gomb (Eredmény másolása, Magyarázat, Következő játék): egy sorban, egyenlő oszlopokban. */
+.result .result-actions:has(> .result-action:nth-child(3)){ grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 360px; }

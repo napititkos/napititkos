@@ -15,26 +15,27 @@ function day(d) {
   }
 }
 
-export default function SudokuArchive() {
+// size: 6 vagy 9 – a két méretnek külön archívuma van (a választó a játékválasztó alatt).
+export default function SudokuArchive({ size = 6 }) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   const [game, setGame] = useState(null);
-  // A lenyitott nap mérete (6×6 / 9×9): a fejléc alatti gombokkal váltható.
-  const [size, setSize] = useState(6);
   const [openMonths, setOpenMonths] = useState({});
   const [openYears, setOpenYears] = useState({});
   useEffect(() => {
-    fetch('/api/sudoku/archive', { cache: 'no-store' })
+    setItems(null);
+    setOpen(null);
+    setGame(null);
+    fetch(`/api/sudoku/archive?size=${size}`, { cache: 'no-store' })
       .then(async (r) => {
         const d = await r.json().catch(() => ({}));
         if (r.status === 401) setError('A korábbi sudokukhoz jelentkezz be.');
         setItems(d.items || []);
       })
       .catch(() => setItems([]));
-  }, []);
+  }, [size]);
   function load(d, sz) {
-    setSize(sz);
     setGame(null);
     const dev = deviceId();
     fetch(`/api/sudoku?date=${d}&size=${sz}${dev ? `&device=${dev}` : ''}`, { cache: 'no-store' })
@@ -45,7 +46,7 @@ export default function SudokuArchive() {
   function toggle(d) {
     if (open === d) return setOpen(null);
     setOpen(d);
-    load(d, 6);
+    load(d, size);
   }
   if (error) return <p>{error} <a href="/login?callbackUrl=/archive?tab=sudoku">Bejelentkezés</a></p>;
   if (!items) return <p>Betöltés…</p>;
@@ -65,7 +66,7 @@ export default function SudokuArchive() {
   const isOpen = (k) => (openMonths[k] ?? k === firstKey);
   // Ugyanaz a doboz-szerkezet, mint a korábbi titkosírásoknál: év doboz (lenyitható), benne hónap
   // dobozok (a legutóbbi nyitva), bennük a napok kártyái.
-  const fullCount = (list) => list.filter((it) => it.solvedMs || it.solved9Ms).length;
+  const fullCount = (list) => list.filter((it) => it.solvedMs).length;
   const mmss = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
   return (
     <div className="szo-archive">
@@ -101,7 +102,7 @@ export default function SudokuArchive() {
                           {mo.items.map((it) => (
                             <div key={it.date} className={`card mini-list-item${open === it.date ? ' open' : ''}`}>
                               <button type="button" className="mini-list-head" aria-expanded={open === it.date} onClick={() => toggle(it.date)}>
-                                <span className="sudoku-thumb" aria-hidden="true">
+                                <span className={`sudoku-thumb${size === 9 ? " t9" : ""}`} aria-hidden="true">
                                   {it.givens.map((n, i) => (
                                     <span key={i}>{n || ''}</span>
                                   ))}
@@ -109,24 +110,16 @@ export default function SudokuArchive() {
                                 <span className="mini-list-meta">
                                   <b>{day(it.date)}</b>
                                   <span>
-                                    #{it.number} · nehézség: {it.level}/5{it.solvedMs ? ` · 6×6: ${mmss(it.solvedMs)}` : ''}
-                                    {it.solved9Ms ? ` · 9×9: ${mmss(it.solved9Ms)}` : ''}
+                                    #{it.number} · nehézség: {it.level}/5{it.solvedMs ? ` · megoldva ${mmss(it.solvedMs)}` : ''}
                                   </span>
                                 </span>
                                 <span className="mini-list-chev" aria-hidden="true">
                                   {open === it.date ? '▴' : '▾'}
                                 </span>
-                                {it.solvedMs || it.solved9Ms ? <SolvedMark /> : null}
+                                {it.solvedMs ? <SolvedMark /> : null}
                               </button>
                               {open === it.date && (
                                 <div className="mini-list-body">
-                                  <div className="sudoku-arch-sizes" role="group" aria-label="Rács mérete">
-                                    {[6, 9].map((n) => (
-                                      <button key={n} type="button" className={`sudoku-size${size === n ? ' on' : ''}`} aria-pressed={size === n} onClick={() => size !== n && load(it.date, n)}>
-                                        {n}×{n}
-                                      </button>
-                                    ))}
-                                  </div>
                                   {game?.givens && game._size === size ? (
                                     <SudokuGame
                                       key={`${it.date}-${size}`}
@@ -135,7 +128,7 @@ export default function SudokuArchive() {
                                       solvedTime={game.mine}
                                       onSolved={(el) => {
                                         recordSudoku(it.date, size);
-                                        setItems((list) => list.map((x) => (x.date === it.date ? { ...x, [size === 9 ? 'solved9Ms' : 'solvedMs']: el } : x)));
+                                        setItems((list) => list.map((x) => (x.date === it.date ? { ...x, solvedMs: el } : x)));
                                       }}
                                     />
                                   ) : (

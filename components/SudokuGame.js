@@ -4,6 +4,7 @@ import { conflicts } from '../lib/sudokuGen';
 import { deviceId } from '../lib/device';
 import { fireConfetti } from './Confetti';
 import CopyResultButton from './CopyResultButton';
+import NextGameButton from './NextGameButton';
 import GameHead from './GameHead';
 import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { getIdentity } from '../lib/identity';
@@ -71,6 +72,10 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   // bekerül (számnál és jegyzetnél is).
   const [multiMode, setMultiMode] = useState(false);
   const [multi, setMulti] = useState([]);
+  // Húzásos kijelölés (Kijelölés nélkül is): nyomva tartva végighúzva több cella jelölődik ki; egy
+  // sima koppintás (félrenyomás) után azonnal eltűnik. dragRef: a folyamatban lévő húzás.
+  const [swipe, setSwipe] = useState([]);
+  const dragRef = useRef(null);
   const [history, setHistory] = useState([]);
   const [solved, setSolved] = useState(alreadySolved);
   const [msg, setMsg] = useState(null);
@@ -85,12 +90,21 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     const t = setInterval(() => setElapsed(Date.now() - start.current), 500);
     return () => clearInterval(t);
   }, [solved]);
+  // A napi sudoku haladása (beírt számok, jegyzetek, idő) csak ezen az eszközön, a böngészőben
+  // mentődik (a szervert nem terheli). A korábbi sudokuknál (compact) csak az, hogy megoldotta-e.
   useEffect(() => {
     if (preview) return;
+    if (compact) {
+      if (solved) saveDay(date, { solved, completedAt, elapsed }, N);
+      return;
+    }
     saveDay(date, { grid, notes, elapsed, solved, completedAt }, N);
-  }, [date, grid, notes, elapsed, solved, preview, completedAt, N]);
+  }, [date, grid, notes, elapsed, solved, preview, compact, completedAt, N]);
 
   const bad = useMemo(() => conflicts(grid), [grid]);
+  // Azok a számok, amelyekből már mind az N be van írva: a gombjuk kiszürkül (de megnyomható marad,
+  // hogy egy beírt szám újranyomással törölhető legyen).
+  const complete = useMemo(() => new Set(digits.filter((d) => grid.filter((v) => v === d).length >= N)), [grid, digits, N]);
   const filled = grid.every(Boolean);
 
   // Kitöltött, ütközésmentes rács: mivel a rejtvénynek egyetlen megoldása van, ez a megoldás. A
@@ -105,6 +119,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     setSel(-1);
     setMultiMode(false);
     setMulti([]);
+    setSwipe([]);
     playWave(10);
     setElapsed(el);
     fireConfetti();
@@ -129,9 +144,9 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   // A beírás célcellái: kijelölés módban az összes kijelölt (a megadottak kivételével), egyébként a
   // kijelölt cella.
   const targets = useMemo(() => {
-    const list = multiMode ? multi : sel >= 0 ? [sel] : [];
+    const list = multiMode ? multi : swipe.length > 1 ? swipe : sel >= 0 ? [sel] : [];
     return list.filter((i) => i >= 0 && !givens[i]);
-  }, [multiMode, multi, sel, givens]);
+  }, [multiMode, multi, swipe, sel, givens]);
   const put = useCallback(
     (d) => {
       if (solved || !targets.length) return;
@@ -146,7 +161,9 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
         setNotes((ns) => ns.map((n, i) => (!T.has(i) || grid[i] ? n : all ? n.filter((x) => x !== d) : n.includes(d) ? n : [...n, d].sort())));
         return;
       }
-      if (targets.every((i) => grid[i] === d && !notes[i].length)) return;
+      // Ha a cellában (kijelölésnél mindegyikben) már ez a szám áll, újra megnyomva törlődik.
+      if (d && targets.every((i) => grid[i] === d)) d = 0;
+      if (!d && targets.every((i) => !grid[i] && !notes[i].length)) return;
       setHistory((h) => [...h, { grid, notes }].slice(-200));
       setGrid((g) => g.map((v, i) => (T.has(i) ? d : v)));
       // Szám beírásakor a cellák jegyzetei törlődnek, és a társaikból kikerül ez a jelölt.
@@ -168,11 +185,43 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   }
   function pick(i) {
     if (solved) return;
-    if (!multiMode) return setSel(i);
     setSel(i);
+    if (!multiMode) {
+      setSwipe([]);
+      dragRef.current = { cells: [i], multi: false };
+      return;
+    }
+    const had = multi.includes(i);
+    dragRef.current = { cells: [i], multi: true, adding: !had };
     if (givens[i]) return;
-    setMulti((m) => (m.includes(i) ? m.filter((x) => x !== i) : [...m, i]));
+    setMulti((m) => (had ? m.filter((x) => x !== i) : [...m, i]));
   }
+  // Húzás közben a mutató alatti cella (érintésnél a mozgás az első cellához kötődik, ezért a
+  // képernyő-koordinátából keressük meg).
+  function dragMove(e) {
+    const dr = dragRef.current;
+    if (!dr || solved) return;
+    if (e.pointerType === 'mouse' && !(e.buttons & 1)) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-cell]');
+    if (!el) return;
+    const i = Number(el.dataset.cell);
+    if (dr.cells.includes(i)) return;
+    dr.cells.push(i);
+    if (dr.multi) {
+      if (!givens[i]) setMulti((m) => (dr.adding ? (m.includes(i) ? m : [...m, i]) : m.filter((x) => x !== i)));
+    } else setSwipe([...dr.cells]);
+  }
+  useEffect(() => {
+    const end = () => {
+      dragRef.current = null;
+    };
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    return () => {
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+    };
+  }, []);
   const clearBoard = useCallback(() => {
     if (solved) return;
     setMsg(null);
@@ -211,6 +260,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
       if (e.key === 'k' || e.key === 'K') return toggleMulti();
       const mv = { ArrowUp: -N, ArrowDown: N, ArrowLeft: -1, ArrowRight: 1 }[e.key];
       if (mv) {
+        setSwipe([]);
         e.preventDefault();
         setSel((s) => {
           const n = (s < 0 ? 0 : s) + mv;
@@ -254,13 +304,14 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
           }
         />
       )}
-      <div className={`sudoku-board s${N}${wave ? ' win-wave' : ''}`} role="grid" aria-label={`Sudoku rács (${N}×${N})`}>
+      <div className={`sudoku-board s${N}${wave ? ' win-wave' : ''}`} role="grid" aria-label={`Sudoku rács (${N}×${N})`} onPointerMove={dragMove}>
         {digits.map((_, r) => (
           <div key={r} role="row" className="sudoku-row">
             {grid.slice(r * N, r * N + N).map((v, k) => {
               const i = r * N + k;
-              const isSel = multiMode ? multi.includes(i) : i === sel;
-              const zone = !multiMode && sel >= 0 && !isSel && (rowOf(i) === rowOf(sel) || colOf(i) === colOf(sel) || boxOf(i) === boxOf(sel));
+              const swiping = !multiMode && swipe.length > 1;
+              const isSel = multiMode ? multi.includes(i) : swiping ? swipe.includes(i) : i === sel;
+              const zone = !multiMode && !swiping && sel >= 0 && !isSel && (rowOf(i) === rowOf(sel) || colOf(i) === colOf(sel) || boxOf(i) === boxOf(sel));
               const same = !isSel && selVal && v === selVal;
               const cls = [
                 'sudoku-cell',
@@ -282,16 +333,23 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
                   aria-selected={isSel}
                   className={cls}
                   style={{ '--d': diagFromBottomLeft(rowOf(i), colOf(i), N) }}
-                  onPointerDown={() => pick(i)}
-                  onPointerEnter={(e) => e.pointerType === 'mouse' && !solved && !multiMode && setSel(i)}
+                  data-cell={i}
+                  onPointerDown={(e) => {
+                    // Érintésnél a mutató ne ragadjon az első cellához (különben a húzás nem követhető).
+                    if (e.pointerType !== 'mouse' && e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+                    pick(i);
+                  }}
+                  onPointerEnter={(e) => e.pointerType === 'mouse' && !e.buttons && !solved && !multiMode && !swipe.length && setSel(i)}
                 >
                   {v ? (
                     v
                   ) : notes[i].length ? (
                     <span className="sudoku-notes">
-                      {digits.map((d) => (
-                        <span key={d}>{notes[i].includes(d) ? d : ''}</span>
-                      ))}
+                      {/* A jegyzetek mindig bal felülről, növekvő sorrendben követik egymást. */}
+                      {digits.map((_, k) => {
+                        const ns = [...notes[i]].sort((a, b) => a - b);
+                        return <span key={k}>{ns[k] || ''}</span>;
+                      })}
                     </span>
                   ) : null}
                 </div>
@@ -310,7 +368,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
           {/* 6x6: 1 2 3 Törlés / 4 5 6 Vissza / Jegyzet. 9x9: 1–5 Törlés / 6–9 Vissza / Jegyzet
               (hat oszlop, hogy mobilon a rács alatt kiférjen). */}
           {(N === 9 ? [1, 2, 3, 4, 5] : [1, 2, 3]).map((d) => (
-            <button key={d} type="button" className="sudoku-key" onClick={() => put(d)}>
+            <button key={d} type="button" className={`sudoku-key${complete.has(d) ? ' complete' : ''}`} onClick={() => put(d)} aria-label={complete.has(d) ? `${d} (mind beírva)` : undefined}>
               {d}
             </button>
           ))}
@@ -319,7 +377,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
             <small>Törlés</small>
           </button>
           {(N === 9 ? [6, 7, 8, 9] : [4, 5, 6]).map((d) => (
-            <button key={d} type="button" className="sudoku-key" onClick={() => put(d)}>
+            <button key={d} type="button" className={`sudoku-key${complete.has(d) ? ' complete' : ''}`} onClick={() => put(d)} aria-label={complete.has(d) ? `${d} (mind beírva)` : undefined}>
               {d}
             </button>
           ))}
@@ -348,8 +406,9 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
         </div>
       )}
       {solved && !preview && (
-        <div className="szo-share sudoku-share">
+        <div className="result-actions game-result-actions">
           <CopyResultButton
+            round
             text={[
               `Napi Sudoku ${N}×${N} #${number} – ${dayLabel}`,
               `Nehézség: ${level}/5`,
@@ -357,11 +416,8 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
               N === 9 ? 'napititkos.hu/sudoku?m=9' : 'napititkos.hu/sudoku',
             ].join('\n')}
           />
-          {onSize && (
-            <button type="button" className="ghost sudoku-other" onClick={() => onSize(N === 9 ? 6 : 9)}>
-              {N === 9 ? '6×6' : '9×9'} sudoku
-            </button>
-          )}
+          {/* A napi sudokunál: a következő még nem teljesített napi játék (a másik méret is ide tartozik). */}
+          {!compact && <NextGameButton current={N === 9 ? 'sudoku9' : 'sudoku6'} />}
         </div>
       )}
     </div>

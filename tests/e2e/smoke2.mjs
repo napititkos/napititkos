@@ -1810,7 +1810,10 @@ section('Sudoku 9x9: külön rejtvény, ranglista, archívum, admin');
   await redis.hset('sudoku9:res:' + arcDate, 'u:' + (await (await fetch(BASE + '/api/auth/session', { headers: { cookie: cA.header() } })).json()).user.id, '123000');
   const arc = await (await fetch(BASE + '/api/sudoku/archive', { headers: { cookie: cA.header() } })).json();
   const it = (arc.items || []).find((x) => x.date === arcDate);
-  check('archívum: a 9x9-es idő külön jön vissza', it && it.solved9Ms === 123000 && it.solvedMs == null, JSON.stringify(it));
+  check('archívum (6x6): a 9x9-es idő nem keveredik bele', it && it.solvedMs == null && it.size === 6 && it.givens.length === 36, JSON.stringify(it));
+  const arc9 = await (await fetch(BASE + '/api/sudoku/archive?size=9', { headers: { cookie: cA.header() } })).json();
+  const it9 = (arc9.items || []).find((x) => x.date === arcDate);
+  check('külön 9x9-es archívum: a 9x9-es rács és idő, a hiányzó korábbi 9x9-es elkészül', arc9.size === 9 && it9 && it9.solvedMs === 123000 && it9.givens.length === 81 && it9.level === 2, JSON.stringify(it9).slice(0, 160));
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);

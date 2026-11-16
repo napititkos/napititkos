@@ -31,3 +31,18 @@ test('teljes nap trófeák 1/5/10, és a már megszerzett nem vész el', () => {
   assert.equal(p2.allDoneDays.length, 5);
   assert.ok(computeNewAchievements(statsFromProgress(p2), unlocked).unlocked.includes('all_day_5'));
 });
+
+test('Következő játék: a főoldal sorrendjében az első még nem teljesített (a mostani kihagyva)', async () => {
+  const { nextGameHref } = await import('../lib/dailyDone.js');
+  const w = weekStartOf(D);
+  assert.equal(nextGameHref({}, 'titkos', D), '/szokereso');
+  assert.equal(nextGameHref({ szoFullDays: [D] }, 'titkos', D), '/sudoku');
+  // 9x9 után, ha a 6x6 még nincs meg: a 6x6-ra
+  assert.equal(nextGameHref({ history: { [D]: { correct: true } }, szoFullDays: [D], sudoku9Days: [D] }, 'sudoku9', D), '/sudoku');
+  // 6x6 után a 9x9-re
+  assert.equal(nextGameHref({ history: { [D]: { correct: true } }, szoFullDays: [D], sudokuDays: [D] }, 'sudoku6', D), '/sudoku?m=9');
+  // a mini után felülről: a még meg nem fejtett titkosírás
+  assert.equal(nextGameHref({ miniWeeks: [w] }, 'mini', D), '/titkosiras');
+  // minden kész: főoldal
+  assert.equal(nextGameHref(full(), 'mini', D), '/');
+});

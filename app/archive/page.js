@@ -24,6 +24,11 @@ export default function ArchivePage() {
   // A mini élesítése után: „Korábbi rejtvények”, Titkosírások / Minik választóval.
   const miniLive = useMiniLive();
   const [kind, setKind, tabReady] = useRejtvenyTab();
+  // Sudoku: külön 6×6-os és 9×9-es archívum (a játékválasztó alatt választható; ?m=9 a 9×9-es).
+  const [sudSize, setSudSize] = useState(6);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('m') === '9') setSudSize(9);
+  }, []);
   const [items, setItems] = useState(null);
   // A fiók haladásának megérkezése után (másik eszközön megfejtettek) frissítjük a megfejtett jelzéseket.
   useEffect(() => {
@@ -175,8 +180,17 @@ export default function ArchivePage() {
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo withSudoku labels={{ titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Mini', sudoku: 'Sudoku' }} />}
         <BackButton pill className="kisokos-back" />
       </div>
+      {tabReady && miniLive && kind === 'sudoku' && (
+        <div className="rejtveny-tabs sudoku-arch-size" role="tablist" aria-label="Sudoku mérete">
+          {[6, 9].map((n) => (
+            <button key={n} type="button" role="tab" aria-selected={sudSize === n} className={sudSize === n ? 'primary small' : 'ghost small'} onClick={() => setSudSize(n)}>
+              {n}×{n}
+            </button>
+          ))}
+        </div>
+      )}
       {!tabReady ? null : miniLive && kind === 'sudoku' ? (
-        <SudokuArchive />
+        <SudokuArchive size={sudSize} />
       ) : miniLive && kind === 'szo' ? (
         <SzoArchive />
       ) : miniLive && kind === 'mini' ? (

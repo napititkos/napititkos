@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
+import Icon from './Icon';
 
 // „Eredmény másolása”: az eredmény szövege a vágólapra kerül (a megosztás helyett, hogy bárhová be
 // lehessen illeszteni).
-export default function CopyResultButton({ text, label = 'Eredmény másolása' }) {
+// round: a titkosírás eredményéhez hasonló kerek gomb, alatta felirattal (a .result-actions sorban).
+export default function CopyResultButton({ text, label = 'Eredmény másolása', round = false }) {
   const [msg, setMsg] = useState('');
   async function copy() {
     let ok = false;
@@ -26,6 +28,20 @@ export default function CopyResultButton({ text, label = 'Eredmény másolása' 
     setMsg(ok ? 'Vágólapra másolva!' : 'Nem sikerült másolni.');
     setTimeout(() => setMsg(''), 2200);
   }
+  if (round)
+    return (
+      <div className="result-action">
+        <button type="button" className="primary round-btn" onClick={copy} aria-label={label}>
+          <Icon src="/icons/Megosztas.png" size={20} className="icon-on-accent" />
+        </button>
+        <span>{label}</span>
+        {msg && (
+          <span className="share-msg result-action-msg" role="status">
+            {msg}
+          </span>
+        )}
+      </div>
+    );
   return (
     <span className="share-wrap">
       <button type="button" className="primary small share-btn" onClick={copy}>
