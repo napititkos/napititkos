@@ -7,7 +7,8 @@ import { isAdminRequest } from '../../../../lib/adminAuth';
 import { readJson } from '../../../../lib/validate';
 import { completeMini, generateMini } from '../../../../lib/miniGen';
 import { sanitizeDraftInput } from '../../../../lib/miniDraft';
-import { MINI_KEYS, cluesFor, enqueuePuzzle, loadBank, miniStart, newMiniId, normWord, rotateMini, titkosClues, validatePuzzle, weekStart } from '../../../../lib/mini';
+import { MINI_KEYS, cluesFor, enqueuePuzzle, loadBank, miniStart, moveQueued, newMiniId, normWord, patchQueued, rotateMini, titkosClues, validatePuzzle, weekStart } from '../../../../lib/mini';
+import { addWeeks, isMonday, planQueue } from '../../../../lib/miniSchedule';
 
 const unauthorized = () => Response.json({ error: 'unauthorized' }, { status: 401 });
 const newId = newMiniId;
@@ -32,16 +33,13 @@ export async function GET(req) {
       published: pub.slice(-10).reverse(),
       current: pub[pub.length - 1] || null,
       week: weekStart(),
-      // A várólista elemeinek tervezett hete: ha a mostani héten már megjelent mini, a következő
-      // héttől, különben ettől a héttől sorban.
+      // A várólista elemeinek várható hete: ha a mostani héten már megjelent mini, a következő
+      // héttől, különben ettől a héttől; a beütemezett elemek a saját hetükön, a többi sorban.
       scheduled: (() => {
         const ws = weekStart();
         const curDone = pub.length && pub[pub.length - 1].week >= ws;
-        return (queue || []).map((_, i) => {
-          const d = new Date(`${ws}T12:00:00Z`);
-          d.setUTCDate(d.getUTCDate() + 7 * (i + (curDone ? 1 : 0)));
-          return d.toISOString().slice(0, 10);
-        });
+        const plan = planQueue(queue || [], curDone ? addWeeks(ws, 1) : ws);
+        return (queue || []).map((q) => plan[q.id] || null);
       })(),
       start: miniStart(),
       bankWords: Object.keys(bank).length,
@@ -132,6 +130,23 @@ export async function POST(req) {
     });
     if (!r) return Response.json({ error: 'busy' }, { status: 503 });
     return Response.json({ ok: true, word, variants: r.value });
+  }
+
+  // Várólista sorrendje (to: új index), illetve a készítő és az ütemezett hét (hétfő; üres = sorban).
+  if (action === 'moveQueued') {
+    if (typeof body.id !== 'string' || !Number.isInteger(body.to)) return Response.json({ error: 'bad-request' }, { status: 400 });
+    const r = await moveQueued(body.id, body.to);
+    if (!r) return Response.json({ error: 'busy' }, { status: 503 });
+    if (r.value === null) return Response.json({ error: 'not-found' }, { status: 404 });
+    return Response.json({ ok: true });
+  }
+  if (action === 'patchQueued') {
+    if (typeof body.id !== 'string') return Response.json({ error: 'bad-request' }, { status: 400 });
+    if (body.scheduledWeek !== undefined && body.scheduledWeek !== '' && (!isMonday(body.scheduledWeek) || body.scheduledWeek < weekStart())) return Response.json({ error: 'bad-week', message: 'Csak a mostani vagy egy későbbi hét hétfője választható.' }, { status: 400 });
+    const r = await patchQueued(body.id, { author: body.author, scheduledWeek: body.scheduledWeek });
+    if (!r) return Response.json({ error: 'busy' }, { status: 503 });
+    if (r.value === null) return Response.json({ error: 'not-found' }, { status: 404 });
+    return Response.json({ ok: true, item: r.value });
   }
 
   if (action === 'removeQueued') {

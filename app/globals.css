@@ -2113,3 +2113,12 @@ button.sudoku-key.complete{ opacity: 0.38; filter: saturate(0.3); }
 .result-action-msg{ position: absolute; top: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; margin-top: 2px; }
 /* Három gomb (Eredmény másolása, Magyarázat, Következő játék): egy sorban, egyenlő oszlopokban. */
 .result .result-actions:has(> .result-action:nth-child(3)){ grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 360px; }
+/* Mini szerkesztő: készítő és ütemezés a tábla neve alatt. */
+.mini-meta-fields{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 10px; }
+.mini-meta-fields select{ width: 100%; }
+@media (max-width: 640px){ .mini-meta-fields{ grid-template-columns: 1fr; } }
+/* Mini várólista: sorrend, ütemezés, készítő. */
+.mini-queue-ctrl{ display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 6px; }
+.mini-queue-ctrl input{ max-width: 180px; padding: 6px 10px; font-size: 14px; text-transform: none; }
+.mini-queue-ctrl select{ max-width: 280px; padding-top: 6px; padding-bottom: 6px; font-size: 14px; }
+.mini-sched-badge{ display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; background: var(--btn-primary); color: #fff; }

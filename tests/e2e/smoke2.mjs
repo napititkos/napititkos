@@ -1816,6 +1816,47 @@ section('Sudoku 9x9: külön rejtvény, ranglista, archívum, admin');
   check('külön 9x9-es archívum: a 9x9-es rács és idő, a hiányzó korábbi 9x9-es elkészül', arc9.size === 9 && it9 && it9.solvedMs === 123000 && it9.givens.length === 81 && it9.level === 2, JSON.stringify(it9).slice(0, 160));
 }
 
+section('Heti mini admin: sorrend, ütemezés, készítő (mint a titkosírásnál)');
+{
+  const rowsS = [['k','e','r','t','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#']];
+  const entS = [['A',0,0,'kert'],['D',0,0,'k'],['D',0,1,'e'],['D',0,2,'r'],['D',0,3,'t']].map(([dir,row,col,word])=>({dir,row,col,len:word.length,word,clue:'Q '+word}));
+  const savedQ = await redis.get('mini:queue'); const savedP = await redis.get('mini:published');
+  // a mostani hét már megjelent (különben a lekérés kitenné a várólista elsőjét)
+  const mon = (() => { const d = new Date(`${budapestToday}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
+  await redis.set('mini:published', JSON.stringify([{ id: 'pcur', rows: rowsS, entries: entS, week: mon, publishedAt: new Date().toISOString() }]));
+  await redis.set('mini:queue', JSON.stringify(['s1','s2','s3'].map((id) => ({ id, rows: rowsS, entries: entS }))));
+  let st = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  const w0 = st.week;
+  const add = (n) => { const d = new Date(`${w0}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 7 * n); return d.toISOString().slice(0, 10); };
+  let rr = await post('/api/admin/mini', { action: 'moveQueued', id: 's3', to: 0 }, adm);
+  st = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  check('sorrend: a 3. elem az első helyre kerül', rr.status === 200 && st.queue.map((q) => q.id).join() === 's3,s1,s2');
+  rr = await post('/api/admin/mini', { action: 'patchQueued', id: 's2', scheduledWeek: add(1), author: '  Kovács  Anna ' }, adm);
+  st = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  const s2 = st.queue.find((q) => q.id === 's2');
+  check('ütemezés és készítő mentése (a név körüli szóközök levágva)', rr.status === 200 && s2.scheduledWeek === add(1) && s2.author === 'Kovács  Anna', JSON.stringify(s2).slice(0, 200));
+  check('várható hetek: a beütemezett a saját hetén, a többi sorban körülötte', JSON.stringify(st.scheduled) === JSON.stringify([add(2), add(3), add(1)]), JSON.stringify(st.scheduled));
+  rr = await post('/api/admin/mini', { action: 'patchQueued', id: 's2', scheduledWeek: '2026-11-17' }, adm);
+  check('nem hétfő: 400', rr.status === 400);
+  rr = await post('/api/admin/mini', { action: 'patchQueued', id: 's2', scheduledWeek: add(-1) }, adm);
+  check('elmúlt hét: 400', rr.status === 400);
+  rr = await post('/api/admin/mini', { action: 'patchQueued', id: 's2', scheduledWeek: '', author: '' }, adm);
+  st = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  check('ütemezés és készítő törlése', !st.queue.find((q) => q.id === 's2').scheduledWeek && !st.queue.find((q) => q.id === 's2').author);
+  rr = await post('/api/admin/mini', { action: 'moveQueued', id: 'nincs', to: 0 }, adm);
+  check('nem létező elem áthelyezése: 404', rr.status === 404);
+  // szerkesztőből: készítő és ütemezés a piszkozattal együtt mentődik és kerül a várólistára
+  rr = await post('/api/admin/mini/drafts', { action: 'editQueued', id: 's1' }, adm); let j = await rr.json();
+  const dd = (await (await fetch(BASE + `/api/admin/mini/drafts?id=${j.id}`, { headers: adm })).json()).draft;
+  rr = await post('/api/admin/mini/drafts', { action: 'save', id: dd.id, rev: dd.rev, title: dd.title, rows: dd.rows, clues: dd.clues, author: 'Szerkesztő Szilvi', scheduledWeek: add(3) }, adm); const sv = await rr.json();
+  rr = await post('/api/admin/mini/drafts', { action: 'publish', id: dd.id, rev: sv.draft.rev }, adm);
+  st = await (await fetch(BASE + '/api/admin/mini', { headers: adm })).json();
+  const s1 = st.queue.find((q) => q.id === 's1');
+  check('szerkesztőből: készítő és ütemezett hét a helyén maradó elemen', rr.status === 200 && s1.author === 'Szerkesztő Szilvi' && s1.scheduledWeek === add(3) && st.queue.map((q) => q.id).join() === 's3,s1,s2', JSON.stringify(s1).slice(0, 200));
+  if (savedQ) await redis.set('mini:queue', savedQ); else await redis.del('mini:queue');
+  if (savedP) await redis.set('mini:published', savedP); else await redis.del('mini:published');
+}
+
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);
 await redis.quit();
 process.exit(fail ? 1 : 0);

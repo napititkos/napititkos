@@ -517,7 +517,8 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
       {!preview && (foundReq.length > 0 || done) && (
         <div className="result-actions game-result-actions">
           <CopyResultButton round text={shareText()} />
-          {done && !compact && <NextGameButton current="szo" />}
+          {/* A napi szókeresőnél fejtés közben is ott van (mint a másolás). */}
+          {!compact && <NextGameButton current="szo" />}
         </div>
       )}
     </div>
