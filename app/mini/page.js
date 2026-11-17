@@ -71,7 +71,7 @@ export default function MiniPage() {
     } catch {}
   }
 
-  if (!data) return <div className="wrap"><div className="card">Betöltés…</div></div>;
+  if (!data) return <div className="wrap"><div className="card" data-nosnippet="">Betöltés…</div></div>;
   if (!data.live || !data.puzzle) {
     return (
       <div className="wrap">

@@ -1122,6 +1122,13 @@ export default function AdminApp({ section = 'home' }) {
                   </div>
                   <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
                     {u.email} · {u.emailVerified ? 'megerősítve' : 'nincs megerősítve'}
+                    {u.registeredAt && (
+                      <>
+                        {' · regisztrált: '}
+                        {u.registeredApprox ? 'kb. ' : ''}
+                        {new Date(u.registeredAt).toLocaleDateString('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="user-actions">

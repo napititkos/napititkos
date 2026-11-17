@@ -1,6 +1,8 @@
 export default function Footer() {
   return (
     <footer className="site-footer">
+      {/* A keresők találati szövegébe a lábléc ne kerüljön (a jelölés div-en érvényes). */}
+      <div data-nosnippet="">
       <div className="site-footer-links">
         <a href="/contact">Kapcsolat</a>
         <span className="dot">·</span>
@@ -17,6 +19,7 @@ export default function Footer() {
           Twemoji
         </a>{' '}
         (CC-BY 4.0)
+      </div>
       </div>
     </footer>
   );

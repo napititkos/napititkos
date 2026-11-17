@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { enumerationFor } from '../../lib/format';
 import { loadProgress, saveProgress } from '../../lib/progress';
+import { recordArchiveVisit } from '../../lib/gameProgress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
 import DailyReactions from '../../components/DailyReactions';
 import MiniArchive from '../../components/MiniArchive';
@@ -26,6 +27,10 @@ export default function ArchivePage() {
   const [kind, setKind, tabReady] = useRejtvenyTab();
   // Sudoku: külön 6×6-os és 9×9-es archívum (a játékválasztó alatt választható; ?m=9 a 9×9-es).
   const [sudSize, setSudSize] = useState(6);
+  // A Régész trófea: a Korábbi rejtvények oldal meglátogatása.
+  useEffect(() => {
+    recordArchiveVisit();
+  }, []);
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('m') === '9') setSudSize(9);
   }, []);

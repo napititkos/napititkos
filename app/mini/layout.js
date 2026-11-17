@@ -8,6 +8,13 @@ export const metadata = {
   twitter: { card: 'summary_large_image', title: 'Napititkos.hu - Minden héten új Mini Keresztrejtvény', description: 'Napititkos.hu - Minden héten új Mini Keresztrejtvény' },
 };
 
+// A leírás a szerveren renderelt HTML-ben is benne van (a keresők ezt olvassák elsőként), a
+// képernyőn nem látszik.
 export default function Layout({ children }) {
-  return children;
+  return (
+    <>
+      <p className="sr-only">{metadata.description}</p>
+      {children}
+    </>
+  );
 }

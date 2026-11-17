@@ -45,7 +45,11 @@ export default function AchievementCheck() {
       if (sessionStorage.getItem(flag)) first = false;
       else sessionStorage.setItem(flag, '1');
     } catch {}
-    if (first) runCheck(status);
+    // Ha az oldal még a bejelentkezési állapot betöltése közben kért ellenőrzést (pl. a Korábbi
+    // rejtvények oldal megnyitásakor), azt most pótoljuk.
+    const pending = typeof window !== 'undefined' && window.__achRecheckPending;
+    if (pending) window.__achRecheckPending = false;
+    if (first || pending) runCheck(status);
     return () => window.removeEventListener('achievements-recheck', again);
   }, [status]);
   return null;

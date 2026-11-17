@@ -43,6 +43,12 @@ test('Következő játék: a főoldal sorrendjében az első még nem teljesíte
   assert.equal(nextGameHref({ history: { [D]: { correct: true } }, szoFullDays: [D], sudokuDays: [D] }, 'sudoku6', D), '/sudoku?m=9');
   // a mini után felülről: a még meg nem fejtett titkosírás
   assert.equal(nextGameHref({ miniWeeks: [w] }, 'mini', D), '/titkosiras');
-  // minden kész: főoldal
-  assert.equal(nextGameHref(full(), 'mini', D), '/');
+  // minden kész: a közösségi rejtvények
+  assert.equal(nextGameHref(full(), 'mini', D), '/kozossegi');
+});
+
+test('A Régész: a korábbi rejtvények meglátogatásáért, visszamenőleges beszámítás nélkül', () => {
+  const un = (p) => computeNewAchievements(statsFromProgress(p), []).unlocked;
+  assert.ok(!un({ archiveSolved: Array.from({ length: 60 }, (_, i) => `t${i}`) }).includes('archaeologist'));
+  assert.ok(un({ visitedArchive: true }).includes('archaeologist'));
 });
