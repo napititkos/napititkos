@@ -2171,3 +2171,6 @@ a.card.game-tile.hub-extra-tile{ min-height: 118px; }
 @media (min-width: 561px){ a.card.game-tile.hub-extra-tile{ min-height: 120px; } }
 .game-tile.hub-extra-tile .game-tile-text{ margin: 0; align-items: center; text-align: center; padding-left: 34px; padding-right: 34px; }
 @media (max-width: 400px){ .game-tile.hub-extra-tile .game-tile-text{ padding-left: 28px; padding-right: 28px; } }
+/* A Korábbi / Közösségi csempén nincs ikon: a felirat a teljes szélességet használhatja. */
+.game-tile.hub-extra-tile .game-tile-text{ padding-left: 8px; padding-right: 8px; }
+.brand.brand-flow.hub-extra-word{ font-size: min(calc((100vw - 90px) / 14), 24px); }
