@@ -17,6 +17,10 @@ export async function GET(req) {
         name: user.name || '',
         role: user.role || 'user',
         emailVerified: !!user.emailVerified,
+        // Regisztráció dátuma: a régebbi fiókoknál (ahol még nem volt naplózva) a megerősítés ideje,
+        // ami a regisztrációval egy időben történt – ezt „kb.”-ként jelezzük.
+        registeredAt: user.createdAt || (typeof user.emailVerified === 'string' ? user.emailVerified : null),
+        registeredApprox: !user.createdAt,
         banned: !!user.banned,
       });
     }

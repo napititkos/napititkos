@@ -3,7 +3,8 @@ import { loadProgress } from '../lib/progress';
 import { nextGameHref } from '../lib/dailyDone';
 
 // „Következő játék”: a főoldal sorrendjében (Titkosírás, Szókereső, Sudoku 6×6, Sudoku 9×9, Heti Mini)
-// az első még nem teljesített napi játékra visz, a mostanit kihagyva. Ha minden kész, a főoldalra.
+// az első még nem teljesített napi játékra visz, a mostanit kihagyva. Ha minden kész, a közösségi
+// rejtvényekhez.
 // A célt kattintáskor számoljuk, így a frissen teljesített játék már beleszámít.
 export default function NextGameButton({ current }) {
   function go() {

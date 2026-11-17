@@ -29,6 +29,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    // ?mode=register: a „Regisztráció” gombokról egyből a regisztráció nyílik.
+    if (params.get('mode') === 'register') setMode('register');
     const verify = params.get('verify');
     if (verify === 'ok') {
       setStatus({ ok: true, msg: 'Sikeresen megerősítetted az email címed! Most már bejelentkezhetsz.' });

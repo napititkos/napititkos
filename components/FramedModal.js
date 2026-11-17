@@ -6,7 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 // (cím, bezáró X, a nem változó részek), középen keretben a görgethető tartalom, lent a lap aljára
 // rögzített lábléc két gombbal: Bezárás és Játszom (az aktuális játékhoz visz; ha már azon az
 // oldalon vagyunk, csak bezárja az ablakot). Váltáskor csak a középső rész töltődik újra.
-const FramedModal = forwardRef(function FramedModal({ title, head, children, playHref, onClose, labelId, bodyLabel }, bodyRef) {
+// foot: saját lábléc (alapból Bezárás és Játszom).
+const FramedModal = forwardRef(function FramedModal({ title, head, children, playHref, onClose, labelId, bodyLabel, foot = null, className = '' }, bodyRef) {
   const router = useRouter();
   const pathname = usePathname();
   function play() {
@@ -19,7 +20,7 @@ const FramedModal = forwardRef(function FramedModal({ title, head, children, pla
   }
   return (
     <div className="modal-overlay framed-overlay" onClick={onClose}>
-      <div className="modal-card has-close-tl framed-modal" role="dialog" aria-modal="true" aria-labelledby={labelId} onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-card has-close-tl framed-modal ${className}`} role="dialog" aria-modal="true" aria-labelledby={labelId} onClick={(e) => e.stopPropagation()}>
         <div className="fm-head">
           {/* Jobb felső sarokban bezárás, egy sorban a címmel (mobilon és asztali gépen is). */}
           <button type="button" className="modal-close-tl" aria-label="Bezárás" onClick={onClose}>
@@ -34,12 +35,16 @@ const FramedModal = forwardRef(function FramedModal({ title, head, children, pla
           {children}
         </div>
         <div className="fm-foot">
-          <button type="button" className="ghost" onClick={onClose}>
-            Bezárás
-          </button>
-          <button type="button" className="primary" onClick={play}>
-            Játszom
-          </button>
+          {foot || (
+            <>
+              <button type="button" className="ghost" onClick={onClose}>
+                Bezárás
+              </button>
+              <button type="button" className="primary" onClick={play}>
+                Játszom
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

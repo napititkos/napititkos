@@ -19,10 +19,20 @@ export default function AchievementsModal() {
   // Melyik játék oldaláról nyitották (a Játszom gombhoz, ha az „Összes” van kiválasztva).
   const [from, setFrom] = useState('titkos');
   const bodyRef = useRef(null);
+  const [jump, setJump] = useState(null);
+  // Megnyitáskor (és ha a Mini állapota megjön) az aktuális játék csoportja a keret tetejére kerül.
+  useEffect(() => {
+    if (!open || !jump || !multi) return;
+    const box = bodyRef.current;
+    const el = box?.querySelector(`[data-game="${jump}"]`);
+    if (box && el) box.scrollTop = el.offsetTop;
+  }, [open, jump, multi, filter]);
 
   useEffect(() => {
     function handleOpen(e) {
+      // A szűrő mindig „Összes”; játékoldalról a lista az aktuális játék csoportjáig görget.
       setFilter('all');
+      setJump(GAME_LABEL[e?.detail?.game] ? e.detail.game : null);
       setFrom(GAME_LABEL[e?.detail?.game] ? e.detail.game : 'titkos');
       fetch('/api/mini/status')
         .then((r) => (r.ok ? r.json() : null))
@@ -72,6 +82,7 @@ export default function AchievementsModal() {
               value={filter}
               onChange={(e) => {
                 setFilter(e.target.value);
+                setJump(null);
                 if (bodyRef.current) bodyRef.current.scrollTop = 0;
               }}
               aria-label="Trófeák játék szerint"
@@ -87,7 +98,7 @@ export default function AchievementsModal() {
       }
     >
         {games.map((g) => (
-          <div key={g} className="ach-group">
+          <div key={g} className="ach-group" data-game={g}>
             {multi && filter === 'all' && <h3 className="ach-group-title">{GROUP_LABEL[g]}</h3>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {ACHIEVEMENTS.filter((a) => gameOf(a) === g).map((a) => {
@@ -115,6 +126,18 @@ export default function AchievementsModal() {
                     </div>
                     <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{a.desc}</div>
                   </div>
+                  {/* Saját beküldéses trófeák: ceruza gomb a beküldéshez. */}
+                  {a.link && (
+                    <a className="ach-link" href={a.link} aria-label={`${a.title}: ${a.linkLabel || 'ugrás a beküldéshez'}`} title={a.linkLabel || 'Beküldés'}>
+                      {a.linkIcon ? (
+                        <Icon src={a.linkIcon} size={17} className="icon-on-accent" />
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 20l1-4.2L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19 4 20z" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </a>
+                  )}
                   {/* A még meg nem szerzett, számszerű trófeáknál a haladás (pl. 37/50). */}
                   {!done && progress[a.id] && (
                     <span className="ach-progress" aria-label={`Haladás: ${Math.min(progress[a.id][0], progress[a.id][1])} / ${progress[a.id][1]}`}>

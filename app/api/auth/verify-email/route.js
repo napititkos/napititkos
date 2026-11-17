@@ -25,6 +25,8 @@ export async function GET(req) {
       emailVerified: new Date().toISOString(),
       role: 'user',
       passwordHash: pending.passwordHash,
+      // A regisztráció dátuma (az admin felhasználólistájához).
+      createdAt: new Date().toISOString(),
     });
     // Atomikus foglalás: ha közben a címhez már létrejött fiók (pl. Google-lal),
     // azt nem írjuk felül és nem adunk rá jelszót.

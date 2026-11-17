@@ -189,6 +189,12 @@ let loc = await verify(linkB);
 check('link megnyitása: /login?verify=ok', loc.endsWith('/login?verify=ok'), loc);
 const uB = await getUser(B);
 check('a fiók létrejött, megerősítve, jelszóval', !!uB && !!uB.emailVerified && String(uB.passwordHash).includes(':'));
+check('a regisztráció dátuma naplózva (createdAt)', !!uB && !Number.isNaN(Date.parse(uB.createdAt)) && Date.now() - Date.parse(uB.createdAt) < 60000, String(uB?.createdAt));
+{
+  const ul = await (await fetch(BASE + '/api/admin/users', { headers: { cookie: adminCookie } })).json();
+  const row = (ul.users || []).find((u) => u.email === B);
+  check('admin felhasználólista: regisztráció dátuma (pontos)', row && row.registeredAt === uB.createdAt && row.registeredApprox === false, JSON.stringify(row));
+}
 check('a függő rekord törlődött', (await redis.keys('pendingreg:*')).length === 0);
 loc = await verify(linkB);
 check('ugyanaz a link másodszor: /login?verify=expired', loc.endsWith('/login?verify=expired'), loc);

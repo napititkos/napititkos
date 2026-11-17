@@ -51,6 +51,9 @@ léteznek, újra kell használni őket, nem újat írni.
 - **Korábbiak** fül (`app/archive/page.js`): év és hónap szerinti dobozok, „x/y megfejtve”,
   kicsinyítve csak a lényeg és jobbra a pipa (`components/SolvedMark.js`), lenyitva a részletek.
 - **Trófeák** (`lib/achievements.js`, `game: '<kulcs>'`), a trófeák ablakában saját csoport.
+- **A Régész** (Általános): a Korábbi rejtvények oldal meglátogatásáért (`recordArchiveVisit`).
+- **Linkes trófeák:** a trófeán `link` mező → gomb a megfelelő oldalra (alapból ceruza, `linkIcon`
+  megadásával más ikon, pl. a Régésznél a Korábbi rejtvények doboza).
 - **Teljes nap** (`lib/dailyDone.js`): ha egy napon minden napi rejtvény kész, a nap a haladás
   `allDoneDays` listájába kerül (Általános trófeák: 1/5/10 teljes nap). Új játéknál a `dailyDone`
   függvénybe is fel kell venni; a lista csak bővül, így a korábbi teljes napok nem vesznek el.

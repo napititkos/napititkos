@@ -89,7 +89,7 @@ export default function SudokuPage() {
       <h1 className="sr-only">Napititkos.hu - Minden nap új sudoku!</h1>
       <div className="card">
         {!data ? (
-          <p>Betöltés…</p>
+          <p data-nosnippet="">Betöltés…</p>
         ) : !data.live || !data.givens ? (
           <p>A napi sudoku hamarosan érkezik.</p>
         ) : (

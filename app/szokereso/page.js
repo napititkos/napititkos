@@ -51,7 +51,7 @@ export default function SzokeresoPage() {
       <h1 className="sr-only">Napititkos.hu - Minden nap új szókereső!</h1>
       <div className="card">
         {!data ? (
-          <p>Betöltés…</p>
+          <p data-nosnippet="">Betöltés…</p>
         ) : !data.live || !data.grid ? (
           <p>A napi szókereső hamarosan érkezik.</p>
         ) : (

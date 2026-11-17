@@ -108,10 +108,10 @@ export default function CommunityPage() {
       <a className="community-cta" href="/submit">
         <Icon src="/icons/Rejtveny_bekuldese.png" size={22} className="icon-on-accent" /> Írj te is titkosírást!
       </a>
-      {status === 'unauthenticated' && (
+      {/* Vendégnek a bejelentkezés csak a lenyitott rejtvénynél jelenik meg (ott, ahol megfejtené). */}
+      {status === 'unauthenticated' && sharedLink && (
         <div className="community-guest-note">
-          {sharedLink && <b>Valaki megosztott veled egy közösségi titkosírást! </b>}
-          <a href={`/login?callbackUrl=${encodeURIComponent('/kozossegi' + (sharedLink ? `?r=${sharedLink}` : ''))}`}>Bejelentkezés / regisztráció</a>
+          <b>Valaki megosztott veled egy közösségi titkosírást!</b>
         </div>
       )}
       <div className="community-sort">

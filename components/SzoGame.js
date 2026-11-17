@@ -6,6 +6,7 @@ import { fireConfetti } from './Confetti';
 import { recordSzoFull, recordSzoWord } from '../lib/gameProgress';
 import CopyResultButton from './CopyResultButton';
 import NextGameButton from './NextGameButton';
+import FramedModal from './FramedModal';
 import GameHead from './GameHead';
 import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { dayLevel } from '../lib/dayLevel';
@@ -88,6 +89,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
   }, [abc, outer, preview]);
   const [path, setPath] = useState([]);
   const [panel, setPanel] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [lastWord, setLastWord] = useState(null); // a legutóbb beküldött szó (a beírás felülírja)
   const togglePanel = (v) => {
     setPanel(v);
@@ -397,68 +399,90 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         {foundReq.length}/{total} szó · {szoPointsTotal(foundReq)} pont
       </button>
       {panel && (
-        <div className="modal-overlay szo-words-overlay" onClick={() => togglePanel(false)}>
-        <div className="modal-card szo-words-panel" role="dialog" aria-label="Szavak" onClick={(e) => e.stopPropagation()}>
-          <button type="button" className="modal-x szo-words-x" aria-label="Bezárás" onClick={() => togglePanel(false)}>
-            ×
-          </button>
-          <h2 className="szo-words-title">
-            Szavak <span>{foundReq.length}/{total}</span>
-          </h2>
-        <div className="szo-options">
-          <label className="checkbox-row">
-            <input type="checkbox" checked={abc} onChange={(e) => setAbc(e.target.checked)} /> ABC-sorrend (a még meg nem talált szavak a helyükön)
-          </label>
-          <label className="checkbox-row">
-            <input type="checkbox" checked={outer} onChange={(e) => setOuter(e.target.checked)} /> Első és utolsó betű mutatása
-          </label>
-        </div>
-        <div className="szo-lists">
-          {groups.map(([L, words]) => {
-            const got = words.filter((w) => found.includes(w));
-            const rest = words.filter((w) => !found.includes(w));
-            const items = abc ? words.slice().sort((a, b) => a.localeCompare(b, 'hu')) : [...got.sort((a, b) => a.localeCompare(b, 'hu')), ...rest];
-            return (
-              <div key={L} className="szo-group">
-                <h3>
-                  {L} betűs <span>({got.length}/{words.length})</span>
-                </h3>
+        <FramedModal
+          labelId="szo-words-title"
+          bodyLabel="Szólista"
+          className="szo-words-panel"
+          onClose={() => {
+            setReporting(false);
+            togglePanel(false);
+          }}
+          title={
+            <>
+              Szavak <span className="ach-progress fm-count">{foundReq.length}/{total}</span>
+            </>
+          }
+          head={
+            <div className="szo-options">
+              <label className="checkbox-row">
+                <input type="checkbox" checked={abc} onChange={(e) => setAbc(e.target.checked)} /> ABC-sorrend (a még meg nem talált szavak a helyükön)
+              </label>
+              <label className="checkbox-row">
+                <input type="checkbox" checked={outer} onChange={(e) => setOuter(e.target.checked)} /> Első és utolsó betű mutatása
+              </label>
+            </div>
+          }
+          foot={
+            <>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  setReporting(false);
+                  togglePanel(false);
+                }}
+              >
+                Bezárás
+              </button>
+              {showReport && (
+                <button type="button" className={reporting ? 'primary' : 'ghost'} aria-pressed={reporting} onClick={() => setReporting((x) => !x)}>
+                  Problémád van?
+                </button>
+              )}
+            </>
+          }
+        >
+          {/* A keretben csak a szólista görget; a betűszám szerinti csoport címe felül rögzítve marad,
+              amíg a következő csoport fel nem ér (mint a trófeáknál a játékok). */}
+          {reporting && showReport && <SzoReport date={date} onClose={() => setReporting(false)} />}
+          <div className="szo-lists">
+            {groups.map(([L, words]) => {
+              const got = words.filter((w) => found.includes(w));
+              const rest = words.filter((w) => !found.includes(w));
+              const items = abc ? words.slice().sort((a, b) => a.localeCompare(b, 'hu')) : [...got.sort((a, b) => a.localeCompare(b, 'hu')), ...rest];
+              return (
+                <div key={L} className="szo-group">
+                  <h3 className="szo-group-title">
+                    {L} betűs <span>({got.length}/{words.length})</span>
+                  </h3>
+                  <ul>
+                    {items.map((w) =>
+                      found.includes(w) ? (
+                        <li key={w} className="got">{w.toUpperCase()}</li>
+                      ) : (
+                        <li key={w}>
+                          <span className="szo-masked" aria-label="Még meg nem talált szó">
+                            {mask(w)}
+                          </span>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              );
+            })}
+            {foundBonus.length > 0 && (
+              <div className="szo-group">
+                <h3 className="szo-group-title">Bónuszszavak <span>({foundBonus.length})</span></h3>
                 <ul>
-                  {items.map((w) =>
-                    found.includes(w) ? (
-                      <li key={w} className="got">{w.toUpperCase()}</li>
-                    ) : (
-                      <li key={w}>
-                        <span className="szo-masked" aria-label="Még meg nem talált szó">
-                          {mask(w)}
-                        </span>
-                      </li>
-                    )
-                  )}
+                  {foundBonus.sort((a, b) => a.localeCompare(b, 'hu')).map((w) => (
+                    <li key={w} className="got bonus">{w.toUpperCase()}</li>
+                  ))}
                 </ul>
               </div>
-            );
-          })}
-          {foundBonus.length > 0 && (
-            <div className="szo-group">
-              <h3>Bónuszszavak <span>({foundBonus.length})</span></h3>
-              <ul>
-                {foundBonus.sort((a, b) => a.localeCompare(b, 'hu')).map((w) => (
-                  <li key={w} className="got bonus">{w.toUpperCase()}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-          {showReport && <SzoReport date={date} />}
-          <div className="actions" style={{ marginTop: 12 }}>
-            <button className="primary" onClick={() => togglePanel(false)}>
-              Bezárás
-            </button>
+            )}
           </div>
-        </div>
-        </div>
+        </FramedModal>
       )}
       {/* Két külön sor: fölül az üzenet (halványodva eltűnik), alatta a szó. A beírás mindig
           felülírja: amíg betűket húz, az üzenet nem látszik, a szó sorában a beírt betűk állnak. */}
@@ -527,8 +551,9 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
 }
 
 // „Problémád van?” – hibajelzés az adminnak (legördülő típus + szöveg).
-function SzoReport({ date }) {
-  const [open, setOpen] = useState(false);
+// A Szavak ablakban a lábléc „Problémád van?” gombja nyitja (onClose: a Mégse / küldés után).
+function SzoReport({ date, onClose }) {
+  const [open, setOpen] = useState(true);
   const [type, setType] = useState('');
   const [text, setText] = useState('');
   const [msg, setMsg] = useState(null);
@@ -542,16 +567,16 @@ function SzoReport({ date }) {
       setOpen(false);
     } else setMsg({ ok: false, text: d.message || 'Nem sikerült elküldeni.' });
   }
+  function cancel() {
+    setOpen(false);
+    onClose?.();
+  }
   return (
     <div className="szo-report">
-      {!open ? (
-        <button type="button" className="link-btn" onClick={() => setOpen(true)}>
-          Problémád van?
-        </button>
-      ) : (
+      {!open ? null : (
         <div className="szo-report-form">
           <label className="field-label" htmlFor="szo-report-type">Mi a probléma?</label>
-          <select id="szo-report-type" value={type} onChange={(e) => setType(e.target.value)}>
+          <select id="szo-report-type" className="pretty-select" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="">Válassz…</option>
             <option value="missing">Egy szót nem fogad el</option>
             <option value="wrong">Hibás vagy sértő szó a listában</option>
@@ -563,7 +588,7 @@ function SzoReport({ date }) {
             <button type="button" className="primary small" disabled={!type || !text.trim()} onClick={send}>
               Küldés
             </button>
-            <button type="button" className="ghost small" onClick={() => setOpen(false)}>
+            <button type="button" className="ghost small" onClick={cancel}>
               Mégse
             </button>
           </div>

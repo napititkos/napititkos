@@ -295,7 +295,10 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
             onSize ? (
               <span className="sudoku-sizes" role="group" aria-label="Rács mérete">
                 {[6, 9].map((n) => (
-                  <button key={n} type="button" className={`sudoku-size${n === N ? ' on' : ''}`} aria-pressed={n === N} onClick={() => n !== N && onSize(n)}>
+                  <button
+                    key={n}
+                    type="button"
+                    className={`sudoku-size${n === N ? ' on' : ''}`} aria-pressed={n === N} onClick={() => n !== N && onSize(n)}>
                     {n}×{n}
                   </button>
                 ))}

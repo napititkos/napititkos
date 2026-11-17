@@ -54,8 +54,8 @@ export default function SzoArchive() {
     mo.items.push(it);
   }
   const monthName = (m) => new Date(Date.UTC(2026, Number(m) - 1, 15)).toLocaleDateString('hu-HU', { month: 'long' });
-  const firstKey = groups[0] ? `${groups[0].y}-${groups[0].months[0].m}` : null;
-  const isOpen = (k) => (openMonths[k] ?? k === firstKey);
+  // Alapból minden hónap le van csukva (mint a titkosírásoknál).
+  const isOpen = (k) => openMonths[k] ?? false;
   // Ugyanaz a doboz-szerkezet, mint a korábbi titkosírásoknál: év doboz (lenyitható), benne hónap
   // dobozok (a legutóbbi nyitva), bennük a napok kártyái.
   const fullCount = (list) => list.filter((it) => it.total && it.count >= it.total).length;

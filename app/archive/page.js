@@ -1,11 +1,13 @@
 'use client';
 import BackButton from '../../components/BackButton';
+import AuthPrompt from '../../components/AuthPrompt';
 import SolvedMark from '../../components/SolvedMark';
 import ResendVerification from '../../components/ResendVerification';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { enumerationFor } from '../../lib/format';
 import { loadProgress, saveProgress } from '../../lib/progress';
+import { recordArchiveVisit } from '../../lib/gameProgress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
 import DailyReactions from '../../components/DailyReactions';
 import MiniArchive from '../../components/MiniArchive';
@@ -26,6 +28,10 @@ export default function ArchivePage() {
   const [kind, setKind, tabReady] = useRejtvenyTab();
   // Sudoku: külön 6×6-os és 9×9-es archívum (a játékválasztó alatt választható; ?m=9 a 9×9-es).
   const [sudSize, setSudSize] = useState(6);
+  // A Régész trófea: a Korábbi rejtvények oldal meglátogatása.
+  useEffect(() => {
+    recordArchiveVisit();
+  }, []);
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('m') === '9') setSudSize(9);
   }, []);
@@ -142,30 +148,18 @@ export default function ArchivePage() {
           {status === 'loading' || teaser === null ? (
             <p style={{ margin: 0, color: 'var(--ink-soft)' }}>Betöltés…</p>
           ) : (
-            <>
-              {teaser && (teaser.all ?? teaser.total) > 0 ? (
-                <>
-                  {/* Tízesre lefelé kerekítve (pl. „60+”), az összes játék korábbi rejtvényei együtt. */}
-                  <p className="teaser-total">
-                    <b>
-                      {(teaser.all ?? teaser.total) >= 10 ? `${Math.floor((teaser.all ?? teaser.total) / 10) * 10}+` : teaser.all ?? teaser.total} rejtvény
-                    </b>{' '}
-                    <span className="teaser-wait">vár megfejtésre.</span>
-                  </p>
-                  <p style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>
-                    Jelentkezz be, és újrajátszhatod őket tippekkel, és reagálhatsz is rájuk. Azt is
-                    látod majd, melyiket fejtetted már meg, és hányan fejtették meg összesen.
-                  </p>
-                </>
-              ) : (
-                <p style={{ marginTop: 0 }}>
-                  A korábbi titkosírások újrajátszásához jelentkezz be.
+            <AuthPrompt callbackUrl="/archive">
+              {teaser && (teaser.all ?? teaser.total) > 0 && (
+                /* Tízesre lefelé kerekítve (pl. „60+”), az összes játék korábbi rejtvényei együtt. */
+                <p className="teaser-total">
+                  <b>
+                    {(teaser.all ?? teaser.total) >= 10 ? `${Math.floor((teaser.all ?? teaser.total) / 10) * 10}+` : teaser.all ?? teaser.total} rejtvény
+                  </b>{' '}
+                  <span className="teaser-wait">vár megfejtésre.</span>
                 </p>
               )}
-              <a href="/login?callbackUrl=/archive" style={{ textDecoration: 'none' }}>
-                <button className="primary">Bejelentkezés</button>
-              </a>
-            </>
+              <p className="auth-prompt-text">Jelentkezz be, vagy regisztrálj, hogy játszhass korábbi rejtvényeinkkel!</p>
+            </AuthPrompt>
           )}
         </div>
       </div>

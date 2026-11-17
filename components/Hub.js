@@ -53,6 +53,22 @@ export default function Hub() {
           ]}
         />
         <GameTile game="mini" big isNew done={done.mini} />
+        {/* Legalul a Korábbi és a Közösségi rejtvények, ketten együtt egy csempe szélességében, a
+            játékcsempék stílusában (csak felirat: „KORÁBBI / KÖZÖSSÉGI” + lila „REJTVÉNYEK”). */}
+        <div className="hub-extra">
+          {[
+            ['/archive', '/icons/Korabbi_titkosirasok.png', 'KORÁBBI', 'Korábbi rejtvények'],
+            ['/kozossegi', '/icons/Kozossegi.png', 'KÖZÖSSÉGI', 'Közösségi rejtvények'],
+          ].map(([href, , w1, label]) => (
+            <a key={href} className="card game-tile hub-extra-tile" href={href} aria-label={label}>
+              <span className="game-tile-text">
+                <span className="brand brand-flow brand-plain hub-extra-word" data-nosnippet="" aria-hidden="true">
+                  <span className="bf-ink">{w1}</span> <span className="bf-accent">REJTVÉNYEK</span>
+                </span>
+              </span>
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 'use client';
+import AuthPrompt from './AuthPrompt';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import MiniPlayer from './MiniPlayer';
@@ -93,9 +94,9 @@ export default function CommunityMinis() {
                   {loggedIn ? (
                     <MiniPlayer key={it.id} rows={it.rows} entries={it.entries} solvedTime={it.solvedMs} onSolved={(t) => solved(it, t)} headTitle="Közösségi mini" dateLabel={day(it.createdAt)} author={it.name && it.name !== 'Névtelen' ? it.name : ''} />
                   ) : (
-                    <p>
-                      A megfejtéshez <a href="/login?callbackUrl=/kozossegi">jelentkezz be</a>.
-                    </p>
+                    <AuthPrompt callbackUrl="/kozossegi?tab=mini">
+                      <p className="auth-prompt-text">A megfejtéshez jelentkezz be vagy regisztrálj!</p>
+                    </AuthPrompt>
                   )}
                   {done && <DailyReactions date={it.id} scope="cmini" interactive />}
                   {(it.isOwner || data.isAdmin) && (
