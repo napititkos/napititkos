@@ -67,8 +67,7 @@ export default function Hub() {
               </span>
               <span className="game-tile-text">
                 <span className="brand brand-flow brand-plain hub-extra-word" data-nosnippet="" aria-hidden="true">
-                  <span className="bf-ink">{w1}</span>
-                  <span className="bf-accent">REJTVÉNYEK</span>
+                  <span className="bf-ink">{w1}</span> <span className="bf-accent">REJTVÉNYEK</span>
                 </span>
               </span>
             </a>

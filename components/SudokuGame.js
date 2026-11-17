@@ -5,7 +5,6 @@ import { deviceId } from '../lib/device';
 import { fireConfetti } from './Confetti';
 import CopyResultButton from './CopyResultButton';
 import NextGameButton from './NextGameButton';
-import { loadProgress } from '../lib/progress';
 import GameHead from './GameHead';
 import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { getIdentity } from '../lib/identity';
@@ -81,16 +80,6 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
   const [solved, setSolved] = useState(alreadySolved);
   const [msg, setMsg] = useState(null);
   const [wave, playWave] = useWinWave();
-  // Ma megvan-e már a másik méret (a megfejtés utáni villogáshoz).
-  const otherDone = (() => {
-    if (!wave) return true;
-    try {
-      const prog = loadProgress();
-      return ((N === 9 ? prog.sudokuDays : prog.sudoku9Days) || []).includes(date);
-    } catch {
-      return true;
-    }
-  })();
   const [completedAt, setCompletedAt] = useState(saved.completedAt || null);
   const start = useRef(Date.now() - (solvedTime ?? saved.elapsed ?? 0));
   const [elapsed, setElapsed] = useState(solvedTime ?? saved.elapsed ?? 0);
@@ -309,8 +298,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
                   <button
                     key={n}
                     type="button"
-                    // Megfejtés után a hullám alatt villog a másik méret, ha az még nincs meg ma.
-                    className={`sudoku-size${n === N ? ' on' : ''}${wave && n !== N && !otherDone ? ' coach-blink' : ''}`} aria-pressed={n === N} onClick={() => n !== N && onSize(n)}>
+                    className={`sudoku-size${n === N ? ' on' : ''}`} aria-pressed={n === N} onClick={() => n !== N && onSize(n)}>
                     {n}×{n}
                   </button>
                 ))}

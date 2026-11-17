@@ -19,11 +19,20 @@ export default function AchievementsModal() {
   // Melyik játék oldaláról nyitották (a Játszom gombhoz, ha az „Összes” van kiválasztva).
   const [from, setFrom] = useState('titkos');
   const bodyRef = useRef(null);
+  const [jump, setJump] = useState(null);
+  // Megnyitáskor (és ha a Mini állapota megjön) az aktuális játék csoportja a keret tetejére kerül.
+  useEffect(() => {
+    if (!open || !jump || !multi) return;
+    const box = bodyRef.current;
+    const el = box?.querySelector(`[data-game="${jump}"]`);
+    if (box && el) box.scrollTop = el.offsetTop;
+  }, [open, jump, multi, filter]);
 
   useEffect(() => {
     function handleOpen(e) {
-      // Mindig az aktuális játék trófeái nyílnak (játékoldalról); máshonnan az összes.
-      setFilter(GAME_LABEL[e?.detail?.game] ? e.detail.game : 'all');
+      // A szűrő mindig „Összes”; játékoldalról a lista az aktuális játék csoportjáig görget.
+      setFilter('all');
+      setJump(GAME_LABEL[e?.detail?.game] ? e.detail.game : null);
       setFrom(GAME_LABEL[e?.detail?.game] ? e.detail.game : 'titkos');
       fetch('/api/mini/status')
         .then((r) => (r.ok ? r.json() : null))
@@ -73,6 +82,7 @@ export default function AchievementsModal() {
               value={filter}
               onChange={(e) => {
                 setFilter(e.target.value);
+                setJump(null);
                 if (bodyRef.current) bodyRef.current.scrollTop = 0;
               }}
               aria-label="Trófeák játék szerint"
@@ -88,7 +98,7 @@ export default function AchievementsModal() {
       }
     >
         {games.map((g) => (
-          <div key={g} className="ach-group">
+          <div key={g} className="ach-group" data-game={g}>
             {multi && filter === 'all' && <h3 className="ach-group-title">{GROUP_LABEL[g]}</h3>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {ACHIEVEMENTS.filter((a) => gameOf(a) === g).map((a) => {

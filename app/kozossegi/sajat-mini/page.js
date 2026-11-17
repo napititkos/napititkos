@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import UserMiniEditor from '../../../components/UserMiniEditor';
+import AuthPrompt from '../../../components/AuthPrompt';
 import { loadProgress, saveProgress } from '../../../lib/progress';
 
 // Saját mini keresztrejtvény készítése (csak élesítés után, bejelentkezve, megerősített fiókkal).
@@ -32,9 +33,9 @@ export default function SajatMiniPage() {
         ) : !live ? (
           <p>A mini keresztrejtvény hamarosan érkezik.</p>
         ) : !session?.user ? (
-          <p>
-            A saját mini beküldéséhez <a href="/login?callbackUrl=/kozossegi/sajat-mini">jelentkezz be</a>.
-          </p>
+          <AuthPrompt callbackUrl="/kozossegi/sajat-mini">
+            <p className="auth-prompt-text">Rejtvények beküldéséhez regisztrálj, vagy jelentkezz be!</p>
+          </AuthPrompt>
         ) : session.user.verified === false ? (
           <p>A beküldéshez meg kell erősítened az e-mail-címedet.</p>
         ) : doneId ? (

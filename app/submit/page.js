@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import AuthPrompt from '../../components/AuthPrompt';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import { computeNewAchievements } from '../../lib/achievements';
 import FieldHelp from '../../components/FieldHelp';
@@ -146,13 +147,9 @@ export default function SubmitPage() {
       <div className="wrap">
         <h1 className="page-title">Közösségi rejtvény beküldése</h1>
         <div className="card">
-          <p style={{ fontSize: 14.5 }}>
-            A rejtvények beküldéséhez be kell jelentkezned - így tudjuk feltüntetni a nevedet a
-            rejtvényed mellett, ha bekerül a napi titkosírások közé.
-          </p>
-          <a href="/login">
-            <button className="primary">Bejelentkezés</button>
-          </a>
+          <AuthPrompt callbackUrl="/submit">
+            <p className="auth-prompt-text">Rejtvények beküldéséhez regisztrálj, vagy jelentkezz be!</p>
+          </AuthPrompt>
         </div>
       </div>
     );

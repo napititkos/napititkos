@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import PuzzlePlayer from './PuzzlePlayer';
+import AuthPrompt from './AuthPrompt';
 import Icon from './Icon';
 import { Stars } from './Stars';
 import { enumerationFor } from '../lib/format';
@@ -167,10 +168,9 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
               {data.avg != null ? `(${data.avg.toLocaleString('hu-HU')} átlag, ${data.ratingCount} értékelés)` : '(még nincs értékelése)'}
             </span>
           </div>
-          <p className="community-rate-note">
-            A megfejtéshez és az értékeléshez{' '}
-            <a href={`/login?callbackUrl=${encodeURIComponent(`/kozossegi?r=${id}`)}`}>jelentkezz be vagy regisztrálj</a> - ingyenes.
-          </p>
+          <AuthPrompt callbackUrl={`/kozossegi?r=${id}`}>
+            <p className="auth-prompt-text">A megfejtéshez jelentkezz be vagy regisztrálj!</p>
+          </AuthPrompt>
         </div>
         <div className="community-share">
           <button className="ghost small" type="button" onClick={share}>

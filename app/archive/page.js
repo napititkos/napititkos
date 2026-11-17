@@ -1,5 +1,6 @@
 'use client';
 import BackButton from '../../components/BackButton';
+import AuthPrompt from '../../components/AuthPrompt';
 import SolvedMark from '../../components/SolvedMark';
 import ResendVerification from '../../components/ResendVerification';
 import { useEffect, useMemo, useState } from 'react';
@@ -147,30 +148,18 @@ export default function ArchivePage() {
           {status === 'loading' || teaser === null ? (
             <p style={{ margin: 0, color: 'var(--ink-soft)' }}>Betöltés…</p>
           ) : (
-            <>
-              {teaser && (teaser.all ?? teaser.total) > 0 ? (
-                <>
-                  {/* Tízesre lefelé kerekítve (pl. „60+”), az összes játék korábbi rejtvényei együtt. */}
-                  <p className="teaser-total">
-                    <b>
-                      {(teaser.all ?? teaser.total) >= 10 ? `${Math.floor((teaser.all ?? teaser.total) / 10) * 10}+` : teaser.all ?? teaser.total} rejtvény
-                    </b>{' '}
-                    <span className="teaser-wait">vár megfejtésre.</span>
-                  </p>
-                  <p style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>
-                    Jelentkezz be, és újrajátszhatod őket tippekkel, és reagálhatsz is rájuk. Azt is
-                    látod majd, melyiket fejtetted már meg, és hányan fejtették meg összesen.
-                  </p>
-                </>
-              ) : (
-                <p style={{ marginTop: 0 }}>
-                  A korábbi titkosírások újrajátszásához jelentkezz be.
+            <AuthPrompt callbackUrl="/archive">
+              {teaser && (teaser.all ?? teaser.total) > 0 && (
+                /* Tízesre lefelé kerekítve (pl. „60+”), az összes játék korábbi rejtvényei együtt. */
+                <p className="teaser-total">
+                  <b>
+                    {(teaser.all ?? teaser.total) >= 10 ? `${Math.floor((teaser.all ?? teaser.total) / 10) * 10}+` : teaser.all ?? teaser.total} rejtvény
+                  </b>{' '}
+                  <span className="teaser-wait">vár megfejtésre.</span>
                 </p>
               )}
-              <a href="/login?callbackUrl=/archive" style={{ textDecoration: 'none' }}>
-                <button className="primary">Bejelentkezés</button>
-              </a>
-            </>
+              <p className="auth-prompt-text">Jelentkezz be, vagy regisztrálj, hogy játszhass korábbi rejtvényeinkkel!</p>
+            </AuthPrompt>
           )}
         </div>
       </div>
