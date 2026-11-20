@@ -15,7 +15,8 @@ export default function AchievementsModal() {
   const [progress, setProgress] = useState({});
   // A játékonkénti szűrő csak a mini/szókereső élesítése után látszik; addig csak a titkosírás trófeái.
   const [filter, setFilter] = useState('all');
-  const [multi, setMulti] = useState(false);
+  // A Mini él: alapból igaz, hogy megnyitáskor ne villanjon fel először csak a titkosírás listája.
+  const [multi, setMulti] = useState(true);
   // Melyik játék oldaláról nyitották (a Játszom gombhoz, ha az „Összes” van kiválasztva).
   const [from, setFrom] = useState('titkos');
   const bodyRef = useRef(null);

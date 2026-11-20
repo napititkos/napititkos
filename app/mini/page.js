@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import MiniPlayer from '../../components/MiniPlayer';
+import { openLeaderboardIfTop } from '../../lib/autoLeaderboard';
 import DailyReactions from '../../components/DailyReactions';
 import GameBar from '../../components/GameBar';
 import CopyResultButton from '../../components/CopyResultButton';
@@ -54,6 +55,7 @@ export default function MiniPage() {
 
   async function solved(elapsed) {
     fireConfetti();
+    openLeaderboardIfTop('mini');
     recordMiniWeek(data.week);
     const rec = { week: data.week, elapsed };
     try {

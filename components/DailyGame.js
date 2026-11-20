@@ -11,6 +11,7 @@ import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from './Icon';
 import NextGameButton from './NextGameButton';
+import { openLeaderboardIfTop } from '../lib/autoLeaderboard';
 import Logo from './Logo';
 import LookupHint from './LookupHint';
 import LetterBoxes from './LetterBoxes';
@@ -494,6 +495,8 @@ export default function DailyGame() {
     clearInProgress();
     fireConfetti();
     playWave(String(puzzle?.answer || '').length || 8);
+    // Ha dobogós (és van legalább 5 megfejtés), a hullám után felúszik a ranglista.
+    openLeaderboardIfTop('daily');
 
     const totalHints = revealed.filter((t) => t !== 'betu').length + betuCount + (didGiveUp ? 1 : 0);
 

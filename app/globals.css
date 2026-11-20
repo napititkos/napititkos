@@ -364,7 +364,8 @@ footer.page-footer{ text-align:center; color: var(--ink-soft); font-size: 12.5px
   text-align: center; padding: 6px 14px 22px; color: var(--ink-soft); font-size: 13px;
   margin-top: auto;
 }
-.site-footer-links{ display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
+.site-footer-links{ display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; row-gap: 2px; margin-bottom: 6px; }
+.site-footer-social{ display: inline-flex; gap: 8px; }
 .site-footer-links a{ color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid transparent; }
 .site-footer-links a:hover{ border-color: var(--ink-soft); }
 .site-footer .dot{ opacity: 0.5; }
@@ -2174,3 +2175,26 @@ a.card.game-tile.hub-extra-tile{ min-height: 118px; }
 /* A Korábbi / Közösségi csempén nincs ikon: a felirat a teljes szélességet használhatja. */
 .game-tile.hub-extra-tile .game-tile-text{ padding-left: 8px; padding-right: 8px; }
 .brand.brand-flow.hub-extra-word{ font-size: min(calc((100vw - 90px) / 14), 24px); }
+/* Mobilon a Korábbi / Közösségi csempe felirata kisebb. */
+@media (max-width: 560px){ .brand.brand-flow.hub-extra-word{ font-size: calc((100vw - 90px) / 17.5); } }
+/* Lenyitott korábbi / közösségi rejtvény: balra a Bezárás, jobbra a megfejtve-doboz. */
+button.community-close.with-mark{ display: flex; align-items: center; justify-content: space-between; text-align: left; padding: 4px 12px 4px 16px; }
+button.community-close.with-mark .solved-mark{ width: 20px; height: 20px; border-radius: 6px; }
+.solved-mark.empty{ background: #1F1A2B; }
+/* Közösségi lista: a megfejtve-doboz a sor jobb szélén, középen. */
+button.community-head{ position: relative; }
+button.community-head > .solved-mark{ position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }
+button.community-head:has(> .solved-mark){ padding-right: 48px; }
+/* Ranglista: érmek az első háromnak, dicséret a címben, rövid gombfelirat keskeny kijelzőn. */
+.lb-medal{ display: inline-block; width: 1.4em; text-align: center; }
+.lb-praise{ font-size: 0.82em; color: var(--accent-text); white-space: nowrap; }
+@media (max-width: 420px){ .lb-praise{ font-size: 0.66em; } }
+.lbl-short{ display: none; }
+@media (max-width: 400px){ .lbl-long{ display: none; } .lbl-short{ display: inline; } }
+/* Megfejtés után magától nyíló ranglista: alulról gyorsan felúszik. */
+@keyframes framed-rise-in{ from{ transform: translateY(100vh); } to{ transform: translateY(0); } }
+@keyframes framed-fade-in{ from{ background: transparent; } }
+.modal-overlay.framed-overlay:has(.framed-rise){ animation: framed-fade-in 0.35s ease-out; }
+.modal-card.framed-modal.framed-rise{ animation: framed-rise-in 0.42s cubic-bezier(0.2, 0.8, 0.25, 1); }
+@media (prefers-reduced-motion: reduce){ .modal-card.framed-modal.framed-rise{ animation: none; } }
+.szo-words-panel .fm-foot button.ghost.on{ border-color: var(--btn-primary); color: var(--accent-text); }

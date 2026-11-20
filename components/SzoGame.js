@@ -6,6 +6,7 @@ import { fireConfetti } from './Confetti';
 import { recordSzoFull, recordSzoWord } from '../lib/gameProgress';
 import CopyResultButton from './CopyResultButton';
 import NextGameButton from './NextGameButton';
+import { openLeaderboardIfTop } from '../lib/autoLeaderboard';
 import FramedModal from './FramedModal';
 import GameHead from './GameHead';
 import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
@@ -266,6 +267,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
         setCompletedAt(Date.now());
         playWave(5);
         if (!preview && onComplete) onComplete(el);
+        if (!preview && !compact) openLeaderboardIfTop('szo');
       }
     }
     sync(next, el);
@@ -424,9 +426,10 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
           }
           foot={
             <>
+              {/* A Bezárás a többi ablakhoz hasonlóan a mályva fő gomb, a Problémád van? visszafogott. */}
               <button
                 type="button"
-                className="ghost"
+                className="primary"
                 onClick={() => {
                   setReporting(false);
                   togglePanel(false);
@@ -435,7 +438,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
                 Bezárás
               </button>
               {showReport && (
-                <button type="button" className={reporting ? 'primary' : 'ghost'} aria-pressed={reporting} onClick={() => setReporting((x) => !x)}>
+                <button type="button" className={`ghost${reporting ? ' on' : ''}`} aria-pressed={reporting} onClick={() => setReporting((x) => !x)}>
                   Problémád van?
                 </button>
               )}
