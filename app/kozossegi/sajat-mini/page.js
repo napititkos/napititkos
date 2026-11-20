@@ -8,7 +8,8 @@ import { loadProgress, saveProgress } from '../../../lib/progress';
 // Saját mini keresztrejtvény készítése (csak élesítés után, bejelentkezve, megerősített fiókkal).
 export default function SajatMiniPage() {
   const { data: session, status } = useSession();
-  const [live, setLive] = useState(null);
+  // A Mini él: alapból igaz (a szerver felülírhatja), így nem kell külön a válaszára várni.
+  const [live, setLive] = useState(true);
   const [doneId, setDoneId] = useState(null);
   useEffect(() => {
     fetch('/api/mini/status')

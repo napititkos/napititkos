@@ -1,7 +1,7 @@
-// Közösségi oldalak (a Kapcsolat és az Adatvédelem mellett). A Facebook- és az Instagram-cím
-// feltételezett (napititkos); ha más, itt kell átírni.
+// Közösségi oldalak (a Kapcsolat és az Adatvédelem mellett). Az Instagram-cím feltételezett
+// (napititkos); ha más, itt kell átírni.
 const SOCIAL = [
-  ['Facebook', 'https://www.facebook.com/napititkos'],
+  ['Facebook', 'https://www.facebook.com/profile.php?id=61596235281584'],
   ['Instagram', 'https://www.instagram.com/napititkos'],
   ['Reddit', 'https://www.reddit.com/r/napititkos/'],
 ];

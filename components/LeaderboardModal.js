@@ -27,7 +27,8 @@ export default function LeaderboardModal() {
   const [myName, setMyName] = useState('');
   // Két ranglista (a mini élesítése után): Titkosírás (mai) és Keresztrejtvény (heti, idő szerint).
   const [tab, setTab] = useState('daily');
-  const [miniLive, setMiniLive] = useState(false);
+  // A Mini él: alapból igaz, így a játékválasztó fülek nem utólag ugranak be.
+  const [miniLive, setMiniLive] = useState(true);
   // Sudoku: 6x6 / 9x9 választó a kereten belül (a fejléc nem változik); 9x9-ből nyitva a 9x9-es.
   const [sudSize, setSudSize] = useState(6);
   // Megfejtés után magától nyílt (felúszik).
@@ -194,15 +195,18 @@ export default function LeaderboardModal() {
             const mine = !!myName && e.name === myName;
             return (
               <div key={i} className={`lb-entry${mine ? ' mine' : ''}`} data-me={mine ? '1' : undefined}>
-                <span>
-                  {i < 3 ? (
-                    <span className="lb-medal" role="img" aria-label={`${i + 1}. hely`}>
-                      {MEDALS[i]}
-                    </span>
-                  ) : (
-                    `${i + 1}.`
-                  )}{' '}
-                  {e.name}
+                <span className="lb-who">
+                  {/* Egyforma széles helyezés-oszlop: az érmek és a számok egy vonalban, a nevek is. */}
+                  <span className="lb-rank">
+                    {i < 3 ? (
+                      <span className="lb-medal" role="img" aria-label={`${i + 1}. hely`}>
+                        {MEDALS[i]}
+                      </span>
+                    ) : (
+                      `${i + 1}.`
+                    )}
+                  </span>
+                  <span className="lb-name">{e.name}</span>
                 </span>
                 <span className="lb-entry-res">
                   {tab === 'mini' || tab === 'sudoku' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.points} pont · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}

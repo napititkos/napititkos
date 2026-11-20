@@ -152,12 +152,14 @@ export default function DailyGame() {
   // az emojisor (nem kell a hálózatra várni).
   const [reactionsInitial, setReactionsInitial] = useState(null);
   // A heti mini keresztrejtvény állapota (csak élesítés után jelenik meg a gombja).
-  const [miniInfo, setMiniInfo] = useState(null);
+  // A Mini él: alapból élőnek vesszük (a hét és a „Kész” jelzés a szerver válaszából jön), így
+  // betöltéskor nem villan fel előbb a régi, Mini nélküli elrendezés.
+  const [miniInfo, setMiniInfo] = useState({ live: true });
   useEffect(() => {
     fetch('/api/mini/status', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!d?.live) return;
+        if (!d?.live) return setMiniInfo({ live: false });
         let solved = false;
         try {
           solved = JSON.parse(localStorage.getItem('titkositas_mini_v1') || 'null')?.week === d.week;

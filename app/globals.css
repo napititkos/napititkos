@@ -2186,7 +2186,10 @@ button.community-head{ position: relative; }
 button.community-head > .solved-mark{ position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }
 button.community-head:has(> .solved-mark){ padding-right: 48px; }
 /* Ranglista: érmek az első háromnak, dicséret a címben, rövid gombfelirat keskeny kijelzőn. */
-.lb-medal{ display: inline-block; width: 1.4em; text-align: center; }
+.lb-who{ display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lb-rank{ flex: none; width: 2em; text-align: center; font-variant-numeric: tabular-nums; }
+.lb-medal{ display: inline-block; font-size: 1.5em; line-height: 1; vertical-align: middle; }
+.lb-name{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-praise{ font-size: 0.82em; color: var(--accent-text); white-space: nowrap; }
 @media (max-width: 420px){ .lb-praise{ font-size: 0.66em; } }
 .lbl-short{ display: none; }
