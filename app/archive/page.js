@@ -277,8 +277,10 @@ export default function ArchivePage() {
                                   return (
                                     <div className={`card community-item archive-item${isPlaying ? ' open' : ''}`} key={itemKey}>
                                       {isPlaying ? (
-                                        <button type="button" className="community-close" aria-expanded={true} onClick={() => setPlayingId(null)}>
-                                          ▴ Bezárás
+                                        <button type="button" className="community-close with-mark" aria-expanded={true} onClick={() => setPlayingId(null)}>
+                                          {/* Balra a Bezárás, jobbra a megfejtve-doboz (pipával vagy üresen). */}
+                                          <span>▴ Bezárás</span>
+                                          <SolvedMark done={solved} />
                                         </button>
                                       ) : (
                                         <button type="button" className="community-head archive-head-compact" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
@@ -289,14 +291,9 @@ export default function ArchivePage() {
                                       )}
                                       {isPlaying && (
                                         <div className="community-detail">
-                                          {/* Lenyitva: dátum, megfejtők száma, megfejtetted. */}
+                                          {/* Lenyitva: dátum és a megfejtők száma egy sorban (a dátum csak itt szerepel). */}
                                           <div className="community-meta archive-meta archive-meta-open">
                                             <span className="community-rating-row">
-                                              {solved && (
-                                                <span className="community-solved" title="Megfejtetted">
-                                                  ✓<span className="community-solved-text"> Megfejtetted</span>
-                                                </span>
-                                              )}
                                               <span>
                                                 {formatDay(it.shownDate)}
                                                 {it.totalSolvers != null && ` – ${it.totalSolvers} megfejtő`}
@@ -306,7 +303,6 @@ export default function ArchivePage() {
                                           <PuzzlePlayer
                                             puzzle={it}
                                             initiallySolved={solved}
-                                            dateLabel={formatDay(it.shownDate)}
                                             onSolved={() => handleSolved(it.id, it.shownDate)}
                                             onGaveUp={() => setGaveUpIds((prev) => [...prev, it.id])}
                                           />

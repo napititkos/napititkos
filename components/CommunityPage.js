@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import CommunityDetail from './CommunityDetail';
 import Icon from './Icon';
+import SolvedMark from './SolvedMark';
 import ClueLine from './ClueLine';
 import { enumerationFor } from '../lib/format';
 import CommunityMinis from './CommunityMinis';
@@ -136,20 +137,15 @@ export default function CommunityPage() {
             {/* Lenyitva a fejléc helyén csak egy keskeny bezáró sáv marad: a rejtvény szövege,
                 dátuma, beküldője és értékelése ilyenkor a megoldó felületen jelenik meg. */}
             {open ? (
-              <button type="button" className="community-close" aria-expanded={true} onClick={() => setOpenId(null)}>
-                ▴ Bezárás
+              <button type="button" className="community-close with-mark" aria-expanded={true} onClick={() => setOpenId(null)}>
+                <span>▴ Bezárás</span>
+                <SolvedMark done={!!it.solved} />
               </button>
             ) : (
               <button type="button" className="community-head" aria-expanded={false} onClick={() => setOpenId(it.id)}>
                 <ClueLine text={`${it.clue} ${it.enumeration || ''}`.trim()} className="community-clue" lines={8} />
                 <span className="community-meta">
                   <span className="community-rating-row">
-                    {/* A sor a megfejtett-pipával kezdődik, utána a csillagok és a többi adat. */}
-                    {it.solved && (
-                      <span className="community-solved" title="Megfejtetted">
-                        ✓<span className="community-solved-text"> Megfejtetted</span>
-                      </span>
-                    )}
                     {it.avg != null ? (
                       <span className="community-rating">
                         <Stars value={it.avg} />
@@ -166,6 +162,8 @@ export default function CommunityPage() {
                   </span>
                   {it.promoted && <span className="community-badge">Bekerült a napi titkosírások közé</span>}
                 </span>
+                {/* Megfejtve: dobozos pipa jobbra (mint a korábbi rejtvényeknél). */}
+                {it.solved && <SolvedMark />}
               </button>
             )}
             {open && (

@@ -5,6 +5,7 @@ import { deviceId } from '../lib/device';
 import { fireConfetti } from './Confetti';
 import CopyResultButton from './CopyResultButton';
 import NextGameButton from './NextGameButton';
+import { openLeaderboardIfTop } from '../lib/autoLeaderboard';
 import GameHead from './GameHead';
 import { diagFromBottomLeft, useWinWave } from '../lib/winWave';
 import { getIdentity } from '../lib/identity';
@@ -121,6 +122,8 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
     setMulti([]);
     setSwipe([]);
     playWave(10);
+    // A napi sudokunál: ha dobogós (és van legalább 5 megfejtés), a hullám után felúszik a ranglista.
+    if (!compact && !preview) openLeaderboardIfTop('sudoku', N);
     setElapsed(el);
     fireConfetti();
     if (preview) return;
@@ -152,6 +155,13 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
       if (solved || !targets.length) return;
       setMsg(null);
       const T = new Set(targets);
+      // Jegyzet módban a Törlés csak a jegyzeteket törli (a beírt számokat nem).
+      if (noteMode && !d) {
+        if (!targets.some((i) => notes[i].length)) return;
+        setHistory((h) => [...h, { grid, notes }].slice(-200));
+        setNotes((ns) => ns.map((n, i) => (T.has(i) ? [] : n)));
+        return;
+      }
       if (noteMode && d) {
         const empty = targets.filter((i) => !grid[i]);
         if (!empty.length) return;
@@ -183,8 +193,18 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
       return true;
     });
   }
-  function pick(i) {
+  function pick(i, shift = false) {
     if (solved) return;
+    // Shift + kattintás: a cella hozzáadódik a kijelöléshez (vagy kikerül belőle), Kijelölés gomb nélkül.
+    if (!multiMode && shift) {
+      setSwipe((sw) => {
+        const base = sw.length ? sw : sel >= 0 ? [sel] : [];
+        return base.includes(i) ? base.filter((x) => x !== i) : [...base, i];
+      });
+      setSel(i);
+      dragRef.current = null;
+      return;
+    }
     setSel(i);
     if (!multiMode) {
       setSwipe([]);
@@ -239,7 +259,17 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
 
   // Gépi billentyűzet (mobilon nincs beviteli mező, így a telefon billentyűzete nem jön fel).
   useEffect(() => {
+    // A Ctrl önmagában (más billentyű nélkül lenyomva-felengedve) a Jegyzet módot kapcsolja.
+    // (Ctrl + szám nem használható: a böngésző fülváltásra foglalja.)
+    let ctrlAlone = false;
+    const onKeyUp = (e) => {
+      if (e.key === 'Control' && ctrlAlone) {
+        ctrlAlone = false;
+        if (!document.querySelector('.modal-overlay')) setNoteMode((m) => !m);
+      }
+    };
     const onKey = (e) => {
+      ctrlAlone = e.key === 'Control' && !e.repeat;
       const t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       if (document.querySelector('.modal-overlay')) return;
@@ -271,7 +301,11 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
       }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, [put, undo, N, NN, colOf]);
 
   const dayLabel = /^\d{4}-\d{2}-\d{2}$/.test(date)
@@ -340,7 +374,7 @@ export default function SudokuGame({ data, onSolved, preview = false, compact = 
                   onPointerDown={(e) => {
                     // Érintésnél a mutató ne ragadjon az első cellához (különben a húzás nem követhető).
                     if (e.pointerType !== 'mouse' && e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-                    pick(i);
+                    pick(i, e.shiftKey);
                   }}
                   onPointerEnter={(e) => e.pointerType === 'mouse' && !e.buttons && !solved && !multiMode && !swipe.length && setSel(i)}
                 >

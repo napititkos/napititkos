@@ -5,6 +5,13 @@ import { useSession } from 'next-auth/react';
 import { getIdentity } from '../lib/identity';
 import Icon from './Icon';
 import FramedModal, { GAME_HREF } from './FramedModal';
+import { loadProgress } from '../lib/progress';
+import { dailyDone, nextGameHref } from '../lib/dailyDone';
+
+const LB_URL = (t, sz) => (t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : t === 'sudoku' ? `/api/sudoku/leaderboard?size=${sz}` : '/api/leaderboard');
+// A ranglista fülének megfelelő napi játék (a „Következő játék” gombhoz).
+const DONE_KEY = (t, sz) => (t === 'daily' ? 'titkos' : t === 'sudoku' ? (sz === 9 ? 'sudoku9' : 'sudoku6') : t);
+const MEDALS = ['🥇', '🥈', '🥉'];
 
 function formatTime(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -20,9 +27,12 @@ export default function LeaderboardModal() {
   const [myName, setMyName] = useState('');
   // Két ranglista (a mini élesítése után): Titkosírás (mai) és Keresztrejtvény (heti, idő szerint).
   const [tab, setTab] = useState('daily');
-  const [miniLive, setMiniLive] = useState(false);
+  // A Mini él: alapból igaz, így a játékválasztó fülek nem utólag ugranak be.
+  const [miniLive, setMiniLive] = useState(true);
   // Sudoku: 6x6 / 9x9 választó a kereten belül (a fejléc nem változik); 9x9-ből nyitva a 9x9-es.
   const [sudSize, setSudSize] = useState(6);
+  // Megfejtés után magától nyílt (felúszik).
+  const [rise, setRise] = useState(false);
   // Visszaszámláló a nullázódásig (titkosírás: éjfél, óra:perc:mp; mini: hétfő 0:00, nap/óra/perc).
   const [tick, setTick] = useState(Date.now());
   useEffect(() => {
@@ -36,7 +46,7 @@ export default function LeaderboardModal() {
   function load(t, sz = sudSize) {
     setEntries(null);
     if (bodyRef.current) bodyRef.current.scrollTop = 0;
-    fetch(t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : t === 'sudoku' ? `/api/sudoku/leaderboard?size=${sz}` : '/api/leaderboard', { cache: 'no-store' })
+    fetch(LB_URL(t, sz), { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setEntries(d.entries || []))
       .catch(() => setEntries([]));
@@ -54,10 +64,28 @@ export default function LeaderboardModal() {
   }, [entries]);
 
   useEffect(() => {
-    function handleOpen(e) {
-      setMyName(session?.user?.name || getIdentity().name);
+    async function handleOpen(e) {
+      const name = session?.user?.name || getIdentity().name;
+      setMyName(name);
       const t = ['mini', 'szo', 'sudoku'].includes(e?.detail?.tab) ? e.detail.tab : 'daily';
       const sz = Number(e?.detail?.size) === 9 ? 9 : 6;
+      // Megfejtés után: csak akkor nyílik meg (felúszva), ha a játékos dobogós és már legalább 5
+      // megfejtés van; ilyenkor a lista már betöltve érkezik (nem villan a „Betöltés...”).
+      if (e?.detail?.auto) {
+        let list = [];
+        try {
+          list = (await (await fetch(LB_URL(t, sz), { cache: 'no-store' })).json()).entries || [];
+        } catch {}
+        const rank = list.findIndex((x) => name && x.name === name);
+        if (list.length < 5 || rank < 0 || rank > 2) return;
+        setTab(t);
+        setSudSize(sz);
+        setEntries(list);
+        setRise(true);
+        setOpen(true);
+        return;
+      }
+      setRise(false);
       setTab(t);
       setSudSize(sz);
       load(t, sz);
@@ -74,6 +102,12 @@ export default function LeaderboardModal() {
   if (!open) return null;
 
   const close = () => setOpen(false);
+  // Ha a játék ma már kész, a Játszom helyett a következő játék (a döntés megnyitáskor, a szöveg
+  // nem vált át utólag).
+  const prog = loadProgress();
+  const doneHere = !!dailyDone(prog)[DONE_KEY(tab, sudSize)];
+  const myRank = entries ? entries.findIndex((x) => myName && x.name === myName) : -1;
+  const podium = myRank >= 0 && myRank < 3;
   const TABS = [
     ['daily', 'Titkosírás'],
     ['szo', 'Szókereső'],
@@ -86,10 +120,21 @@ export default function LeaderboardModal() {
       labelId="lb-title"
       bodyLabel="Ranglista eredményei"
       onClose={close}
-      playHref={tab === 'sudoku' && sudSize === 9 ? '/sudoku?m=9' : GAME_HREF[tab]}
+      playHref={doneHere ? nextGameHref(prog, DONE_KEY(tab, sudSize)) : tab === 'sudoku' && sudSize === 9 ? '/sudoku?m=9' : GAME_HREF[tab]}
+      playLabel={
+        doneHere ? (
+          <>
+            <span className="lbl-long">Következő játék</span>
+            <span className="lbl-short">Kövi játék</span>
+          </>
+        ) : null
+      }
+      className={rise ? 'framed-rise' : ''}
       title={
         <>
           <Icon src="/icons/Ranglista.png" size={24} /> {tab === 'mini' ? 'Heti ranglista' : 'Mai ranglista'}
+          {/* Dobogós helyezésnél – a listával együtt jelenik meg és tűnik el. */}
+          {podium && <span className="lb-praise"> - szép munka!</span>}
         </>
       }
       head={
@@ -150,8 +195,18 @@ export default function LeaderboardModal() {
             const mine = !!myName && e.name === myName;
             return (
               <div key={i} className={`lb-entry${mine ? ' mine' : ''}`} data-me={mine ? '1' : undefined}>
-                <span>
-                  {i + 1}. {e.name}
+                <span className="lb-who">
+                  {/* Egyforma széles helyezés-oszlop: az érmek és a számok egy vonalban, a nevek is. */}
+                  <span className="lb-rank">
+                    {i < 3 ? (
+                      <span className="lb-medal" role="img" aria-label={`${i + 1}. hely`}>
+                        {MEDALS[i]}
+                      </span>
+                    ) : (
+                      `${i + 1}.`
+                    )}
+                  </span>
+                  <span className="lb-name">{e.name}</span>
                 </span>
                 <span className="lb-entry-res">
                   {tab === 'mini' || tab === 'sudoku' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.points} pont · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}

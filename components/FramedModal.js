@@ -7,7 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 // rögzített lábléc két gombbal: Bezárás és Játszom (az aktuális játékhoz visz; ha már azon az
 // oldalon vagyunk, csak bezárja az ablakot). Váltáskor csak a középső rész töltődik újra.
 // foot: saját lábléc (alapból Bezárás és Játszom).
-const FramedModal = forwardRef(function FramedModal({ title, head, children, playHref, onClose, labelId, bodyLabel, foot = null, className = '' }, bodyRef) {
+// playLabel: a Játszom gomb felirata helyett más (pl. „Következő játék”).
+const FramedModal = forwardRef(function FramedModal({ title, head, children, playHref, playLabel = null, onClose, labelId, bodyLabel, foot = null, className = '' }, bodyRef) {
   const router = useRouter();
   const pathname = usePathname();
   function play() {
@@ -41,7 +42,7 @@ const FramedModal = forwardRef(function FramedModal({ title, head, children, pla
                 Bezárás
               </button>
               <button type="button" className="primary" onClick={play}>
-                Játszom
+                {playLabel || 'Játszom'}
               </button>
             </>
           )}
