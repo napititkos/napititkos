@@ -49,7 +49,7 @@ export default function SzolancPage() {
             </div>
             <h2 style={{ fontFamily: 'var(--font-baloo), Baloo 2, sans-serif', color: 'var(--accent-text)', marginTop: 0, letterSpacing: '0.015em', textAlign: 'center' }}>Üdv a Szóláncban!</h2>
             <p style={{ fontSize: 15, lineHeight: 1.6 }}>
-              Minden nap kapsz egy kezdő- és egy célszót. Juss el az egyikből a másikba úgy, hogy minden lépésben pontosan egy betűt cserélsz, és mindig létező szót kapsz (ragozott alakot is). Minden feladványnak több legrövidebb megoldása van. Hétfőn a legkönnyebb, vasárnap a legnehezebb. Ha még nem ismered, nézd át a Kisokost!
+              Minden nap kapsz egy kezdő- és egy célszót. Juss el az egyikből a másikba úgy, hogy minden lépésben pontosan egy betűt cserélsz, és mindig létező szót kapsz (ragozott alakot is). Ha még nem ismered, nézd át a Kisokost!
             </p>
             <div className="intro-actions">
               <button className="ghost" onClick={dismissIntro}>

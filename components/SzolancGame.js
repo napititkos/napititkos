@@ -9,7 +9,8 @@ import { isWord, oneLetterApart, shortestPath } from '../lib/szolanc';
 // Szólánc (prototípus): a kezdőszóból a célszóba kell eljutni; minden lépésben pontosan egy betű
 // változik (a helye marad), és minden közbülső alak létező szó (ragozott alak is lehet).
 // Kezelés: a kezdőszó és a célszó között egy üres sorba kell beírni a következő szót (saját
-// billentyűzet, gépen a billentyűzet is; ⌫ betűt töröl, ↵ beküld). Ha egynél több betű változott,
+// billentyűzet, gépen a billentyűzet is; ⌫ betűt töröl, ↵ beküld). Visszalépni a korábbi szó újbóli
+// beírásával lehet (az is egy lépés). Ha egynél több betű változott,
 // vagy nincs ilyen szó, üzenet jön; ha jó, a szó a láncba kerül, és lenyílik egy új üres sor.
 //   data: { date, number, level, start, end, par, paths }
 //   preview: Kisokos (nincs mentés)
@@ -92,7 +93,7 @@ export default function SzolancGame({ data, preview = false, compact = false, on
     if ([...next].length < N) return flash('Írj be egy 4 betűs szót!', 'info');
     if (next === last) return flash('Változtass meg egy betűt!', 'info');
     if (!oneLetterApart(last, next)) return flash('Csak egy betűt változtathatsz meg!');
-    if (chain.includes(next)) return flash('Ez a szó már szerepel a láncban.');
+    // Egy korábbi szó újra beírható (így lehet visszalépni; minden beírás egy lépésnek számít).
     if (!isWord(next)) return flash(`„${next.toUpperCase()}” nincs a szótárunkban.`);
     const nc = [...chain, next];
     setChain(nc);
@@ -106,12 +107,6 @@ export default function SzolancGame({ data, preview = false, compact = false, on
       onSolved && onSolved({ steps: nc.length - 1, elapsed: el, chain: nc });
     }
   }, [solved, typed, last, chain, end, playWave, onSolved]);
-  const undo = useCallback(() => {
-    if (solved || chain.length < 2) return;
-    setChain((c) => c.slice(0, -1));
-    setTyped('');
-    setMsg(null);
-  }, [solved, chain.length]);
 
   // Gépi billentyűzet: betűk, Backspace (betű törlése), Enter (beküldés).
   useEffect(() => {
@@ -194,25 +189,21 @@ export default function SzolancGame({ data, preview = false, compact = false, on
         <div className="szl-keys" aria-label="Billentyűzet">
           {KEYBOARD.map((row, i) => (
             <div key={i} className="szl-keyrow">
-              {i === 2 && (
-                <button type="button" className="szl-key wide" onClick={undo} disabled={chain.length < 2} aria-label="Vissza: az utolsó szó törlése a láncból" title="Az utolsó szó törlése">
-                  ↶
-                </button>
-              )}
               {row.map((k) => (
                 <button key={k} type="button" className="szl-key" onClick={() => type(k)}>
                   {k.toUpperCase()}
                 </button>
               ))}
+              {/* A sor végén egymás alatt: Törlés (⌫) és Beküldés (↵). */}
+              {i === 2 && (
+                <button type="button" className="szl-key wide erase" onClick={erase} aria-label="Betű törlése">
+                  ⌫
+                </button>
+              )}
               {i === 3 && (
-                <>
-                  <button type="button" className="szl-key wide" onClick={erase} aria-label="Betű törlése">
-                    ⌫
-                  </button>
-                  <button type="button" className="szl-key wide enter" onClick={submit} aria-label="Beküldés">
-                    ↵
-                  </button>
-                </>
+                <button type="button" className="szl-key wide enter" onClick={submit} aria-label="Beküldés">
+                  ↵
+                </button>
               )}
             </div>
           ))}

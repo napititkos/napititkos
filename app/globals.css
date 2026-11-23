@@ -2292,3 +2292,13 @@ button.szl-key.enter{ background: var(--btn-primary); border-color: var(--btn-pr
 /* Korábbi Szóláncok: kicsinyítve a kezdő- és a célszó egymás alatt. */
 .szl-thumb{ display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 64px; font-size: 12px; line-height: 1.15; color: var(--ink-soft); }
 .szl-thumb b{ font-size: 13px; letter-spacing: 0.08em; color: var(--accent-text); }
+/* Szólánc billentyűzet: a sorok kitöltik a szélességet, így a sorvégi Törlés (⌫) és Beküldés (↵)
+   pontosan egymás alá kerül; a Törlés más színű. */
+.szl-keyrow{ justify-content: stretch; }
+button.szl-key{ max-width: none; }
+button.szl-key.wide{ max-width: none; flex-grow: 1.5; }
+button.szl-key.erase{ background: var(--accent-soft); border-color: var(--accent2); color: var(--accent-text); }
+/* A KEZDŐ SZÓ felirat ne érjen a fejléc nehézség-sorához. A Törlés és a Beküldés egyforma széles. */
+.szolanc .game-head + .szl-board{ margin-top: 14px; }
+button.szl-key.wide{ flex: 0 0 54px; }
+@media (max-width: 380px){ button.szl-key.wide{ flex-basis: 46px; } }
