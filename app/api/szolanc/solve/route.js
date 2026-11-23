@@ -6,10 +6,11 @@ import { todayStr, isValidDateStr } from '../../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../../lib/rateLimit';
 import { cleanName, readJson } from '../../../../lib/validate';
 import { actorFor } from '../../../../lib/reactions';
-import { SZOLANC_LB_TTL, SZOLANC_START, checkChain, generateSzolanc, szolancLbKey, szolancLbNamesKey, szolancResKey } from '../../../../lib/szolanc';
+import { SZOLANC_LB_TTL, SZOLANC_START, checkChain, szolancLbKey, szolancLbNamesKey, szolancResKey } from '../../../../lib/szolanc';
+import { szolancForDate } from '../../../../lib/szolancStore';
 
-// Szólánc megoldás beküldése: { date, chain[], elapsed, device, name? }. A szerver a dátumból
-// ugyanúgy előállítja a feladványt, és ellenőrzi a láncot. Szereplőnként az első megoldás számít
+// Szólánc megoldás beküldése: { date, chain[], elapsed, device, name? }. A szerver előveszi a nap
+// feladványát (beemelt vagy a dátumból generált), és ellenőrzi a láncot. Szereplőnként az első megoldás számít
 // (lépésszám és idő); a ranglistára csak a mai nap kerül fel. Válasz: statisztika.
 export async function POST(req) {
   if (await isLimited('szolanc:solve:ip', clientIp(req), 120, 3600)) return tooMany(3600);
@@ -17,7 +18,7 @@ export async function POST(req) {
   const date = String(body.date || '');
   const today = todayStr();
   if (!isValidDateStr(date) || date > today || date < SZOLANC_START) return Response.json({ error: 'not-found' }, { status: 404 });
-  const p = generateSzolanc(date);
+  const p = await szolancForDate(date);
   const chain = Array.isArray(body.chain) ? body.chain.map((w) => String(w || '').toLowerCase()) : [];
   const steps = checkChain(p, chain);
   if (steps < 0) return Response.json({ error: 'wrong', message: 'Ez a lánc nem érvényes megoldás.' }, { status: 400 });

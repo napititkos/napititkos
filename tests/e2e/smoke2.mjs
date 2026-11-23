@@ -1860,7 +1860,8 @@ section('Heti mini admin: sorrend, ütemezés, készítő (mint a titkosírásn�
 section('Szólánc: megoldás ellenőrzése, ranglista (előbb a lépések, aztán az idő)');
 {
   const L = await import(pathToFileURL(`${REPO}/lib/szolanc.js`).href);
-  const p = L.generateSzolanc(budapestToday);
+  const p = await (await fetch(BASE + '/api/szolanc')).json();
+  check('szólánc: a mai feladvány elérhető', !!p.start && !!p.end && p.par >= 4, JSON.stringify(p));
   const best = L.shortestPath(p.start, p.end);
   // egy eggyel hosszabb, de érvényes lánc: a kezdőszóból egy olyan szomszédra lépünk, amelyből a cél
   // ugyanolyan messze van, mint a kezdőszóból
@@ -1885,6 +1886,36 @@ section('Szólánc: megoldás ellenőrzése, ranglista (előbb a lépések, azt�
   rr = await sub(best, 1000, 'b', 'Lassú Lóránt');
   const lb2 = await (await fetch(BASE + '/api/szolanc/leaderboard')).json();
   check('szólánc: szereplőnként az első megoldás számít', lb2.entries.find((e) => e.name === 'Lassú Lóránt').elapsed === 90000);
+}
+
+section('Szólánc admin: javaslatok, beemelés a következő szabad napra, törlés');
+{
+  let st = await (await fetch(BASE + '/api/admin/szolanc', { headers: adm })).json();
+  check('admin: a mai és a következő 20 nap, a következő szabad nap holnaptól', st.days?.length === 21 && st.next > st.today && st.nextLevel >= 1, JSON.stringify({ next: st.next, lv: st.nextLevel }));
+  let rr = await post('/api/admin/szolanc', { action: 'suggest', level: st.nextLevel, count: 10 }, adm);
+  const sg = (await rr.json()).suggestions || [];
+  check('admin: 10 javaslat a következő nap nehézségével, mindegyiknél a legrövidebb utak', sg.length === 10 && sg.every((x) => x.level === st.nextLevel && x.allPaths.length === x.paths && x.allPaths.every((pp) => pp.length === x.par + 1)), JSON.stringify(sg[0]));
+  const ex = sg.slice(0, 3).map((x) => `${x.start}>${x.end}`);
+  rr = await post('/api/admin/szolanc', { action: 'suggest', level: st.nextLevel, count: 3, exclude: ex }, adm);
+  const sg2 = (await rr.json()).suggestions || [];
+  check('admin: pótlás – a kizárt párok nem jönnek újra', sg2.length === 3 && sg2.every((x) => !ex.includes(`${x.start}>${x.end}`)));
+  const next = st.next;
+  rr = await post('/api/admin/szolanc', { action: 'pick', start: sg[0].start, end: sg[0].end }, adm);
+  let j = await rr.json();
+  const dd = j.days?.find((d) => d.date === next);
+  check('admin: beemelés a következő szabad napra', rr.status === 200 && j.date === next && dd?.picked && dd.start === sg[0].start && j.next > next, JSON.stringify({ date: j.date, dd }));
+  // rossz nehézségű feladvány nem emelhető be
+  const other = (st.nextLevel % 5) + 1;
+  const wrongLv = (await (await post('/api/admin/szolanc', { action: 'suggest', level: j.nextLevel === other ? (other % 5) + 1 : other, count: 1 }, adm)).json()).suggestions[0];
+  rr = await post('/api/admin/szolanc', { action: 'pick', start: wrongLv.start, end: wrongLv.end }, adm);
+  check('admin: más nehézségű feladvány nem emelhető be: 400', rr.status === 400);
+  rr = await post('/api/admin/szolanc', { action: 'remove', date: next }, adm);
+  j = await rr.json();
+  check('admin: törlés után a nap ismét automatikus', rr.status === 200 && !j.days.find((d) => d.date === next).picked && j.next === next);
+  rr = await post('/api/admin/szolanc', { action: 'remove', date: st.today }, adm);
+  check('admin: a mai nap nem törölhető: 400', rr.status === 400);
+  rr = await fetch(BASE + '/api/admin/szolanc');
+  check('admin nélkül: 401', rr.status === 401);
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);

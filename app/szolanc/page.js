@@ -7,13 +7,12 @@ import KisokosIcon from '../../components/KisokosIcon';
 import Logo from '../../components/Logo';
 import { useFirstVisit } from '../../lib/firstVisit';
 import { todayStr } from '../../lib/date';
-import { generateSzolanc } from '../../lib/szolanc';
 import { deviceId } from '../../lib/device';
 import { getIdentity } from '../../lib/identity';
 import { recordSzolanc } from '../../lib/gameProgress';
 import { openLeaderboardIfTop } from '../../lib/autoLeaderboard';
 
-// Szólánc. A napi feladvány a dátumból készül (a böngészőben és a szerveren ugyanúgy); a megoldást
+// Szólánc. A napi feladványt a szerver adja (az admin által beemelt, vagy a dátumból generált); a megoldást
 // a szerver ellenőrzi és a ranglistára teszi (előbb a lépések száma, aztán az idő számít).
 // ?d=ÉÉÉÉ-HH-NN: egy másik nap feladványa (teszteléshez; ranglistára csak a mai kerül).
 export default function SzolancPage() {
@@ -25,7 +24,10 @@ export default function SzolancPage() {
       const q = new URLSearchParams(window.location.search).get('d');
       if (/^\d{4}-\d{2}-\d{2}$/.test(q || '')) d = q;
     } catch {}
-    setData(generateSzolanc(d));
+    fetch(`/api/szolanc?date=${d}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => setData(p || { error: true }))
+      .catch(() => setData({ error: true }));
   }, []);
   function solved({ chain, elapsed }) {
     recordSzolanc(data.date);
@@ -63,7 +65,7 @@ export default function SzolancPage() {
       )}
       <GameBar game="szolanc" />
       <h1 className="sr-only">Napititkos.hu - Szólánc</h1>
-      <div className="card">{!data ? <p data-nosnippet="">Betöltés…</p> : <SzolancGame key={data.date} data={data} onSolved={solved} />}</div>
+      <div className="card">{!data ? <p data-nosnippet="">Betöltés…</p> : data.error ? <p>A mai Szólánc nem tölthető be. Próbáld újra később!</p> : <SzolancGame key={data.date} data={data} onSolved={solved} />}</div>
       <GameFooter game="szolanc" />
     </div>
   );

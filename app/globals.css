@@ -2215,15 +2215,11 @@ button.community-head:has(> .solved-mark){ padding-right: 48px; }
 .szl-row{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; position: relative; }
 .szl-gap{ position: absolute; left: 50%; top: -14px; transform: translateX(-50%); font-size: 14px; line-height: 1; color: var(--ink-soft); }
 .szl-row.target{ margin-top: 14px; }
-button.szl-tile{ aspect-ratio: 1; padding: 0; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-family: var(--font-fredoka), Fredoka, sans-serif; font-size: clamp(22px, 7vw, 30px); font-weight: 600; display: flex; align-items: center; justify-content: center; }
-button.szl-tile:disabled{ opacity: 1; cursor: default; }
-button.szl-tile:hover:not(:disabled){ transform: none; border-color: var(--accent2); }
-.szl-row.start button.szl-tile{ background: var(--accent2-soft); border-color: var(--accent2); }
-button.szl-tile.changed{ background: var(--accent-soft); border-color: var(--btn-primary); }
-.szl-row.current button.szl-tile{ border-color: var(--accent2); box-shadow: 0 2px 0 var(--line); }
-.szl-row.current button.szl-tile.sel{ background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; }
-.szl-row.target button.szl-tile{ border-style: dashed; background: transparent; color: var(--accent-text); }
-.szl-row.target button.szl-tile.match{ border-style: solid; background: var(--accent2-soft); }
+span.szl-tile{ aspect-ratio: 1; padding: 0; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-family: var(--font-fredoka), Fredoka, sans-serif; font-size: clamp(22px, 7vw, 30px); font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.szl-row.start span.szl-tile{ background: var(--accent2-soft); border-color: var(--accent2); }
+span.szl-tile.changed{ background: var(--accent-soft); border-color: var(--btn-primary); }
+.szl-row.target span.szl-tile{ border-style: dashed; background: transparent; color: var(--accent-text); }
+.szl-row.target span.szl-tile.match{ border-style: solid; background: var(--accent2-soft); }
 .szl-row.shake{ animation: szl-shake 0.35s ease-in-out; }
 @keyframes szl-shake{ 20%{ transform: translateX(-6px); } 40%{ transform: translateX(6px); } 60%{ transform: translateX(-4px); } 80%{ transform: translateX(4px); } }
 .szl-msg{ min-height: 22px; margin: 10px 0 8px; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
@@ -2254,3 +2250,32 @@ a.card.game-tile.hub-extra-tile{ min-height: 96px; }
 /* Asztali gépen az öt ranglista-fül egy sorban elfér. */
 .framed-modal .lb-tabs{ gap: 5px; }
 .framed-modal .lb-tabs button.small{ padding: 5px 9px; }
+/* Szólánc admin */
+.szl-admin-list{ display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.szl-admin-item{ border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.szl-admin-head{ display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.szl-admin-head b{ letter-spacing: 0.05em; color: var(--accent-text); }
+.szl-admin-paths{ margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.szl-admin-actions{ display: flex; gap: 6px; margin-top: auto; }
+.szl-admin-days{ display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.szl-admin-day{ display: grid; grid-template-columns: 130px 40px 1fr 90px 70px; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 8px; font-size: 13.5px; }
+.szl-admin-day.picked{ background: var(--accent-soft); }
+.szl-admin-words{ letter-spacing: 0.03em; }
+.szl-admin-src{ font-size: 12px; color: var(--ink-soft); }
+@media (max-width: 640px){ .szl-admin-day{ grid-template-columns: 1fr auto; } .szl-admin-words{ grid-column: 1 / -1; } }
+/* Szólánc: feliratok, üres beviteli sor, lenyíló új sor. */
+.szl-label{ font-size: 11.5px; font-weight: 800; letter-spacing: 0.12em; color: var(--ink-soft); }
+.szl-row.target{ margin-top: 0; }
+.szl-gap{ display: none; }
+span.szl-tile{ box-sizing: border-box; }
+.szl-row.input span.szl-tile{ border-style: solid; border-color: var(--accent2); background: var(--card); }
+.szl-row.input span.szl-tile.filled{ border-color: var(--btn-primary); }
+.szl-row.input span.szl-tile.cursor{ box-shadow: inset 0 -4px 0 var(--accent2); }
+.szl-row.goal span.szl-tile{ background: var(--accent2-soft); border-color: var(--accent2); }
+@keyframes szl-open{ from{ opacity: 0; transform: translateY(-14px) scaleY(0.6); } to{ opacity: 1; transform: none; } }
+.szl-row.input{ animation: szl-open 0.28s ease-out; transform-origin: top; }
+.szl-row.fresh{ animation: szl-open 0.22s ease-out; }
+button.szl-key.enter{ background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; }
+@media (prefers-reduced-motion: reduce){ .szl-row.input, .szl-row.fresh{ animation: none; } }
+/* Ranglista: a fülek emelkedő animációja ne vágódjon le a görgethető fülsor tetején. */
+.framed-modal .lb-tabs{ padding: 4px 2px 4px; margin-top: -8px; margin-bottom: 8px; }
