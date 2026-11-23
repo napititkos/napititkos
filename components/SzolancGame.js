@@ -49,6 +49,41 @@ export default function SzolancGame({ data, preview = false, compact = false, on
   const startRef = useRef(Date.now() - (saved.elapsed || 0));
   const [wave, playWave] = useWinWave();
   const last = chain[chain.length - 1];
+  // A napi (és a korábbi) Szóláncnál a billentyűzet a képernyő aljára rögzített, amíg nincs kész;
+  // a helyét egy ugyanakkora térköz tartja, hogy semmi ne kerüljön alá.
+  const fixedKeys = !preview && !solved;
+  const keysRef = useRef(null);
+  const boardRef = useRef(null);
+  const [keysH, setKeysH] = useState(0);
+  useEffect(() => {
+    if (!fixedKeys || !keysRef.current) return;
+    const el = keysRef.current;
+    const upd = () => setKeysH(el.offsetHeight);
+    upd();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(upd) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [fixedKeys]);
+  // Szó beírása után az oldal úgy gördül, hogy látsszon a most beírt szó, az üres sor, a célszó és
+  // a billentyűzet (ha nem fér ki minden, a most beírt szó a fontosabb).
+  useEffect(() => {
+    if (!fixedKeys || chain.length < 2) return;
+    const t = setTimeout(() => {
+      const board = boardRef.current;
+      if (!board) return;
+      const rows = board.querySelectorAll('.szl-row');
+      const fresh = rows[chain.length - 1];
+      const labels = board.querySelectorAll('.szl-label');
+      const bottomEl = labels[labels.length - 1];
+      if (!fresh || !bottomEl) return;
+      const limit = window.innerHeight - (keysRef.current?.offsetHeight || 0) - 10;
+      let dy = bottomEl.getBoundingClientRect().bottom - limit;
+      const top = fresh.getBoundingClientRect().top - 10;
+      if (dy > top) dy = top;
+      if (Math.abs(dy) > 2) window.scrollBy({ top: dy, behavior: 'smooth' });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [chain.length, fixedKeys]);
 
   useEffect(() => {
     if (solved) return;
@@ -141,7 +176,7 @@ export default function SzolancGame({ data, preview = false, compact = false, on
     <div className="szolanc">
       {!preview && !compact && <GameHead title="Napi Szólánc" number={number} level={level} dateLabel={dayLabel} time={fmt(elapsed)} />}
       {/* Fent a kezdőszó, alatta a lánc, utána (amíg nincs kész) az üres sor, legalul a célszó. */}
-      <div className={`szl-board${wave ? ' win-wave' : ''}`} role="list" aria-label="A szólánc">
+      <div ref={boardRef} className={`szl-board${wave ? ' win-wave' : ''}`} role="list" aria-label="A szólánc">
         <span className="szl-label">KEZDŐ SZÓ</span>
         {chain.map((w, r) => {
           const prev = r > 0 ? chain[r - 1] : null;
@@ -179,14 +214,14 @@ export default function SzolancGame({ data, preview = false, compact = false, on
         )}
         <span className="szl-label">CÉL SZÓ</span>
       </div>
-      {/* Megfejtés után nincs üzenetsor: a statisztika közvetlenül a célszó alatt jön. */}
+      {fixedKeys && <div className="szl-keys-spacer" style={{ height: keysH }} aria-hidden="true" />}
       {!solved && (
-        <div className={`szl-msg ${msg?.kind || ''}`} role="status">
-          {msg?.text || 'Írd be a következő szót: egy betű változhat.'}
-        </div>
-      )}
-      {!solved && (
-        <div className="szl-keys" aria-label="Billentyűzet">
+        <div ref={keysRef} className={`szl-keys${fixedKeys ? ' fixed' : ''}`} aria-label="Billentyűzet">
+          {/* Az üzenetsor a billentyűzet tetején: így mindig látszik (megfejtés után eltűnik, és a
+              statisztika közvetlenül a célszó alatt jön). */}
+          <div className={`szl-msg ${msg?.kind || ''}`} role="status">
+            {msg?.text || 'Írd be a következő szót: egy betű változhat.'}
+          </div>
           {KEYBOARD.map((row, i) => (
             <div key={i} className="szl-keyrow">
               {row.map((k) => (
