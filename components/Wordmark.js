@@ -59,7 +59,19 @@ export function SzolancWordmark({ ring = true }) {
       ) : (
         <span className="bf-ink">SZÓ</span>
       )}
-      <span className="bf-accent">LÁNC</span>
+      {ring ? (
+        /* A fejlécben a kos-Ó pontosan ott és akkora, mint a SZÓKERESŐ-ben: a LÁNC mögött láthatatlanul
+           a KERESŐ foglalja a helyet, így a felirat teljes szélessége is ugyanannyi. */
+        <span className="bf-accent bf-overlay">
+          <span className="bf-ghost">
+            KERES
+            <ODbl />
+          </span>
+          <span className="bf-real">LÁNC</span>
+        </span>
+      ) : (
+        <span className="bf-accent">LÁNC</span>
+      )}
     </div>
   );
 }

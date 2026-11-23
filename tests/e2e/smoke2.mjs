@@ -1888,6 +1888,15 @@ section('Szólánc: megoldás ellenőrzése, ranglista (előbb a lépések, azt�
   check('szólánc: szereplőnként az első megoldás számít', lb2.entries.find((e) => e.name === 'Lassú Lóránt').elapsed === 90000);
 }
 
+section('Szólánc archívum');
+{
+  let rr = await fetch(BASE + '/api/szolanc/archive');
+  check('szólánc archívum vendégként: 401', rr.status === 401);
+  rr = await fetch(BASE + '/api/szolanc/archive', { headers: { cookie: cA.header() } });
+  const j = await rr.json();
+  check('szólánc archívum bejelentkezve: lista (a mai nap nincs benne)', rr.status === 200 && Array.isArray(j.items) && j.items.every((x) => x.date < budapestToday && x.start && x.end && x.level >= 1), JSON.stringify(j).slice(0, 200));
+}
+
 section('Szólánc admin: javaslatok, beemelés a következő szabad napra, törlés');
 {
   let st = await (await fetch(BASE + '/api/admin/szolanc', { headers: adm })).json();

@@ -34,9 +34,10 @@ const loadAll = () => {
   }
 };
 
-export default function SzolancGame({ data, preview = false, onSolved }) {
+// compact: korábbi Szólánc az archívumban (nincs fejléc, a haladás nem mentődik, csak a teljesítés).
+export default function SzolancGame({ data, preview = false, compact = false, onSolved }) {
   const { date, start, end, par, paths, level, number } = data;
-  const saved = useMemo(() => (preview ? {} : loadAll()[date] || {}), [date, preview]);
+  const saved = useMemo(() => (preview || compact ? {} : loadAll()[date] || {}), [date, preview, compact]);
   const [chain, setChain] = useState(() => (Array.isArray(saved.chain) && saved.chain[0] === start ? saved.chain : [start]));
   // Az üres sorba írt betűk (legfeljebb 4).
   const [typed, setTyped] = useState('');
@@ -54,15 +55,15 @@ export default function SzolancGame({ data, preview = false, onSolved }) {
     return () => clearInterval(t);
   }, [solved]);
   useEffect(() => {
-    if (preview) return;
+    if (preview || (compact && !solved)) return;
     try {
       const all = loadAll();
-      all[date] = { chain, elapsed, solved };
+      all[date] = compact ? { ...(all[date] || {}), archiveSolved: true } : { chain, elapsed, solved };
       const keys = Object.keys(all).sort();
       while (keys.length > 60) delete all[keys.shift()];
       localStorage.setItem(KEY, JSON.stringify(all));
     } catch {}
-  }, [chain, elapsed, solved, date, preview]);
+  }, [chain, elapsed, solved, date, preview, compact]);
 
   const flash = (text, kind = 'bad') => {
     setMsg({ text, kind });
@@ -143,7 +144,7 @@ export default function SzolancGame({ data, preview = false, onSolved }) {
 
   return (
     <div className="szolanc">
-      {!preview && <GameHead title="Napi Szólánc" number={number} level={level} dateLabel={dayLabel} time={fmt(elapsed)} />}
+      {!preview && !compact && <GameHead title="Napi Szólánc" number={number} level={level} dateLabel={dayLabel} time={fmt(elapsed)} />}
       {/* Fent a kezdőszó, alatta a lánc, utána (amíg nincs kész) az üres sor, legalul a célszó. */}
       <div className={`szl-board${wave ? ' win-wave' : ''}`} role="list" aria-label="A szólánc">
         <span className="szl-label">KEZDŐ SZÓ</span>
@@ -183,9 +184,12 @@ export default function SzolancGame({ data, preview = false, onSolved }) {
         )}
         <span className="szl-label">CÉL SZÓ</span>
       </div>
-      <div className={`szl-msg ${msg?.kind || ''}`} role="status">
-        {msg?.text || (solved ? '' : 'Írd be a következő szót: egy betű változhat.')}
-      </div>
+      {/* Megfejtés után nincs üzenetsor: a statisztika közvetlenül a célszó alatt jön. */}
+      {!solved && (
+        <div className={`szl-msg ${msg?.kind || ''}`} role="status">
+          {msg?.text || 'Írd be a következő szót: egy betű változhat.'}
+        </div>
+      )}
       {!solved && (
         <div className="szl-keys" aria-label="Billentyűzet">
           {KEYBOARD.map((row, i) => (
@@ -223,7 +227,7 @@ export default function SzolancGame({ data, preview = false, onSolved }) {
             </span>
           </div>
           {steps > par && best.length > 0 && <p className="szl-best">Egy legrövidebb út: {best.map((w) => w.toUpperCase()).join(' → ')}</p>}
-          {!preview && (
+          {!preview && !compact && (
             <div className="result-actions game-result-actions">
               <CopyResultButton
                 round

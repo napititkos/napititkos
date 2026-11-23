@@ -2279,3 +2279,16 @@ button.szl-key.enter{ background: var(--btn-primary); border-color: var(--btn-pr
 @media (prefers-reduced-motion: reduce){ .szl-row.input, .szl-row.fresh{ animation: none; } }
 /* Ranglista: a fülek emelkedő animációja ne vágódjon le a görgethető fülsor tetején. */
 .framed-modal .lb-tabs{ padding: 4px 2px 4px; margin-top: -8px; margin-bottom: 8px; }
+/* SZÓLÁNC fejléc: a láthatatlan KERESŐ adja a szélességet, rajta balra a LÁNC. */
+.bf-overlay{ display: inline-grid; }
+.bf-overlay > span{ grid-area: 1 / 1; }
+.bf-overlay > .bf-ghost{ visibility: hidden; }
+.bf-overlay > .bf-real{ justify-self: start; }
+/* Kisokos gomb: a kérdőjel a gomb bal oldali félkörének közepe felé tolva (a közepén nem túl). */
+.quick-pill .kisokos-ico{ transform: translateX(-5.5px); }
+@media (max-width: 420px){ .quick-pill .kisokos-ico{ transform: translateX(-1.5px); } }
+@media (max-width: 345px){ .quick-pill .kisokos-ico{ transform: translateX(-0.5px); } }
+.quick-row.game-bar.compact-tight .quick-pill .kisokos-ico{ transform: translateX(-0.5px); }
+/* Korábbi Szóláncok: kicsinyítve a kezdő- és a célszó egymás alatt. */
+.szl-thumb{ display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 64px; font-size: 12px; line-height: 1.15; color: var(--ink-soft); }
+.szl-thumb b{ font-size: 13px; letter-spacing: 0.08em; color: var(--accent-text); }

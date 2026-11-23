@@ -63,7 +63,7 @@ export function GameTile({ game, isNew = false, big = false, done = false, href 
 }
 
 export default function GameFooter({ game }) {
-  const tab = game === 'mini' ? '?tab=mini' : game === 'szo' ? '?tab=szo' : game === 'sudoku' ? '?tab=sudoku' : '';
+  const tab = game === 'mini' ? '?tab=mini' : game === 'szo' ? '?tab=szo' : game === 'sudoku' ? '?tab=sudoku' : game === 'szolanc' ? '?tab=szolanc' : '';
   const others = Object.keys(GAMES).filter((k) => k !== game);
   return (
     <div className="game-footer">
@@ -71,7 +71,7 @@ export default function GameFooter({ game }) {
         <a className="card next-link" href={`/archive${tab}`}>
           <Icon src="/icons/Korabbi_titkosirasok.png" size={22} />
           <b>Korábbi rejtvények</b>
-          <span>{game === 'szo' ? 'A korábbi napok szókeresői' : game === 'sudoku' ? 'A korábbi napok sudokui' : game === 'mini' ? 'A korábbi heti minik' : 'Játszd újra a régebbi napok rejtvényeit'}</span>
+          <span>{game === 'szo' ? 'A korábbi napok szókeresői' : game === 'szolanc' ? 'A korábbi napok szóláncai' : game === 'sudoku' ? 'A korábbi napok sudokui' : game === 'mini' ? 'A korábbi heti minik' : 'Játszd újra a régebbi napok rejtvényeit'}</span>
         </a>
         <a className="card next-link" href={`/kozossegi${game === 'mini' ? '?tab=mini' : ''}`}>
           <Icon src="/icons/Kozossegi.png" size={22} />

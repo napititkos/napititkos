@@ -46,9 +46,9 @@ export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkos
       {[
         ['titkos', labels.titkos],
         ...(withSzo ? [['szo', labels.szo || 'Szókeresők']] : []),
+        ...(withSzolanc ? [['szolanc', labels.szolanc || 'Szólánc']] : []),
         ['mini', labels.mini],
         ...(withSudoku ? [['sudoku', labels.sudoku || 'Sudoku']] : []),
-        ...(withSzolanc ? [['szolanc', labels.szolanc || 'Szólánc']] : []),
       ].map(([v, label]) => (
         <button key={v} type="button" role="tab" aria-selected={tab === v} className={tab === v ? 'primary small' : 'ghost small'} onClick={() => onChange(v)}>
           {label}

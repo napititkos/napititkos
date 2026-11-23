@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, achievementProgress, gameOf, statsFromProgress } from '../lib/achievements';
 
-const GAME_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Heti Mini', sudoku: 'Sudoku' };
+const GAME_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', szolanc: 'Szólánc', mini: 'Heti Mini', sudoku: 'Sudoku' };
 // Csoportcímek: az „Összes” nézetben legfelül az általános (minden játékra szóló) trófeák.
 const GROUP_LABEL = { altalanos: 'Általános', ...GAME_LABEL };
 import { loadProgress } from '../lib/progress';
@@ -56,7 +56,7 @@ export default function AchievementsModal() {
   if (!open) return null;
 
   const close = () => setOpen(false);
-  const games = multi ? (filter === 'all' ? ['altalanos', 'titkos', 'szo', 'sudoku', 'mini'] : [filter]) : ['titkos'];
+  const games = multi ? (filter === 'all' ? ['altalanos', 'titkos', 'szo', 'szolanc', 'sudoku', 'mini'] : [filter]) : ['titkos'];
   const shown = ACHIEVEMENTS.filter((a) => games.includes(gameOf(a)));
   const got = shown.filter((a) => unlocked.includes(a.id)).length;
   return (
@@ -88,7 +88,7 @@ export default function AchievementsModal() {
               }}
               aria-label="Trófeák játék szerint"
             >
-              {[['all', 'Összes'], ['altalanos', 'Általános'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']].map(([v, label]) => (
+              {[['all', 'Összes'], ['altalanos', 'Általános'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['szolanc', 'Szólánc'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']].map(([v, label]) => (
                 <option key={v} value={v}>
                   {label}
                 </option>
