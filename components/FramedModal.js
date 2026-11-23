@@ -55,4 +55,4 @@ const FramedModal = forwardRef(function FramedModal({ title, head, children, pla
 export default FramedModal;
 
 // A játékok oldalai (a Játszom gombhoz).
-export const GAME_HREF = { titkos: '/titkosiras', daily: '/titkosiras', szo: '/szokereso', sudoku: '/sudoku', mini: '/mini' };
+export const GAME_HREF = { titkos: '/titkosiras', daily: '/titkosiras', szo: '/szokereso', szolanc: '/szolanc', sudoku: '/sudoku', mini: '/mini' };

@@ -4,12 +4,12 @@ import { dailyDone, markAllDoneToday, weekStartOf } from '../lib/dailyDone.js';
 import { computeNewAchievements, statsFromProgress } from '../lib/achievements.js';
 
 const D = '2026-11-18';
-const full = () => ({ history: { [D]: { correct: true } }, szoFullDays: [D], sudokuDays: [D], sudoku9Days: [D], miniWeeks: [weekStartOf(D)] });
+const full = () => ({ history: { [D]: { correct: true } }, szoFullDays: [D], szolancDays: [D], sudokuDays: [D], sudoku9Days: [D], miniWeeks: [weekStartOf(D)] });
 
-test('teljes nap: csak ha minden napi rejtvény kész (titkosírás, szókereső, 6x6, 9x9, heti mini)', () => {
+test('teljes nap: csak ha minden napi rejtvény kész (titkosírás, szókereső, szólánc, 6x6, 9x9, heti mini)', () => {
   assert.equal(weekStartOf(D), '2026-11-16');
   assert.ok(Object.values(dailyDone(full(), D)).every(Boolean));
-  for (const k of ['szoFullDays', 'sudokuDays', 'sudoku9Days', 'miniWeeks']) {
+  for (const k of ['szoFullDays', 'szolancDays', 'sudokuDays', 'sudoku9Days', 'miniWeeks']) {
     const p = full();
     p[k] = [];
     assert.equal(markAllDoneToday(p, D), false, k);
@@ -36,11 +36,12 @@ test('Következő játék: a főoldal sorrendjében az első még nem teljesíte
   const { nextGameHref } = await import('../lib/dailyDone.js');
   const w = weekStartOf(D);
   assert.equal(nextGameHref({}, 'titkos', D), '/szokereso');
-  assert.equal(nextGameHref({ szoFullDays: [D] }, 'titkos', D), '/sudoku');
+  assert.equal(nextGameHref({ szoFullDays: [D] }, 'titkos', D), '/szolanc');
+  assert.equal(nextGameHref({ szoFullDays: [D], szolancDays: [D] }, 'titkos', D), '/sudoku');
   // 9x9 után, ha a 6x6 még nincs meg: a 6x6-ra
-  assert.equal(nextGameHref({ history: { [D]: { correct: true } }, szoFullDays: [D], sudoku9Days: [D] }, 'sudoku9', D), '/sudoku');
+  assert.equal(nextGameHref({ history: { [D]: { correct: true } }, szoFullDays: [D], szolancDays: [D], sudoku9Days: [D] }, 'sudoku9', D), '/sudoku');
   // 6x6 után a 9x9-re
-  assert.equal(nextGameHref({ history: { [D]: { correct: true } }, szoFullDays: [D], sudokuDays: [D] }, 'sudoku6', D), '/sudoku?m=9');
+  assert.equal(nextGameHref({ history: { [D]: { correct: true } }, szoFullDays: [D], szolancDays: [D], sudokuDays: [D] }, 'sudoku6', D), '/sudoku?m=9');
   // a mini után felülről: a még meg nem fejtett titkosírás
   assert.equal(nextGameHref({ miniWeeks: [w] }, 'mini', D), '/titkosiras');
   // minden kész: a közösségi rejtvények

@@ -23,7 +23,7 @@ export function useRejtvenyTab() {
   useEffect(() => {
     try {
       const t = new URLSearchParams(window.location.search).get('tab');
-      if (t === 'mini' || t === 'szo' || t === 'sudoku') setTab(t);
+      if (t === 'mini' || t === 'szo' || t === 'sudoku' || t === 'szolanc') setTab(t);
     } catch {}
     setReady(true);
   }, []);
@@ -40,12 +40,13 @@ export function useRejtvenyTab() {
   return [tab, choose, ready];
 }
 
-export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false, withSudoku = false }) {
+export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false, withSudoku = false, withSzolanc = false }) {
   return (
     <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus">
       {[
         ['titkos', labels.titkos],
         ...(withSzo ? [['szo', labels.szo || 'Szókeresők']] : []),
+        ...(withSzolanc ? [['szolanc', labels.szolanc || 'Szólánc']] : []),
         ['mini', labels.mini],
         ...(withSudoku ? [['sudoku', labels.sudoku || 'Sudoku']] : []),
       ].map(([v, label]) => (

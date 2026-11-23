@@ -47,6 +47,35 @@ export function TitkosWordmark({ ring = true }) {
   );
 }
 
+// SZÓLÁNC: a kos az Ó helyén (mint a SZÓKERESŐ-nél).
+export function SzolancWordmark({ ring = true }) {
+  return (
+    <div className={`brand brand-flow${ring ? ' brand-c' : ' brand-plain'}`} aria-hidden="true">
+      {ring ? (
+        <>
+          <span className="bf-ink">SZ</span>
+          <Ring acute />
+        </>
+      ) : (
+        <span className="bf-ink">SZÓ</span>
+      )}
+      {ring ? (
+        /* A fejlécben a kos-Ó pontosan ott és akkora, mint a SZÓKERESŐ-ben: a LÁNC mögött láthatatlanul
+           a KERESŐ foglalja a helyet, így a felirat teljes szélessége is ugyanannyi. */
+        <span className="bf-accent bf-overlay">
+          <span className="bf-ghost">
+            KERES
+            <ODbl />
+          </span>
+          <span className="bf-real">LÁNC</span>
+        </span>
+      ) : (
+        <span className="bf-accent">LÁNC</span>
+      )}
+    </div>
+  );
+}
+
 export function SzoWordmark({ ring = true }) {
   return (
     <div className={`brand brand-flow${ring ? ' brand-c' : ' brand-plain'}`} aria-hidden="true">

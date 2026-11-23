@@ -1,4 +1,4 @@
-export const metadata = { title: 'Adatvédelem - Titkosírás' };
+export const metadata = { title: { absolute: 'Napititkos.hu - Adatvédelem' }, alternates: { canonical: '/privacy' }, robots: { index: false, follow: true } };
 
 export default function PrivacyPage() {
   return (

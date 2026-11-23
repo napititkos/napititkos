@@ -34,20 +34,22 @@ export const viewport = {
 
 export const metadata = {
   metadataBase: new URL('https://napititkos.hu'),
-  title: 'Titkosírás - napi kriptikus rejtvény',
-  description: 'Napi magyar nyelvű kriptikus (cryptic) szórejtvény - napititkos.hu',
+  // Alapértelmezés (ha egy oldalnak nincs saját címe): a webhely egésze, nem a titkosírás – így a
+  // kereső egyetlen oldalt sem mutat „Titkosírás” címmel, ha az nem a titkosírás.
+  title: 'Napititkos.hu - Minden nap új rejtvények!',
+  description: 'Napititkos.hu - Minden nap új rejtvények! Kriptikus rejtvény, Szókereső, Sudoku, Mini keresztrejtvény',
   openGraph: {
-    title: 'Titkosírás - napi kriptikus rejtvény',
-    description: 'Napi magyar nyelvű kriptikus (cryptic) szórejtvény.',
+    title: 'Napititkos.hu - Minden nap új rejtvények!',
+    description: 'Napititkos.hu - Minden nap új rejtvények! Kriptikus rejtvény, Szókereső, Sudoku, Mini keresztrejtvény',
     url: 'https://napititkos.hu',
-    siteName: 'Titkosírás',
+    siteName: 'napititkos.hu',
     locale: 'hu_HU',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Titkosírás - napi kriptikus rejtvény',
-    description: 'Napi magyar nyelvű kriptikus (cryptic) szórejtvény.',
+    title: 'Napititkos.hu - Minden nap új rejtvények!',
+    description: 'Napititkos.hu - Minden nap új rejtvények! Kriptikus rejtvény, Szókereső, Sudoku, Mini keresztrejtvény',
   },
 };
 

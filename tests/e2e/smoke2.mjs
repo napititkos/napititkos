@@ -587,7 +587,7 @@ j = await (await fetch(BASE + '/api/puzzle')).json();
 const lkp = plist.find((pz) => pz.id === j.puzzle?.id)?.lookup;
 check('a napi rejtvény a "Nézz utána!" adatot is kiadja (ha van)', JSON.stringify(j.puzzle?.lookup || null) === JSON.stringify(lkp || null), JSON.stringify(j.puzzle?.lookup));
 r = await fetch(BASE + '/help'); const kisHtml = await r.text();
-check('a Kisokos oldal címe és fejléce: Kisokos', /<title>Kisokos - Titkosírás<\/title>/.test(kisHtml) && /Kisokos<\/h1>/.test(kisHtml) && !/Súgó/.test(kisHtml));
+check('a Kisokos oldal címe és fejléce: Kisokos', /<title>Napititkos\.hu - Kisokos<\/title>/.test(kisHtml) && /Kisokos<\/h1>/.test(kisHtml) && !/Súgó/.test(kisHtml));
 r = await fetch(BASE + '/manifest.webmanifest'); j = await r.json();
 check('a webalkalmazás-leíró nagy (192, 512, maskable) ikonokat ad', r.status === 200 && j.icons?.some((i) => i.sizes === '512x512' && i.purpose === 'maskable') && j.icons?.some((i) => i.sizes === '192x192'));
 for (const ic of ['/icon-192.png', '/icon-512.png', '/icon-maskable-512.png']) { r = await fetch(BASE + ic); check(`az ikon elérhető: ${ic}`, r.status === 200); }
@@ -642,7 +642,7 @@ const myNotifs = async (jar) => (await (await fetch(BASE + '/api/notifications/m
 r = await post('/api/submissions', { clue: 'Közösségi próba kérdés?', answer: 'KOS JUH', hints: { definicio: 'állatok', alternativ: 'Másik?' }, hintWords: { definicio: [0] } }, { cookie: kkJar.header() });
 check('beküldés: 200', r.status === 200, `(${r.status})`);
 check('a beküldésről már nem megy személyes értesítés (a régi rendszer része volt)', (await myNotifs(kkJar)).length === 0);
-r = await fetch(BASE + '/kozossegi'); check('a /kozossegi oldal elérhető', r.status === 200 && /Közösségi titkosírások/.test(await r.text()));
+r = await fetch(BASE + '/kozossegi'); check('a /kozossegi oldal elérhető', r.status === 200 && /<title>Napititkos\.hu - Közösségi rejtvények<\/title>/.test(await r.text()));
 r = await fetch(BASE + '/api/community'); j = await r.json();
 check('vendégként is látható a lista (megoldás és tippek nélkül)', r.status === 200 && Array.isArray(j.items) && !JSON.stringify(j).includes('KOS JUH') && !JSON.stringify(j).includes('állatok') && !JSON.stringify(j).includes('@teszt.hu'));
 j = await (await fetch(BASE + '/api/community/count')).json();
@@ -1855,6 +1855,76 @@ section('Heti mini admin: sorrend, ütemezés, készítő (mint a titkosírásn�
   check('szerkesztőből: készítő és ütemezett hét a helyén maradó elemen', rr.status === 200 && s1.author === 'Szerkesztő Szilvi' && s1.scheduledWeek === add(3) && st.queue.map((q) => q.id).join() === 's3,s1,s2', JSON.stringify(s1).slice(0, 200));
   if (savedQ) await redis.set('mini:queue', savedQ); else await redis.del('mini:queue');
   if (savedP) await redis.set('mini:published', savedP); else await redis.del('mini:published');
+}
+
+section('Szólánc: megoldás ellenőrzése, ranglista (előbb a lépések, aztán az idő)');
+{
+  const L = await import(pathToFileURL(`${REPO}/lib/szolanc.js`).href);
+  const p = await (await fetch(BASE + '/api/szolanc')).json();
+  check('szólánc: a mai feladvány elérhető', !!p.start && !!p.end && p.par >= 4, JSON.stringify(p));
+  const best = L.shortestPath(p.start, p.end);
+  // egy eggyel hosszabb, de érvényes lánc: a kezdőszóból egy olyan szomszédra lépünk, amelyből a cél
+  // ugyanolyan messze van, mint a kezdőszóból
+  let longer = null;
+  const { SZOLANC_WORDS } = await import(pathToFileURL(`${REPO}/lib/szolancData.js`).href);
+  for (const w of SZOLANC_WORDS) {
+    if (w === p.start || !L.oneLetterApart(p.start, w)) continue;
+    const rest = L.shortestPath(w, p.end);
+    if (rest.length === best.length && !rest.includes(p.start)) { longer = [p.start, ...rest]; break; }
+  }
+  const sub = (chain, elapsed, dev, name) => post('/api/szolanc/solve', { date: budapestToday, chain, elapsed, device: dev.repeat(32).slice(0, 32), name });
+  let rr = await sub([p.start, p.end], 50000, 'a', 'Csaló Csaba');
+  check('szólánc: érvénytelen lánc: 400', rr.status === 400);
+  rr = await sub(best, 90000, 'b', 'Lassú Lóránt');
+  const j = await rr.json();
+  check('szólánc: a legrövidebb lánc elfogadva', rr.status === 200 && j.stats?.mine?.s === best.length - 1, JSON.stringify(j));
+  rr = await sub(best, 40000, 'c', 'Gyors Gizi');
+  if (longer) rr = await sub(longer, 10000, 'd', 'Kerülő Kati');
+  const lb = await (await fetch(BASE + '/api/szolanc/leaderboard')).json();
+  const names = lb.entries.map((e) => e.name);
+  check('szólánc ranglista: azonos lépésszámnál a gyorsabb elöl, a hosszabb lánc (gyorsabb idővel is) hátrébb', names.indexOf('Gyors Gizi') < names.indexOf('Lassú Lóránt') && (!longer || names.indexOf('Kerülő Kati') > names.indexOf('Lassú Lóránt')) && !names.includes('Csaló Csaba'), JSON.stringify(lb.entries));
+  rr = await sub(best, 1000, 'b', 'Lassú Lóránt');
+  const lb2 = await (await fetch(BASE + '/api/szolanc/leaderboard')).json();
+  check('szólánc: szereplőnként az első megoldás számít', lb2.entries.find((e) => e.name === 'Lassú Lóránt').elapsed === 90000);
+}
+
+section('Szólánc archívum');
+{
+  let rr = await fetch(BASE + '/api/szolanc/archive');
+  check('szólánc archívum vendégként: 401', rr.status === 401);
+  rr = await fetch(BASE + '/api/szolanc/archive', { headers: { cookie: cA.header() } });
+  const j = await rr.json();
+  check('szólánc archívum bejelentkezve: lista (a mai nap nincs benne)', rr.status === 200 && Array.isArray(j.items) && j.items.every((x) => x.date < budapestToday && x.start && x.end && x.level >= 1), JSON.stringify(j).slice(0, 200));
+}
+
+section('Szólánc admin: javaslatok, beemelés a következő szabad napra, törlés');
+{
+  let st = await (await fetch(BASE + '/api/admin/szolanc', { headers: adm })).json();
+  check('admin: a mai és a következő 20 nap, a következő szabad nap holnaptól', st.days?.length === 21 && st.next > st.today && st.nextLevel >= 1, JSON.stringify({ next: st.next, lv: st.nextLevel }));
+  let rr = await post('/api/admin/szolanc', { action: 'suggest', level: st.nextLevel, count: 10 }, adm);
+  const sg = (await rr.json()).suggestions || [];
+  check('admin: 10 javaslat a következő nap nehézségével, mindegyiknél a legrövidebb utak', sg.length === 10 && sg.every((x) => x.level === st.nextLevel && x.allPaths.length === x.paths && x.allPaths.every((pp) => pp.length === x.par + 1)), JSON.stringify(sg[0]));
+  const ex = sg.slice(0, 3).map((x) => `${x.start}>${x.end}`);
+  rr = await post('/api/admin/szolanc', { action: 'suggest', level: st.nextLevel, count: 3, exclude: ex }, adm);
+  const sg2 = (await rr.json()).suggestions || [];
+  check('admin: pótlás – a kizárt párok nem jönnek újra', sg2.length === 3 && sg2.every((x) => !ex.includes(`${x.start}>${x.end}`)));
+  const next = st.next;
+  rr = await post('/api/admin/szolanc', { action: 'pick', start: sg[0].start, end: sg[0].end }, adm);
+  let j = await rr.json();
+  const dd = j.days?.find((d) => d.date === next);
+  check('admin: beemelés a következő szabad napra', rr.status === 200 && j.date === next && dd?.picked && dd.start === sg[0].start && j.next > next, JSON.stringify({ date: j.date, dd }));
+  // rossz nehézségű feladvány nem emelhető be
+  const other = (st.nextLevel % 5) + 1;
+  const wrongLv = (await (await post('/api/admin/szolanc', { action: 'suggest', level: j.nextLevel === other ? (other % 5) + 1 : other, count: 1 }, adm)).json()).suggestions[0];
+  rr = await post('/api/admin/szolanc', { action: 'pick', start: wrongLv.start, end: wrongLv.end }, adm);
+  check('admin: más nehézségű feladvány nem emelhető be: 400', rr.status === 400);
+  rr = await post('/api/admin/szolanc', { action: 'remove', date: next }, adm);
+  j = await rr.json();
+  check('admin: törlés után a nap ismét automatikus', rr.status === 200 && !j.days.find((d) => d.date === next).picked && j.next === next);
+  rr = await post('/api/admin/szolanc', { action: 'remove', date: st.today }, adm);
+  check('admin: a mai nap nem törölhető: 400', rr.status === 400);
+  rr = await fetch(BASE + '/api/admin/szolanc');
+  check('admin nélkül: 401', rr.status === 401);
 }
 
 console.log(`\nÖsszesen: ${pass} sikeres, ${fail} hibás`);

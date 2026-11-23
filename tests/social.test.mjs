@@ -41,7 +41,7 @@ test('trófeák: elöl a Kisokos bevezetője, majd a teljes Kisokos; az Olvasott
   assert.equal(ACHIEVEMENTS[0].title, 'Kezdő');
   assert.equal(ACHIEVEMENTS[1].id, 'tutorial_done');
   assert.ok(!ACHIEVEMENTS.some((a) => a.id === 'read_help'));
-  assert.equal(ACHIEVEMENTS.length, 44); // sudoku: 6x6 1/5/10/20, 9x9 1/5/10; általános: teljes nap 1/5/10, A Régész; mini: saját mini
+  assert.equal(ACHIEVEMENTS.length, 48); // + Szólánc 1/5/10/20
   assert.equal(ACHIEVEMENTS.filter((a) => !a.game).length, 22);
 });
 

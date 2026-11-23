@@ -4,6 +4,7 @@ import SzoGame from '../../components/SzoGame';
 import GameBar from '../../components/GameBar';
 import { useFirstVisit } from '../../lib/firstVisit';
 import Icon from '../../components/Icon';
+import KisokosIcon from '../../components/KisokosIcon';
 import Logo from '../../components/Logo';
 import GameFooter from '../../components/GameFooter';
 import { deviceId } from '../../lib/device';
@@ -40,7 +41,7 @@ export default function SzokeresoPage() {
                 Bezárás
               </button>
               <a className="intro-kisokos" href="/kisokos?tab=szo" onClick={dismissIntro}>
-                <Icon src="/icons/Tutorial.png" size={18} className="icon-on-accent" />
+                <KisokosIcon size={18} />
                 Kisokos
               </a>
             </div>

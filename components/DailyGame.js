@@ -10,6 +10,7 @@ import { deviceId } from '../lib/device';
 import { getIdentity } from '../lib/identity';
 import { previousDay } from '../lib/date';
 import Icon from './Icon';
+import KisokosIcon from './KisokosIcon';
 import NextGameButton from './NextGameButton';
 import { openLeaderboardIfTop } from '../lib/autoLeaderboard';
 import Logo from './Logo';
@@ -734,7 +735,7 @@ export default function DailyGame() {
                 Bezárás
               </button>
               <a className="intro-kisokos" href="/kisokos" onClick={dismissIntro}>
-                <Icon src="/icons/Tutorial.png" size={18} className="icon-on-accent" />
+                <KisokosIcon size={18} />
                 Kisokos
               </a>
             </div>
@@ -754,7 +755,7 @@ export default function DailyGame() {
           <Icon src="/icons/Ranglista.png" size={16} className="quick-ico" /> Ranglista
         </button>
         <a className="pill quick-pill" href="/kisokos">
-          <Icon src="/icons/Tutorial.png" size={15} className="quick-ico" /> Kisokos
+          <KisokosIcon size={15} className="quick-ico" /> Kisokos
         </a>
         <button
           className="pill quick-pill"
