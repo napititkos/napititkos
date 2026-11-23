@@ -5,6 +5,7 @@ import GameBar from '../../components/GameBar';
 import { useFirstVisit } from '../../lib/firstVisit';
 import GameFooter from '../../components/GameFooter';
 import Icon from '../../components/Icon';
+import KisokosIcon from '../../components/KisokosIcon';
 import Logo from '../../components/Logo';
 import { deviceId } from '../../lib/device';
 import { recordSudoku } from '../../lib/gameProgress';
@@ -78,7 +79,7 @@ export default function SudokuPage() {
                 Bezárás
               </button>
               <a className="intro-kisokos" href="/kisokos?tab=sudoku" onClick={dismissIntro}>
-                <Icon src="/icons/Tutorial.png" size={18} className="icon-on-accent" />
+                <KisokosIcon size={18} />
                 Kisokos
               </a>
             </div>

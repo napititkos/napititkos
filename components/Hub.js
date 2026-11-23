@@ -24,7 +24,7 @@ export default function Hub() {
     if (status !== 'authenticated') return setDone({});
     const read = () => {
       const d = dailyDone(loadProgress(), todayStr());
-      setDone({ titkos: d.titkos, szo: d.szo, mini: d.mini, sudoku6: d.sudoku6, sudoku9: d.sudoku9 });
+      setDone({ titkos: d.titkos, szo: d.szo, szolanc: d.szolanc, mini: d.mini, sudoku6: d.sudoku6, sudoku9: d.sudoku9 });
     };
     read();
     window.addEventListener('progress-synced', read);
@@ -40,6 +40,7 @@ export default function Hub() {
       <div className="hub">
         <GameTile game="titkos" big done={done.titkos} />
         <GameTile game="szo" big isNew done={done.szo} />
+        <GameTile game="szolanc" big isNew done={done.szolanc} />
         {/* Sudoku: két jelölődoboz (6×6 és 9×9), alattuk a méret, mindkettő a saját rejtvényére
             visz; ha az egyik kész, maga a csempe a másikra visz. */}
         <GameTile

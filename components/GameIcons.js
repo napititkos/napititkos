@@ -20,6 +20,26 @@ export function SzoIcon({ size = 64 }) {
   );
 }
 
+// Szólánc: három szó egymás alatt (BOLT → FOLT → FONT), a megváltozott betű kiemelve.
+export function SzolancIcon({ size = 64 }) {
+  const W = ['BOLT', 'FOLT', 'FONT'];
+  const changed = [[], [0], [2]];
+  return (
+    <svg width={size || undefined} height={size || undefined} viewBox="0 0 100 100" aria-hidden="true" className="game-icon">
+      {W.map((w, r) =>
+        Array.from(w).map((ch, c) => (
+          <g key={`${r}-${c}`}>
+            <rect x={6 + c * 23} y={8 + r * 30} width="20" height="24" rx="5" fill={changed[r].includes(c) ? 'var(--mini-active)' : 'var(--mini-sq)'} stroke="var(--mini-border)" strokeWidth="2" />
+            <text x={16 + c * 23} y={25 + r * 30} textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--mini-ink)" fontFamily="var(--font-baloo), sans-serif">
+              {ch}
+            </text>
+          </g>
+        ))
+      )}
+    </svg>
+  );
+}
+
 export function MiniIcon({ size = 64 }) {
   const G = ['SOK#', 'OKOS', 'KOS#', '#S##'];
   return (

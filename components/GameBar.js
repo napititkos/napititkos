@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
+import KisokosIcon from './KisokosIcon';
 import NotificationsButton from './NotificationsButton';
 import { ACHIEVEMENTS } from '../lib/achievements';
 import { loadProgress } from '../lib/progress';
@@ -72,16 +73,19 @@ export default function GameBar({ game = 'titkos', lbSize = null }) {
       clearTimeout(idle);
     };
   }, []);
-  const lbTab = ['mini', 'szo', 'sudoku'].includes(game) ? game : undefined;
-  const kisokos = ['mini', 'szo', 'sudoku'].includes(game) ? `/kisokos?tab=${game}` : '/kisokos';
+  const lbTab = ['mini', 'szo', 'sudoku', 'szolanc'].includes(game) ? game : undefined;
+  const kisokos = ['mini', 'szo', 'sudoku', 'szolanc'].includes(game) ? `/kisokos?tab=${game}` : '/kisokos';
+  const noLeaderboard = false;
   return (
     <div ref={rowRef} data-nosnippet="" className={`quick-row game-bar${compact >= 1 ? ' compact-home' : ''}${compact >= 2 ? ' compact-trophy' : ''}${compact >= 3 ? ' compact-tight' : ''}`}>
       <NotificationsButton />
+      {!noLeaderboard && (
       <button className="pill quick-pill" type="button" onClick={() => window.dispatchEvent(new CustomEvent('open-leaderboard', { detail: lbTab ? { tab: lbTab, size: lbSize } : {} }))}>
         <Icon src="/icons/Ranglista.png" size={16} className="quick-ico" /> Ranglista
       </button>
+      )}
       <a className="pill quick-pill" href={kisokos}>
-        <Icon src="/icons/Tutorial.png" size={15} className="quick-ico" /> Kisokos
+        <KisokosIcon size={15} className="quick-ico" /> Kisokos
       </a>
       <button className="pill quick-pill" type="button" aria-label={`Trófeák: ${count} / ${ACHIEVEMENTS.length} megszerezve`} title="Trófeák" onClick={() => window.dispatchEvent(new CustomEvent('open-achievements', { detail: { game } }))}>
         <Icon src="/icons/Trofeak.png" size={16} /> <span className="gb-trophy-count">{count}/{ACHIEVEMENTS.length}</span>

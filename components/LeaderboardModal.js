@@ -8,7 +8,7 @@ import FramedModal, { GAME_HREF } from './FramedModal';
 import { loadProgress } from '../lib/progress';
 import { dailyDone, nextGameHref } from '../lib/dailyDone';
 
-const LB_URL = (t, sz) => (t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : t === 'sudoku' ? `/api/sudoku/leaderboard?size=${sz}` : '/api/leaderboard');
+const LB_URL = (t, sz) => (t === 'mini' ? '/api/mini/leaderboard' : t === 'szo' ? '/api/szo/leaderboard' : t === 'szolanc' ? '/api/szolanc/leaderboard' : t === 'sudoku' ? `/api/sudoku/leaderboard?size=${sz}` : '/api/leaderboard');
 // A ranglista fülének megfelelő napi játék (a „Következő játék” gombhoz).
 const DONE_KEY = (t, sz) => (t === 'daily' ? 'titkos' : t === 'sudoku' ? (sz === 9 ? 'sudoku9' : 'sudoku6') : t);
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -31,6 +31,14 @@ export default function LeaderboardModal() {
   const [miniLive, setMiniLive] = useState(true);
   // Sudoku: 6x6 / 9x9 választó a kereten belül (a fejléc nem változik); 9x9-ből nyitva a 9x9-es.
   const [sudSize, setSudSize] = useState(6);
+  // A kiválasztott fül mindig látszik a görgethető fülsorban.
+  const tabsRef = useRef(null);
+  useEffect(() => {
+    const box = tabsRef.current;
+    const on = box?.querySelector('[aria-selected="true"]');
+    if (!box || !on) return;
+    box.scrollLeft = Math.max(0, on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2);
+  });
   // Megfejtés után magától nyílt (felúszik).
   const [rise, setRise] = useState(false);
   // Visszaszámláló a nullázódásig (titkosírás: éjfél, óra:perc:mp; mini: hétfő 0:00, nap/óra/perc).
@@ -67,7 +75,7 @@ export default function LeaderboardModal() {
     async function handleOpen(e) {
       const name = session?.user?.name || getIdentity().name;
       setMyName(name);
-      const t = ['mini', 'szo', 'sudoku'].includes(e?.detail?.tab) ? e.detail.tab : 'daily';
+      const t = ['mini', 'szo', 'sudoku', 'szolanc'].includes(e?.detail?.tab) ? e.detail.tab : 'daily';
       const sz = Number(e?.detail?.size) === 9 ? 9 : 6;
       // Megfejtés után: csak akkor nyílik meg (felúszva), ha a játékos dobogós és már legalább 5
       // megfejtés van; ilyenkor a lista már betöltve érkezik (nem villan a „Betöltés...”).
@@ -108,9 +116,11 @@ export default function LeaderboardModal() {
   const doneHere = !!dailyDone(prog)[DONE_KEY(tab, sudSize)];
   const myRank = entries ? entries.findIndex((x) => myName && x.name === myName) : -1;
   const podium = myRank >= 0 && myRank < 3;
+  // Rögzített sorrend (a főoldaléval egyezik), bármelyik játékból nyílik is.
   const TABS = [
     ['daily', 'Titkosírás'],
     ['szo', 'Szókereső'],
+    ['szolanc', 'Szólánc'],
     ['sudoku', 'Sudoku'],
     ['mini', 'Heti Mini'],
   ];
@@ -143,7 +153,7 @@ export default function LeaderboardModal() {
             {`Nullázódik: ${tab === 'mini' ? fmtDHM(msUntilMonday(new Date(tick))) : fmtHMS(msUntilMidnight(new Date(tick)))} múlva`}
           </p>
           {(miniLive || tab !== 'daily') && (
-            <div className="lb-tabs" role="tablist" aria-label="Ranglista választása">
+            <div className="lb-tabs" role="tablist" aria-label="Ranglista választása" ref={tabsRef}>
               {TABS.map(([v, label]) => (
                 <button
                   key={v}
@@ -187,7 +197,7 @@ export default function LeaderboardModal() {
       )}
       {entries === null && <p className="fm-loading">Betöltés...</p>}
       {entries && entries.length === 0 && (
-        <p className="fm-empty">{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : tab === 'szo' ? 'Ma még senki nem talált szót - légy te az első!' : tab === 'sudoku' ? 'Ma még senki nem oldotta meg - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>
+        <p className="fm-empty">{tab === 'mini' ? 'Ezen a héten még senki nem fejtette meg - légy te az első!' : tab === 'szo' ? 'Ma még senki nem talált szót - légy te az első!' : tab === 'szolanc' ? 'Ma még senki nem fejtette meg - légy te az első!' : tab === 'sudoku' ? 'Ma még senki nem oldotta meg - légy te az első!' : 'Ma még senki nem fejtette meg - légy te az első!'}</p>
       )}
       {entries && entries.length > 0 && (
         <div className="lb-list">
@@ -209,7 +219,7 @@ export default function LeaderboardModal() {
                   <span className="lb-name">{e.name}</span>
                 </span>
                 <span className="lb-entry-res">
-                  {tab === 'mini' || tab === 'sudoku' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.points} pont · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
+                  {tab === 'mini' || tab === 'sudoku' ? formatTime(e.elapsed) : tab === 'szo' ? `${e.points} pont · ${formatTime(e.elapsed)}` : tab === 'szolanc' ? `${e.steps} lépés · ${formatTime(e.elapsed)}` : `${e.hintsUsed} tipp · ${formatTime(e.elapsed)}`}
                 </span>
               </div>
             );

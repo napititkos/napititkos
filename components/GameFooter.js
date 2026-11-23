@@ -1,14 +1,15 @@
 'use client';
 import Logo from './Logo';
 import Icon from './Icon';
-import { MiniIcon, SudokuIcon, SzoIcon } from './GameIcons';
-import { MiniWordmark, SudokuWordmark, SzoWordmark, TitkosWordmark } from './Wordmark';
+import { MiniIcon, SudokuIcon, SzoIcon, SzolancIcon } from './GameIcons';
+import { MiniWordmark, SudokuWordmark, SzoWordmark, TitkosWordmark, SzolancWordmark } from './Wordmark';
 
 // A játékok alja: a játékhoz tartozó archívum és közösségi csempe (ha van), alatta a másik két
 // játék csempéje.
 const GAMES = {
   titkos: { href: '/titkosiras', title: 'Titkosírás', sub: 'Minden nap új kriptikus rejtvény' },
   szo: { href: '/szokereso', title: 'Szókereső', sub: 'Minden nap új!' },
+  szolanc: { href: '/szolanc', title: 'Szólánc', sub: 'Minden nap új!' },
   sudoku: { href: '/sudoku', title: 'Sudoku', sub: 'Minden nap új!' },
   mini: { href: '/mini', title: 'Heti Mini', sub: 'Hétfőnként új keresztrejtvény!' },
 };
@@ -25,9 +26,9 @@ const CheckMark = () => (
 export function GameTile({ game, isNew = false, big = false, done = false, href = null, checks = null }) {
   const g = GAMES[game];
   const tile = (
-    <a className={`card game-tile${big ? ' game-tile-big' : ''}`} href={href || g.href} aria-label={`${g.title} – ${g.sub}`}>
+    <a className={`card game-tile game-tile-${game}${big ? ' game-tile-big' : ''}`} href={href || g.href} aria-label={`${g.title} – ${g.sub}`}>
       {/* A logók betűrácsai és a díszfeliratok ne kerüljenek a keresők találati szövegébe. */}
-      <span className="game-tile-icon" data-nosnippet="">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : game === 'sudoku' ? <SudokuIcon size={null} /> : <MiniIcon size={null} />}</span>
+      <span className="game-tile-icon" data-nosnippet="">{game === 'titkos' ? <Logo size={null} className="game-tile-logo" /> : game === 'szo' ? <SzoIcon size={null} /> : game === 'sudoku' ? <SudokuIcon size={null} /> : game === 'szolanc' ? <SzolancIcon size={null} /> : <MiniIcon size={null} />}</span>
       {/* Főoldalon: lekerekített sarkú fekete négyzet a csempe jobb szélén; teljesítéskor benne a pipa. */}
       {big && !checks && (
         <span className={`game-tile-check${done ? ' done' : ''}`} role="img" aria-label={done ? 'Teljesítve' : 'Még nincs teljesítve'}>
@@ -35,7 +36,7 @@ export function GameTile({ game, isNew = false, big = false, done = false, href 
         </span>
       )}
       <span className="game-tile-text">
-        <span className="game-tile-word" data-nosnippet="">{game === 'titkos' ? <TitkosWordmark ring={false} /> : game === 'szo' ? <SzoWordmark ring={false} /> : game === 'sudoku' ? <SudokuWordmark ring={false} /> : <MiniWordmark ring={false} />}</span>
+        <span className="game-tile-word" data-nosnippet="">{game === 'titkos' ? <TitkosWordmark ring={false} /> : game === 'szo' ? <SzoWordmark ring={false} /> : game === 'sudoku' ? <SudokuWordmark ring={false} /> : game === 'szolanc' ? <SzolancWordmark ring={false} /> : <MiniWordmark ring={false} />}</span>
         <span className="game-tile-sub">{g.sub}</span>
       </span>
     </a>

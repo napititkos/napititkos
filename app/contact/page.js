@@ -1,4 +1,4 @@
-export const metadata = { title: 'Kapcsolat - Titkosírás' };
+export const metadata = { title: { absolute: 'Napititkos.hu - Kapcsolat' }, alternates: { canonical: '/contact' }, robots: { index: false, follow: true } };
 
 export default function ContactPage() {
   return (
