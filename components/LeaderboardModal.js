@@ -31,14 +31,23 @@ export default function LeaderboardModal() {
   const [miniLive, setMiniLive] = useState(true);
   // Sudoku: 6x6 / 9x9 választó a kereten belül (a fejléc nem változik); 9x9-ből nyitva a 9x9-es.
   const [sudSize, setSudSize] = useState(6);
-  // A kiválasztott fül mindig látszik a görgethető fülsorban.
+  // Megnyitáskor a fülsor úgy áll be, hogy az aktuális játék füle látsszon, és a lehető legtöbb fül
+  // egészben látsszon (a bal szélen mindig egész fül kezdődik). Utána nem görget magától: ha a
+  // felhasználó elgörgeti, ott marad.
   const tabsRef = useRef(null);
+  const [openSeq, setOpenSeq] = useState(0);
   useEffect(() => {
     const box = tabsRef.current;
     const on = box?.querySelector('[aria-selected="true"]');
     if (!box || !on) return;
-    box.scrollLeft = Math.max(0, on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2);
-  });
+    const right = on.offsetLeft + on.offsetWidth;
+    if (right <= box.clientWidth) return void (box.scrollLeft = 0);
+    // A legkisebb görgetés, amivel a kiválasztott fül jobb széle is látszik, egész fülhatárra kerekítve.
+    const need = right - box.clientWidth + 4;
+    const starts = [...box.querySelectorAll('button')].map((b) => b.offsetLeft - 2);
+    box.scrollLeft = starts.find((x) => x >= need && x <= on.offsetLeft) ?? need;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSeq]);
   // Megfejtés után magától nyílt (felúszik).
   const [rise, setRise] = useState(false);
   // Visszaszámláló a nullázódásig (titkosírás: éjfél, óra:perc:mp; mini: hétfő 0:00, nap/óra/perc).
@@ -91,9 +100,11 @@ export default function LeaderboardModal() {
         setEntries(list);
         setRise(true);
         setOpen(true);
+        setOpenSeq((x) => x + 1);
         return;
       }
       setRise(false);
+      setOpenSeq((x) => x + 1);
       setTab(t);
       setSudSize(sz);
       load(t, sz);

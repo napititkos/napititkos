@@ -888,7 +888,7 @@ export default function AdminApp({ section = 'home' }) {
 
       {section === 'home' && (
         <div className="admin-tiles">
-          {['puzzles', 'users', 'notifications', 'archive', 'mini', 'szo', 'sudoku'].map((k) => {
+          {['puzzles', 'users', 'notifications', 'archive', 'mini', 'szo', 'szolanc', 'sudoku'].map((k) => {
             const sec = ADMIN_SECTIONS[k];
             const count =
               k === 'puzzles'
