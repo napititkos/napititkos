@@ -86,7 +86,7 @@ export default function AdminSzolanc() {
                   {up(s.start)} → {up(s.end)}
                 </b>
                 <span className="mini-muted">
-                  {s.par} lépés · {s.paths} legrövidebb út
+                  {[...s.start].length} betű · {s.par} lépés · {s.paths} legrövidebb út
                 </span>
               </div>
               <ol className="szl-admin-paths">

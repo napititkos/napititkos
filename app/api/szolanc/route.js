@@ -4,7 +4,7 @@ import { todayStr, isValidDateStr } from '../../../lib/date';
 import { kv } from '../../../lib/kv';
 import { auth } from '../../../auth';
 import { actorFor } from '../../../lib/reactions';
-import { SZOLANC_START, szolancResKey } from '../../../lib/szolanc';
+import { SZOLANC_START, szolancResKey } from '../../../lib/szolancServer';
 import { szolancForDate } from '../../../lib/szolancStore';
 
 // A nap Szólánca (?date=ÉÉÉÉ-HH-NN: korábbi nap, jövőbeli nem): kezdő- és célszó, nehézség,

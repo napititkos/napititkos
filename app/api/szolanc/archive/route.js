@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { kv } from '../../../../lib/kv';
 import { auth } from '../../../../auth';
 import { todayStr } from '../../../../lib/date';
-import { SZOLANC_START, szolancResKey } from '../../../../lib/szolanc';
+import { SZOLANC_START, szolancResKey } from '../../../../lib/szolancServer';
 import { szolancForDate } from '../../../../lib/szolancStore';
 
 // A korábbi napok Szóláncai (az indulás óta, legfeljebb egy évre visszamenőleg), a saját

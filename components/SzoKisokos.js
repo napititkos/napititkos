@@ -14,7 +14,7 @@ const STEPS = [
   { target: '.szo-kisokos .szo-board', text: 'Új játékunk a Szókereső! Minden nap új 3×3-as rácsot kapsz, a te feladatod pedig, hogy megtaláld az összes szót. Egy betűt egyszer használhatsz; a betűket telefonon ujjal tudod összehúzni, számítógépen pedig az egér segítségével.' },
   { target: '.szo-kisokos .szo-words-btn', text: 'A Szavak listájánál láthatod az összesítést, nyomjunk rá!', wait: true },
   { target: '.szo-words-panel .szo-options', free: true, text: 'Itt láthatod a szavakat, amiket már megtaláltál, illetve azokat, amik még nincsenek meg. Tudsz segítséget is kérni ezeknek a dobozoknak a bepipálásával.' },
-  { target: '.szo-words-panel .szo-report', free: true, place: 'above', text: 'Ha problémát észlelsz, itt tudod jelezni.', closeAfter: true },
+  { target: '.szo-words-panel .szo-report-btn', free: true, place: 'above', text: 'Ha problémát észlelsz, itt tudod jelezni.', closeAfter: true },
   { target: '.szo-kisokos .szo-board', text: 'Azok a betűk, amelyekhez már nem tartozik meg nem talált szó, kifakulnak – így látod, merre érdemes még keresgélni.' },
   { target: '.szo-kisokos .szo-bar', text: 'A haladásmutatón csillagok vannak: ha eléred őket, jutalmat kapsz!', last: true },
 ];

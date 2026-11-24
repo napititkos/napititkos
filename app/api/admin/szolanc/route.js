@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { isAdminRequest } from '../../../../lib/adminAuth';
 import { todayStr, isValidDateStr } from '../../../../lib/date';
 import { readJson } from '../../../../lib/validate';
-import { allShortestPaths, generateSzolanc, isWord, levelOf, ladderInfo, suggestSzolanc, szolancLevel } from '../../../../lib/szolanc';
+import { allShortestPaths, generateSzolanc, isWord, levelOf, ladderInfo, suggestSzolanc, szolancLevel } from '../../../../lib/szolancServer';
 import { pickSzolanc, szolancSchedule, unpickSzolanc } from '../../../../lib/szolancStore';
 
 const unauthorized = () => Response.json({ error: 'unauthorized' }, { status: 401 });

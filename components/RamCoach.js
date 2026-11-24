@@ -79,12 +79,45 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
 
   if (typeof style.top === 'number' && boxH) style.top = Math.max(12, Math.min(style.top, vh - boxH - 12));
 
+  // A buborék soha ne takarja el, amiről beszél: ha a kiszámolt helyen ráesne a kiemelt elemre, a
+  // képernyőn elférő helyek közül (alatta, fölötte, a képernyő alján, tetején) az elsőt választjuk,
+  // amelyik nem fedi; ha egyik sem, azt, amelyik a legkevésbé.
+  if (rect && boxH && place !== 'bottom') {
+    const left = typeof style.left === 'number' ? style.left : (vw - width) / 2;
+    const topOf = (st) => (typeof st.top === 'number' ? st.top : vh - st.bottom - boxH);
+    const pad = 6;
+    const overlap = (t) => {
+      const x = Math.max(0, Math.min(left + width, rect.right + pad) - Math.max(left, rect.left - pad));
+      const y = Math.max(0, Math.min(t + boxH, rect.bottom + pad) - Math.max(t, rect.top - pad));
+      return x * y;
+    };
+    const fits = (t) => t >= 8 && t + boxH <= vh - 8;
+    if (overlap(topOf(style)) > 0 || !fits(topOf(style))) {
+      const cands = [rect.bottom + 12, rect.top - 12 - boxH, vh - boxH - 14, 12].filter(fits);
+      const best = cands.find((t) => overlap(t) === 0) ?? cands.sort((a, b) => overlap(a) - overlap(b))[0];
+      if (best != null) style = { left, top: best, width };
+    }
+  }
+
   // Egész képpontokra kerekítve: tört képpontos helyzetben a buborék kerete és a nyúlvány
   // élsimítása eltér, és a nyúlvány előtt halvány vonal látszik.
   style = Object.fromEntries(Object.entries(style).map(([k, v]) => [k, typeof v === 'number' ? Math.round(v) : v]));
   return createPortal(
     <>
-      {blocking && <div className="coach-blocker" aria-hidden="true" />}
+      {/* Ha van kiemelt elem, a környezete elhomályosul (a kiemelt rész lyukként tiszta marad). */}
+      {(blocking || rect) && (
+        <div
+          className={`coach-blocker${rect ? ' spot' : ''}${blocking ? '' : ' free'}`}
+          aria-hidden="true"
+          style={
+            rect
+              ? {
+                  clipPath: `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${Math.round(rect.left - 7)}px ${Math.round(rect.top - 7)}px, ${Math.round(rect.right + 7)}px ${Math.round(rect.top - 7)}px, ${Math.round(rect.right + 7)}px ${Math.round(rect.bottom + 7)}px, ${Math.round(rect.left - 7)}px ${Math.round(rect.bottom + 7)}px, ${Math.round(rect.left - 7)}px ${Math.round(rect.top - 7)}px)`,
+                }
+              : undefined
+          }
+        />
+      )}
       <div className="coach-wrap" ref={wrapRef} style={style} role="dialog" aria-live="polite" aria-label="A kos üzenete">
         <img className="coach-ram" src="/logo-96.png" alt="" aria-hidden="true" width={44} height={44} />
         <div className="coach-bubble">
