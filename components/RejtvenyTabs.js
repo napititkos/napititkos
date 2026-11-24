@@ -40,7 +40,15 @@ export function useRejtvenyTab() {
   return [tab, choose, ready];
 }
 
-export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false, withSudoku = false, withSzolanc = false }) {
+// asSelect: fülek helyett legördülő választó (mint a trófeáknál) – a Korábbi és a Közösségi oldalon.
+export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false, withSudoku = false, withSzolanc = false, asSelect = false }) {
+  const opts = [
+    ['titkos', labels.titkos],
+    ...(withSzo ? [['szo', labels.szo || 'Szókeresők']] : []),
+    ...(withSzolanc ? [['szolanc', labels.szolanc || 'Szólánc']] : []),
+    ['mini', labels.mini],
+    ...(withSudoku ? [['sudoku', labels.sudoku || 'Sudoku']] : []),
+  ];
   // Ha a fülek nem férnek ki (vízszintesen görgethetők), betöltéskor a kiválasztott fül látsszon;
   // utána nem görget magától.
   const ref = useRef(null);
@@ -52,6 +60,19 @@ export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkos
     if (right > box.clientWidth) box.scrollLeft = right - box.clientWidth + 4;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  if (asSelect)
+    return (
+      <label className="ach-filter rejtveny-select">
+        <span>Játék:</span>
+        <select className="pretty-select" value={tab} onChange={(e) => onChange(e.target.value)} aria-label="Rejtvénytípus">
+          {opts.map(([v, label]) => (
+            <option key={v} value={v}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
   return (
     <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus" ref={ref}>
       {[

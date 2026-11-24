@@ -18,8 +18,7 @@ export default function KisokosTabs() {
     <>
       {/* A játék választó egy sorban a vissza (Játék) gombbal, ami jobbra, eltérő színnel áll. */}
       <div className="kisokos-tabrow">
-        {/* A Szólánc (prototípus) fülét csak a ?tab=szolanc linkről érkezők látják. */}
-        <RejtvenyTabs tab={tab} onChange={setTab} labels={{ titkos: 'Titkosírás', szo: 'Szókereső', mini: 'Mini', sudoku: 'Sudoku', ...(tab === 'szolanc' ? { szolanc: 'Szólánc' } : {}) }} withSzo withSudoku withSzolanc={tab === 'szolanc'} />
+        <RejtvenyTabs tab={tab} onChange={setTab} labels={{ titkos: 'Titkosírás', szo: 'Szókereső', szolanc: 'Szólánc', mini: 'Mini', sudoku: 'Sudoku' }} withSzo withSudoku withSzolanc />
         <BackButton pill className="kisokos-back" />
       </div>
       {tab === 'mini' ? <MiniKisokos /> : tab === 'szo' ? <SzoKisokos /> : tab === 'sudoku' ? <SudokuKisokos /> : tab === 'szolanc' ? <SzolancKisokos /> : <TutorialContent />}

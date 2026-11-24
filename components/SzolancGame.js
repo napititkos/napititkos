@@ -4,7 +4,7 @@ import GameHead from './GameHead';
 import CopyResultButton from './CopyResultButton';
 import { fireConfetti } from './Confetti';
 import { useWinWave, diagFromBottomLeft } from '../lib/winWave';
-import { isWord, oneLetterApart, shortestPath } from '../lib/szolanc';
+import { hasSzolancLength, isWord, oneLetterApart, shortestPath } from '../lib/szolanc';
 
 // Szólánc (prototípus): a kezdőszóból a célszóba kell eljutni; minden lépésben pontosan egy betű
 // változik (a helye marad), és minden közbülső alak létező szó (ragozott alak is lehet).
@@ -21,7 +21,6 @@ const KEYBOARD = [
   ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
   ['y', 'x', 'c', 'v', 'b', 'n', 'm'],
 ];
-const N = 4;
 const LETTERS = new Set(KEYBOARD.flat());
 const fmt = (ms) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -38,6 +37,8 @@ const loadAll = () => {
 // compact: korábbi Szólánc az archívumban (nincs fejléc, a haladás nem mentődik, csak a teljesítés).
 export default function SzolancGame({ data, preview = false, compact = false, onSolved }) {
   const { date, start, end, par, paths, level, number } = data;
+  // A szavak hossza (3, 4 vagy 5 betű) a feladványtól függ.
+  const N = [...start].length;
   const saved = useMemo(() => (preview || compact ? {} : loadAll()[date] || {}), [date, preview, compact]);
   // Ha a szerver szerint a szereplő már megfejtette (más eszközön, vagy bejelentkezés előtt), a
   // megfejtett lánc jelenik meg, és nem tölthető ki újra.
@@ -135,14 +136,26 @@ export default function SzolancGame({ data, preview = false, compact = false, on
     setMsg(null);
     setTyped((t) => [...t].slice(0, -1).join(''));
   }, [solved]);
-  const submit = useCallback(() => {
-    if (solved) return;
+  // Az 5 betűs szavak listája csak a szerveren van: ott a szerver ellenőrzi a szót.
+  const checking = useRef(false);
+  const submit = useCallback(async () => {
+    if (solved || checking.current) return;
     const next = typed;
-    if ([...next].length < N) return flash('Írj be egy 4 betűs szót!', 'info');
+    if ([...next].length < N) return flash(`Írj be egy ${N} betűs szót!`, 'info');
     if (next === last) return flash('Változtass meg egy betűt!', 'info');
     if (!oneLetterApart(last, next)) return flash('Csak egy betűt változtathatsz meg!');
     // Egy korábbi szó újra beírható (így lehet visszalépni; minden beírás egy lépésnek számít).
-    if (!isWord(next)) return flash(`„${next.toUpperCase()}” nincs a szótárunkban.`);
+    let ok = hasSzolancLength(N) ? isWord(next) : false;
+    if (!hasSzolancLength(N)) {
+      checking.current = true;
+      try {
+        ok = !!(await (await fetch(`/api/szolanc/check?w=${encodeURIComponent(next)}`)).json()).ok;
+      } catch {
+        ok = false;
+      }
+      checking.current = false;
+    }
+    if (!ok) return flash(`„${next.toUpperCase()}” nincs a szótárunkban.`);
     const nc = [...chain, next];
     setChain(nc);
     setTyped('');
@@ -154,7 +167,7 @@ export default function SzolancGame({ data, preview = false, compact = false, on
       fireConfetti();
       onSolved && onSolved({ steps: nc.length - 1, elapsed: el, chain: nc });
     }
-  }, [solved, typed, last, chain, end, playWave, onSolved]);
+  }, [solved, typed, last, chain, end, playWave, onSolved, N]);
 
   // Gépi billentyűzet: betűk, Backspace (betű törlése), Enter (beküldés).
   useEffect(() => {
@@ -180,13 +193,13 @@ export default function SzolancGame({ data, preview = false, compact = false, on
     return () => window.removeEventListener('keydown', onKey);
   }, [type, erase, submit]);
 
-  const best = useMemo(() => (solved ? shortestPath(start, end) : []), [solved, start, end]);
+  const best = useMemo(() => (solved && hasSzolancLength(N) ? shortestPath(start, end) : []), [solved, start, end, N]);
   const steps = data.mine && !serverChain && chain.length === 2 ? data.mine.steps : chain.length - 1;
   const rows = [...chain, ...(solved ? [] : [end])];
   const dayLabel = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
   return (
-    <div className="szolanc">
+    <div className="szolanc" style={{ '--szl-n': N }}>
       {!preview && !compact && <GameHead title="Napi Szólánc" number={number} level={level} dateLabel={dayLabel} time={fmt(elapsed)} />}
       {/* Fent a kezdőszó, alatta a lánc, utána (amíg nincs kész) az üres sor, legalul a célszó. */}
       <div ref={boardRef} className={`szl-board${wave ? ' win-wave' : ''}`} role="list" aria-label="A szólánc">

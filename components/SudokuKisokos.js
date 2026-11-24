@@ -7,7 +7,7 @@ import { generateSudoku } from '../lib/sudokuGen';
 // Kisokos – Sudoku: a kos néhány üzenetben bemutatja a játékot egy könnyű gyakorló rejtvényen
 // (mentés nélkül).
 const STEPS = [
-  { target: '.sudoku-kisokos .sudoku-board', text: 'Új játékunk a Sudoku! Minden nap új 6×6-os rácsot kapsz: minden sorba, minden oszlopba és minden vastagabb vonallal határolt 2×3-as dobozba az 1–6 számok kerülnek, mindegyik pontosan egyszer.' },
+  { target: '.sudoku-kisokos .sudoku-board', text: 'Minden nap új 6×6-os rácsot kapsz: minden sorba, minden oszlopba és minden vastagabb vonallal határolt 2×3-as dobozba az 1–6 számok kerülnek, mindegyik pontosan egyszer.' },
   { target: '.sudoku-kisokos .sudoku-pad', text: 'Válassz egy cellát, majd nyomj egy számra. Gépen a billentyűzettel is beírhatod. A Törlés kitörli a cellát, a Vissza visszavonja az utolsó lépést, és egy beírt számot bármikor felülírhatsz.' },
   { target: '.sudoku-kisokos .sudoku-key.note', text: 'A Jegyzet bekapcsolásával kis számokat írhatsz egy cellába: azokat, amelyek még szóba jöhetnek.' },
   { target: '.sudoku-kisokos .sudoku-key.multi', text: 'A Kijelölés bekapcsolásával egyszerre több cellát is kijelölhetsz (koppintással ki-be), és amit beírsz, mindegyikbe bekerül – jegyzetnél is.' },

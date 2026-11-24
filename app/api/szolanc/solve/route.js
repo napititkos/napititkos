@@ -6,7 +6,7 @@ import { todayStr, isValidDateStr } from '../../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../../lib/rateLimit';
 import { cleanName, readJson } from '../../../../lib/validate';
 import { actorFor } from '../../../../lib/reactions';
-import { SZOLANC_LB_TTL, SZOLANC_START, checkChain, szolancLbKey, szolancLbNamesKey, szolancResKey } from '../../../../lib/szolanc';
+import { SZOLANC_LB_TTL, SZOLANC_START, checkChain, szolancLbKey, szolancLbNamesKey, szolancResKey } from '../../../../lib/szolancServer';
 import { szolancForDate } from '../../../../lib/szolancStore';
 
 // Szólánc megoldás beküldése: { date, chain[], elapsed, device, name? }. A szerver előveszi a nap

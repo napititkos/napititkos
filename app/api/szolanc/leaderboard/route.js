@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { kv } from '../../../../lib/kv';
 import { todayStr } from '../../../../lib/date';
-import { szolancLbKey, szolancLbNamesKey } from '../../../../lib/szolanc';
+import { szolancLbKey, szolancLbNamesKey } from '../../../../lib/szolancServer';
 
 // A mai Szólánc ranglistája: előbb a kevesebb lépés, azonos lépésszámnál a gyorsabb idő.
 // A ranglista nem kerülhet a CDN gyorsítótárába: különben a megfejtés után (akár 20 mp-ig) a

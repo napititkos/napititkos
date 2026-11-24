@@ -11,6 +11,19 @@ import { CoachTail } from './RamNote';
 //   blink:  CSS-szelektor, amely villog (pl. a gomb, amit meg kell nyomni)
 //   onOk:   ha nincs megadva, nincs gomb (a felhasználónak a kiemelt elemet kell használnia)
 //   scroll: false esetén nem görget a célhoz (az oldal ott marad, ahol a felhasználó hagyta)
+// A homályosító réteg „lyuka” a kiemelt elem körül: lekerekített téglalap, akkora ráhagyással,
+// hogy a villogó gomb lüktető fénye és nagyobbodása is beleférjen (ne vágódjon le szögletesen).
+function holePath(r, vw, vh) {
+  const pad = 13;
+  const x = Math.round(r.left - pad);
+  const y = Math.round(r.top - pad);
+  const w = Math.round(r.width + 2 * pad);
+  const h = Math.round(r.height + 2 * pad);
+  const k = Math.min(20, h / 2, w / 2);
+  const hole = `M${x + k} ${y}H${x + w - k}A${k} ${k} 0 0 1 ${x + w} ${y + k}V${y + h - k}A${k} ${k} 0 0 1 ${x + w - k} ${y + h}H${x + k}A${k} ${k} 0 0 1 ${x} ${y + h - k}V${y + k}A${k} ${k} 0 0 1 ${x + k} ${y}Z`;
+  return `path(evenodd, "M0 0H${vw}V${vh}H0Z ${hole}")`;
+}
+
 export default function RamCoach({ target, place = 'below', children, okLabel = 'Értem', onOk, blocking = true, blink, scroll = true }) {
   const [rect, setRect] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -25,6 +38,15 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     if (h && Math.abs(h - boxH) > 1) setBoxH(h);
   });
   useEffect(() => setMounted(true), []);
+  // Lépésenként egyszer: ha a buborék csak görgetéssel fér el a kiemelt elem alatt, odagörgetünk.
+  const scrolledFor = useRef(null);
+  const pendingScroll = useRef(null);
+  useEffect(() => {
+    const dy = pendingScroll.current;
+    if (dy == null || scrolledFor.current === target) return;
+    scrolledFor.current = target;
+    if (Math.abs(dy) > 4) window.scrollBy({ top: dy, behavior: 'smooth' });
+  });
 
   useLayoutEffect(() => {
     let raf = 0;
@@ -42,6 +64,11 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     // Először azonnal (animáció nélkül) a célhoz görgetünk, hogy az üzenet ne "csússzon" utána.
     const first = target ? document.querySelector(target) : null;
     if (scroll && first && place !== 'bottom' && place !== 'side') first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    else if (first) {
+      // Ha a kiemelt elem nem látszik egészben (pl. lejjebb van az oldalon), mindenképp odagörgetünk.
+      const r = first.getBoundingClientRect();
+      if (r.top < 8 || r.bottom > window.innerHeight - 8) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
     measure();
     const id = setInterval(measure, 400);
     const onMove = () => {
@@ -79,12 +106,57 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
 
   if (typeof style.top === 'number' && boxH) style.top = Math.max(12, Math.min(style.top, vh - boxH - 12));
 
+  // A buborék soha ne takarja el, amiről beszél: ha a kiszámolt helyen ráesne a kiemelt elemre, a
+  // képernyőn elférő helyek közül (alatta, fölötte, a képernyő alján, tetején) az elsőt választjuk,
+  // amelyik nem fedi; ha egyik sem, azt, amelyik a legkevésbé.
+  let wantScroll = null;
+  if (rect && boxH && place !== 'bottom') {
+    const left = typeof style.left === 'number' ? style.left : (vw - width) / 2;
+    const topOf = (st) => (typeof st.top === 'number' ? st.top : vh - st.bottom - boxH);
+    const pad = 6;
+    const overlap = (t) => {
+      const x = Math.max(0, Math.min(left + width, rect.right + pad) - Math.max(left, rect.left - pad));
+      const y = Math.max(0, Math.min(t + boxH, rect.bottom + pad) - Math.max(t, rect.top - pad));
+      return x * y;
+    };
+    const fits = (t) => t >= 8 && t + boxH <= vh - 8;
+    if (overlap(topOf(style)) > 0 || !fits(topOf(style))) {
+      const cands = [rect.bottom + 12, rect.top - 12 - boxH, vh - boxH - 14, 12].filter(fits);
+      let best = cands.find((t) => overlap(t) === 0) ?? cands.sort((a, b) => overlap(a) - overlap(b))[0];
+      if (best != null) style = { left, top: best, width };
+      // Széles képernyőn a kiemelt elem mellé (jobbra vagy balra), ha ott elfér.
+      if ((best == null || overlap(best) > 0) && boxH) {
+        const sideTop = Math.max(12, Math.min(rect.top, vh - boxH - 12));
+        if (vw - rect.right >= width + 28) {
+          style = { left: rect.right + 16, top: sideTop, width };
+          best = -1;
+        } else if (rect.left >= width + 28) {
+          style = { left: rect.left - width - 16, top: sideTop, width };
+          best = -1;
+        }
+      }
+      // Ha így is fedné, de a kiemelt elem és a buborék egymás alatt elfér a képernyőn, az oldalt
+      // úgy görgetjük, hogy a kiemelt elem felülre kerüljön, a buborék pedig alá.
+      if (best !== -1 && (best == null || overlap(best) > 0)) {
+        if (rect.height + boxH + 40 <= vh) wantScroll = rect.top - 14;
+      }
+    }
+  }
+
+  pendingScroll.current = wantScroll;
   // Egész képpontokra kerekítve: tört képpontos helyzetben a buborék kerete és a nyúlvány
   // élsimítása eltér, és a nyúlvány előtt halvány vonal látszik.
   style = Object.fromEntries(Object.entries(style).map(([k, v]) => [k, typeof v === 'number' ? Math.round(v) : v]));
   return createPortal(
     <>
-      {blocking && <div className="coach-blocker" aria-hidden="true" />}
+      {/* Ha van kiemelt elem, a környezete elhomályosul (a kiemelt rész lyukként tiszta marad). */}
+      {(blocking || rect) && (
+        <div
+          className={`coach-blocker${rect ? ' spot' : ''}${blocking ? '' : ' free'}`}
+          aria-hidden="true"
+          style={rect ? { clipPath: holePath(rect, vw, vh) } : undefined}
+        />
+      )}
       <div className="coach-wrap" ref={wrapRef} style={style} role="dialog" aria-live="polite" aria-label="A kos üzenete">
         <img className="coach-ram" src="/logo-96.png" alt="" aria-hidden="true" width={44} height={44} />
         <div className="coach-bubble">

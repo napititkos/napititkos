@@ -2315,3 +2315,15 @@ button.szl-key.wide{ flex: 0 0 54px; }
 .kisokos-tabrow .rejtveny-tabs{ flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 4px 2px; margin: -4px 0; position: relative; }
 .kisokos-tabrow .rejtveny-tabs::-webkit-scrollbar{ display: none; }
 .kisokos-tabrow .rejtveny-tabs button{ flex: none; white-space: nowrap; }
+/* Szólánc: 3, 4 vagy 5 betűs szavak (a sorok oszlopszáma a szóhosszhoz igazodik). */
+.szolanc .szl-row{ grid-template-columns: repeat(var(--szl-n, 4), 1fr); }
+.szolanc .szl-board{ width: min(100%, calc(var(--szl-n, 4) * 75px)); }
+/* Kisokos: amikor a kos egy elemre mutat, a környezete elhomályosul (a kiemelt elem tiszta marad). */
+.coach-blocker.spot{ -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); background: rgba(31, 26, 43, 0.24); }
+@media (prefers-color-scheme: dark){ .coach-blocker.spot{ background: rgba(0, 0, 0, 0.42); } }
+/* Korábbi és Közösségi: balra a legördülő játékválasztó, jobbra a Játék (vissza) gomb. */
+.kisokos-tabrow:has(.rejtveny-select) .back-pill{ order: 0; margin-left: auto; }
+.kisokos-tabrow .rejtveny-select{ margin: 0; min-width: 0; flex: 0 1 auto; }
+.kisokos-tabrow .rejtveny-select select{ max-width: 200px; }
+/* Szabadon használható Kisokos-lépésnél a homályosítás nem fogja el a kattintásokat. */
+.coach-blocker.free{ pointer-events: none; }

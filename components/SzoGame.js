@@ -438,7 +438,7 @@ export default function SzoGame({ data, onComplete, preview = false, showReport 
                 Bezárás
               </button>
               {showReport && (
-                <button type="button" className={`ghost${reporting ? ' on' : ''}`} aria-pressed={reporting} onClick={() => setReporting((x) => !x)}>
+                <button type="button" className={`ghost szo-report-btn${reporting ? ' on' : ''}`} aria-pressed={reporting} onClick={() => setReporting((x) => !x)}>
                   Problémád van?
                 </button>
               )}
