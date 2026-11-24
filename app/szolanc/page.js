@@ -24,9 +24,12 @@ export default function SzolancPage() {
       const q = new URLSearchParams(window.location.search).get('d');
       if (/^\d{4}-\d{2}-\d{2}$/.test(q || '')) d = q;
     } catch {}
-    fetch(`/api/szolanc?date=${d}`, { cache: 'no-store' })
+    fetch(`/api/szolanc?date=${d}&device=${deviceId()}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((p) => setData(p || { error: true }))
+      .then((p) => {
+        if (p?.mine) recordSzolanc(p.date);
+        setData(p || { error: true });
+      })
       .catch(() => setData({ error: true }));
   }, []);
   function solved({ chain, elapsed }) {

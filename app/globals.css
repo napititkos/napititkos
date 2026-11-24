@@ -2279,11 +2279,6 @@ button.szl-key.enter{ background: var(--btn-primary); border-color: var(--btn-pr
 @media (prefers-reduced-motion: reduce){ .szl-row.input, .szl-row.fresh{ animation: none; } }
 /* Ranglista: a fülek emelkedő animációja ne vágódjon le a görgethető fülsor tetején. */
 .framed-modal .lb-tabs{ padding: 4px 2px 4px; margin-top: -8px; margin-bottom: 8px; }
-/* SZÓLÁNC fejléc: a láthatatlan KERESŐ adja a szélességet, rajta balra a LÁNC. */
-.bf-overlay{ display: inline-grid; }
-.bf-overlay > span{ grid-area: 1 / 1; }
-.bf-overlay > .bf-ghost{ visibility: hidden; }
-.bf-overlay > .bf-real{ justify-self: start; }
 /* Kisokos gomb: a kérdőjel a gomb bal oldali félkörének közepe felé tolva (a közepén nem túl). */
 .quick-pill .kisokos-ico{ transform: translateX(-5.5px); }
 @media (max-width: 420px){ .quick-pill .kisokos-ico{ transform: translateX(-1.5px); } }
@@ -2302,3 +2297,15 @@ button.szl-key.erase{ background: var(--accent-soft); border-color: var(--accent
 .szolanc .game-head + .szl-board{ margin-top: 14px; }
 button.szl-key.wide{ flex: 0 0 54px; }
 @media (max-width: 380px){ button.szl-key.wide{ flex-basis: 46px; } }
+/* Szólánc: a billentyűzet a képernyő aljára rögzítve, amíg nincs kész (a kártya szélességében). */
+.szl-keys.fixed{
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 60;
+  width: min(calc(100% - 16px), 560px); box-sizing: border-box;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--card);
+  border: 2px solid var(--line); border-bottom: none; border-radius: 16px 16px 0 0;
+  box-shadow: 0 -6px 18px rgba(31, 26, 43, 0.14);
+}
+@media (prefers-color-scheme: dark){ .szl-keys.fixed{ box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.5); } }
+.szl-keys-spacer{ flex: none; }
+.szl-keys .szl-msg{ margin: 0 0 4px; min-height: 20px; }
+.szolanc .szl-board + .szl-keys-spacer, .szolanc .szl-board + .szl-keys{ margin-top: 10px; }
