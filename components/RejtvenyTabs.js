@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Korábbi és Közösségi rejtvények: választó a fejlécben (Titkosírások / Minik), csak a mini
 // élesítése után. A kiválasztott fül az URL-ben is megmarad (?tab=mini), így a link megosztható.
@@ -41,8 +41,19 @@ export function useRejtvenyTab() {
 }
 
 export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkosírások', mini: 'Minik' }, withSzo = false, withSudoku = false, withSzolanc = false }) {
+  // Ha a fülek nem férnek ki (vízszintesen görgethetők), betöltéskor a kiválasztott fül látsszon;
+  // utána nem görget magától.
+  const ref = useRef(null);
+  useEffect(() => {
+    const box = ref.current;
+    const on = box?.querySelector('[aria-selected="true"]');
+    if (!box || !on || box.scrollWidth <= box.clientWidth) return;
+    const right = on.offsetLeft + on.offsetWidth;
+    if (right > box.clientWidth) box.scrollLeft = right - box.clientWidth + 4;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
-    <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus">
+    <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus" ref={ref}>
       {[
         ['titkos', labels.titkos],
         ...(withSzo ? [['szo', labels.szo || 'Szókeresők']] : []),
