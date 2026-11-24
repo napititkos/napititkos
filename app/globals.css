@@ -2309,3 +2309,9 @@ button.szl-key.wide{ flex: 0 0 54px; }
 .szl-keys-spacer{ flex: none; }
 .szl-keys .szl-msg{ margin: 0 0 4px; min-height: 20px; }
 .szolanc .szl-board + .szl-keys-spacer, .szolanc .szl-board + .szl-keys{ margin-top: 10px; }
+/* Korábbi rejtvények, Kisokos, Közösségi: a Vissza gomb elöl (balra) rögzítve, mellette a
+   játékválasztó fülek vízszintesen görgethetők, ha nem férnek ki. */
+.kisokos-tabrow .back-pill{ order: -1; margin-left: 0; flex-shrink: 0; }
+.kisokos-tabrow .rejtveny-tabs{ flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 4px 2px; margin: -4px 0; position: relative; }
+.kisokos-tabrow .rejtveny-tabs::-webkit-scrollbar{ display: none; }
+.kisokos-tabrow .rejtveny-tabs button{ flex: none; white-space: nowrap; }

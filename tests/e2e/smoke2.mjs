@@ -1906,6 +1906,20 @@ section('Szólánc: már megfejtett állapot a szerverről (más eszközön és 
   check('a fiókkal másik eszközön is megfejtettként jön', j.mine?.steps === best.length - 1 && Array.isArray(j.mine.chain));
 }
 
+section('Ranglisták: nem kerülhetnek CDN-gyorsítótárba (különben megfejtés után nem látszik az új eredmény)');
+for (const u of ['/api/leaderboard', '/api/szo/leaderboard', '/api/szolanc/leaderboard', '/api/sudoku/leaderboard', '/api/sudoku/leaderboard?size=9', '/api/mini/leaderboard']) {
+  const rr = await fetch(BASE + u);
+  check(`${u}: Cache-Control no-store`, /no-store/.test(rr.headers.get('cache-control') || ''), rr.headers.get('cache-control'));
+}
+{
+  // sudoku: megfejtés után azonnal rajta van a ranglistán
+  const s6 = await (await fetch(BASE + '/api/sudoku')).json();
+  const st6 = JSON.parse(await redis.get('sudoku:puzzle:' + s6.date));
+  const rr = await post('/api/sudoku/solve', { date: s6.date, size: 6, grid: st6.solution, elapsed: 77000, device: '9c'.repeat(16), name: 'Azonnal Anna' });
+  const lb = await (await fetch(BASE + '/api/sudoku/leaderboard')).json();
+  check('sudoku: a megfejtő azonnal a ranglistán', rr.status === 200 && lb.entries.some((e) => e.name === 'Azonnal Anna'));
+}
+
 section('Szólánc archívum');
 {
   let rr = await fetch(BASE + '/api/szolanc/archive');

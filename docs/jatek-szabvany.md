@@ -54,6 +54,10 @@ léteznek, újra kell használni őket, nem újat írni.
 - **A Régész** (Általános): a Korábbi rejtvények oldal meglátogatásáért (`recordArchiveVisit`).
 - **Linkes trófeák:** a trófeán `link` mező → gomb a megfelelő oldalra (alapból ceruza, `linkIcon`
   megadásával más ikon, pl. a Régésznél a Korábbi rejtvények doboza).
+- **Megosztási kép (kötelező):** minden játékoldalnak legyen `opengraph-image.js`-e a fejléc
+  feliratával (`lib/ogWordmark.js`, `OG.<játék>`).
+- **Ranglista API:** `Cache-Control: no-store` (CDN-gyorsítótár nélkül), különben megfejtés után a
+  játékos egy ideig nem látja magát a listán.
 - **Egyszer fejthető meg (kötelező):** a megfejtést a szerver rögzíti a szereplőhöz (fiók, vendégként
   az eszköz), és a napi feladvány lekérésekor (`?device=…`) visszaadja a saját eredményt. Ha van, a
   játék megfejtett állapotban jelenik meg, és nem tölthető ki újra – más eszközön és bejelentkezés

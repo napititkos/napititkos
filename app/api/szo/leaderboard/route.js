@@ -7,6 +7,8 @@ import { szoLbKey, szoLbNamesKey } from '../../../../lib/szo';
 
 // A mai szókereső ranglistája: elöl a több pont (a kötelező szavak hossza szerint), egyenlőségnél a
 // gyorsabb.
+// A ranglista nem kerülhet a CDN gyorsítótárába: különben a megfejtés után (akár 20 mp-ig) a
+// régi lista jönne, és a játékos nem látná magát rajta (a felúszás sem indulna el).
 export async function GET() {
   if (!miniLive()) return Response.json({ live: false, entries: [] });
   const date = todayStr();
@@ -24,5 +26,5 @@ export async function GET() {
     .filter(Boolean)
     .sort((a, b) => b.points - a.points || a.elapsed - b.elapsed)
     .slice(0, 50);
-  return Response.json({ live: true, date, entries }, { headers: { 'Cache-Control': 'public, s-maxage=20' } });
+  return Response.json({ live: true, date, entries }, { headers: { 'Cache-Control': 'no-store' } });
 }

@@ -76,10 +76,11 @@ export default function SzolancGame({ data, preview = false, compact = false, on
     ro?.observe(el);
     return () => ro?.disconnect();
   }, [fixedKeys]);
-  // Szó beírása után az oldal úgy gördül, hogy látsszon a most beírt szó, az üres sor, a célszó és
-  // a billentyűzet (ha nem fér ki minden, a most beírt szó a fontosabb).
+  // Szó beírása után az oldal (mobilon és asztali gépen is) úgy gördül, hogy látsszon a most beírt
+  // szó, az üres sor és a célszó (mobilon a rögzített billentyűzet fölött); ha nem fér ki minden,
+  // a most beírt szó a fontosabb.
   useEffect(() => {
-    if (!fixedKeys || chain.length < 2) return;
+    if (preview || solved || chain.length < 2) return;
     const t = setTimeout(() => {
       const board = boardRef.current;
       if (!board) return;
@@ -88,14 +89,14 @@ export default function SzolancGame({ data, preview = false, compact = false, on
       const labels = board.querySelectorAll('.szl-label');
       const bottomEl = labels[labels.length - 1];
       if (!fresh || !bottomEl) return;
-      const limit = window.innerHeight - (keysRef.current?.offsetHeight || 0) - 10;
+      const limit = window.innerHeight - (fixedKeys ? keysRef.current?.offsetHeight || 0 : 0) - 10;
       let dy = bottomEl.getBoundingClientRect().bottom - limit;
       const top = fresh.getBoundingClientRect().top - 10;
       if (dy > top) dy = top;
       if (Math.abs(dy) > 2) window.scrollBy({ top: dy, behavior: 'smooth' });
     }, 60);
     return () => clearTimeout(t);
-  }, [chain.length, fixedKeys]);
+  }, [chain.length, fixedKeys, preview, solved]);
 
   useEffect(() => {
     if (solved) return;
