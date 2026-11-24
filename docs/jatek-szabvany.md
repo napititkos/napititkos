@@ -54,6 +54,13 @@ léteznek, újra kell használni őket, nem újat írni.
 - **A Régész** (Általános): a Korábbi rejtvények oldal meglátogatásáért (`recordArchiveVisit`).
 - **Linkes trófeák:** a trófeán `link` mező → gomb a megfelelő oldalra (alapból ceruza, `linkIcon`
   megadásával más ikon, pl. a Régésznél a Korábbi rejtvények doboza).
+- **Egyszer fejthető meg (kötelező):** a megfejtést a szerver rögzíti a szereplőhöz (fiók, vendégként
+  az eszköz), és a napi feladvány lekérésekor (`?device=…`) visszaadja a saját eredményt. Ha van, a
+  játék megfejtett állapotban jelenik meg, és nem tölthető ki újra – más eszközön és bejelentkezés
+  után sem. Bejelentkezéskor az eszközön vendégként beküldött eredmény átkerül a fiókhoz (mint a
+  Sudokunál és a Szóláncnál). A helyi mentés csak kényelmi gyorsítás, nem ez dönt.
+- **Dobogós ranglista-felúszás:** megfejtéskor `openLeaderboardIfTop(tab)` – a lista a hullám alatt
+  betöltődik, és a hullám végén azonnal felúszik.
 - **Teljes nap** (`lib/dailyDone.js`): ha egy napon minden napi rejtvény kész, a nap a haladás
   `allDoneDays` listájába kerül (Általános trófeák: 1/5/10 teljes nap). Új játéknál a `dailyDone`
   függvénybe is fel kell venni; a lista csak bővül, így a korábbi teljes napok nem vesznek el.

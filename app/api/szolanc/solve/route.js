@@ -30,7 +30,8 @@ export async function POST(req) {
   if (!actor) return Response.json({ error: 'invalid-device' }, { status: 400 });
   const elapsed = Math.max(2000, Math.min(24 * 3600 * 1000, Math.round(Number(body.elapsed) || 0)));
   const r = kv.raw();
-  const val = JSON.stringify({ s: steps, e: elapsed });
+  // A lánc is eltárolódik, hogy más eszközön (vagy bejelentkezés után) is megfejtettként látszódjon.
+  const val = JSON.stringify({ s: steps, e: elapsed, c: chain });
   const first = await r.hsetnx(szolancResKey(date), actor, val);
   if (first && date === today) {
     await r.hset(szolancLbKey(date), actor, val);

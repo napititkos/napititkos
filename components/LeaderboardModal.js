@@ -89,12 +89,27 @@ export default function LeaderboardModal() {
       // Megfejtés után: csak akkor nyílik meg (felúszva), ha a játékos dobogós és már legalább 5
       // megfejtés van; ilyenkor a lista már betöltve érkezik (nem villan a „Betöltés...”).
       if (e?.detail?.auto) {
-        let list = [];
-        try {
-          list = (await (await fetch(LB_URL(t, sz), { cache: 'no-store' })).json()).entries || [];
-        } catch {}
-        const rank = list.findIndex((x) => name && x.name === name);
+        const sleep = (ms) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
+        const get = async () => {
+          try {
+            return (await (await fetch(LB_URL(t, sz), { cache: 'no-store' })).json()).entries || [];
+          } catch {
+            return [];
+          }
+        };
+        const openAt = Number(e.detail.openAt) || Date.now();
+        // A megoldás beküldésének egy pillanat kell; utána még a hullám alatt betöltjük a listát.
+        await sleep(Math.min(400, openAt - Date.now()));
+        let list = await get();
+        let rank = list.findIndex((x) => name && x.name === name);
+        // Ha a saját eredmény még nem volt benne (lassú beküldés), a hullám végén még egyszer.
+        if (rank < 0) {
+          await sleep(openAt - Date.now());
+          list = await get();
+          rank = list.findIndex((x) => name && x.name === name);
+        }
         if (list.length < 5 || rank < 0 || rank > 2) return;
+        await sleep(openAt - Date.now());
         setTab(t);
         setSudSize(sz);
         setEntries(list);

@@ -10,9 +10,14 @@ export default function ViewportVars() {
     const vv = window.visualViewport;
     if (!vv) return;
     const root = document.documentElement;
+    // Csak a valódi (szövegmezőhöz nyíló) billentyűzetet vesszük figyelembe: a böngésző címsorának
+    // ki-be csúszása (pl. görgetéskor, vagy amikor az oldal rövidebb lesz) ne mozgassa a lenti
+    // értesítéseket (különben pl. egy trófea felugrója beúszás közben megugrik).
     const update = () => {
+      const a = document.activeElement;
+      const typing = a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable);
       const hidden = Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)));
-      root.style.setProperty('--kb-offset', `${hidden}px`);
+      root.style.setProperty('--kb-offset', `${typing && hidden >= 150 ? hidden : 0}px`);
     };
     update();
     vv.addEventListener('resize', update);

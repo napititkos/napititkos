@@ -1888,6 +1888,24 @@ section('Szólánc: megoldás ellenőrzése, ranglista (előbb a lépések, azt�
   check('szólánc: szereplőnként az első megoldás számít', lb2.entries.find((e) => e.name === 'Lassú Lóránt').elapsed === 90000);
 }
 
+section('Szólánc: már megfejtett állapot a szerverről (más eszközön és bejelentkezés után is)');
+{
+  const p = await (await fetch(BASE + '/api/szolanc')).json();
+  const L = await import(pathToFileURL(`${REPO}/lib/szolanc.js`).href);
+  const best = L.shortestPath(p.start, p.end);
+  const dev = 'e7'.repeat(16);
+  let j = await (await fetch(BASE + `/api/szolanc?device=${dev}`)).json();
+  check('még nem fejtette meg: nincs saját eredmény', j.mine === null);
+  await post('/api/szolanc/solve', { date: budapestToday, chain: best, elapsed: 33000, device: dev, name: 'Vendég Vera' });
+  j = await (await fetch(BASE + `/api/szolanc?device=${dev}`)).json();
+  check('ugyanazon az eszközön: megfejtett, a lánccal együtt', j.mine?.steps === best.length - 1 && j.mine.elapsed === 33000 && JSON.stringify(j.mine.chain) === JSON.stringify(best), JSON.stringify(j.mine));
+  // bejelentkezve ugyanezzel az eszközzel: az eredmény átkerül a fiókhoz
+  j = await (await fetch(BASE + `/api/szolanc?device=${dev}`, { headers: { cookie: cA.header() } })).json();
+  check('bejelentkezve ugyanezen az eszközön: megfejtettként jön', j.mine?.steps === best.length - 1);
+  j = await (await fetch(BASE + `/api/szolanc?device=${'f8'.repeat(16)}`, { headers: { cookie: cA.header() } })).json();
+  check('a fiókkal másik eszközön is megfejtettként jön', j.mine?.steps === best.length - 1 && Array.isArray(j.mine.chain));
+}
+
 section('Szólánc archívum');
 {
   let rr = await fetch(BASE + '/api/szolanc/archive');
