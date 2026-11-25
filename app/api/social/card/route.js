@@ -23,7 +23,10 @@ export async function GET(req) {
   const found = await socialEntryFor(date);
   if (!found) return Response.json({ error: 'not-found' }, { status: 404 });
 
-  const image = renderSocialCard({ entry: found.entry, format, dayNumber: found.dayNumber, theme: themeForDay(found.dayNumber) });
+  // A téma a közös világos/sötét posztritmusból jön (t=); régi címeknél a sorszám szerinti.
+  const t = url.searchParams.get('t');
+  const theme = t === 'light' || t === 'dark' ? t : themeForDay(found.dayNumber);
+  const image = renderSocialCard({ entry: found.entry, format, dayNumber: found.dayNumber, theme });
   const png = Buffer.from(await image.arrayBuffer());
   const body = format === 'ig' ? await sharp(png).jpeg({ quality: 90, mozjpeg: true }).toBuffer() : png;
   return new Response(body, {
