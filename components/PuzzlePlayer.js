@@ -11,7 +11,8 @@ import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked, HINT_HELP } fro
 import { enumerationFor } from '../lib/format';
 import FieldHelp from './FieldHelp';
 
-export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolved = false, dateLabel = '', hideShuffle = false }) {
+// note: a dátum alatti külön sor (pl. „… bekerült a napi titkosírások közé”).
+export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolved = false, dateLabel = '', hideShuffle = false, note = '' }) {
   const [guess, setGuess] = useState(() =>
     initiallySolved
       ? Array.from(puzzle.answer).map((ch) => (ch === ' ' ? ' ' : ch.toUpperCase()))
@@ -131,6 +132,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
       ) : (
         puzzle.submittedBy && <div className="submitted-by">Beküldte: {puzzle.submittedBy}</div>
       )}
+      {note && <div className="player-note">{note}</div>}
       <div className="clue-box" style={{ marginBottom: 10 }}>
         <div className="clue-text">
           <ClueText clue={puzzle.clue} marks={highlightMap(puzzle.hints, answered ? HL_TYPES : revealed)} />{' '}

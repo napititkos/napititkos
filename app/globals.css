@@ -2358,3 +2358,5 @@ button.szl-key.wide{ flex: 0 0 54px; }
 .round-btn.on{ box-shadow: 0 0 0 3px var(--accent2); }
 @media (max-width: 400px){ .result-actions.szl-actions .result-action span{ font-size: 12px; } }
 .result-actions.szl-actions .result-action .round-btn .szl-hash1{ color: #fff; font-size: 17px; font-weight: 700; line-height: 1; white-space: nowrap; }
+/* Lenyitott közösségi titkosírás: a dátum alatti sorban, balra zárva, ha bekerült a napiak közé. */
+.player-note{ margin: -2px 0 8px; font-size: 13px; font-weight: 700; color: var(--accent-text); text-align: left; }
