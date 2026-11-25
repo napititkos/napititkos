@@ -140,7 +140,7 @@ export default function ArchivePage() {
     return (
       <div className="wrap">
         <h1 className="sr-only">Korábbi rejtvények</h1>
-        <div className="kisokos-tabrow">
+        <div className="kisokos-tabrow sel-row">
           <BackButton pill className="kisokos-back" />
         </div>
         <div className="card">
@@ -171,7 +171,7 @@ export default function ArchivePage() {
     <div className="wrap">
       <h1 className="sr-only">Korábbi rejtvények</h1>
       {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban. */}
-      <div className="kisokos-tabrow">
+      <div className="kisokos-tabrow sel-row">
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo withSudoku withSzolanc asSelect labels={{ titkos: 'Titkosírás', szo: 'Szókereső', szolanc: 'Szólánc', mini: 'Heti Mini', sudoku: 'Sudoku' }} />}
         <BackButton pill className="kisokos-back" />
       </div>

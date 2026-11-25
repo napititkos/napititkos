@@ -2327,3 +2327,11 @@ button.szl-key.wide{ flex: 0 0 54px; }
 .kisokos-tabrow .rejtveny-select select{ max-width: 200px; }
 /* Szabadon használható Kisokos-lépésnél a homályosítás nem fogja el a kattintásokat. */
 .coach-blocker.free{ pointer-events: none; }
+/* Elrendezés-ugrás ellen: a Szólánc betöltés közben is akkora helyet foglal, mint a játék; a lábléc
+   (Kapcsolat, Adatvédelem…) mindig a képernyő alja alatt kezd, így a tartalom betöltése nem
+   tolja lejjebb a szem előtt. */
+.card.szl-loading{ min-height: 560px; }
+@media (max-width: 700px){ .card.szl-loading{ min-height: 626px; } }
+.wrap{ min-height: calc(100vh - 40px); }
+/* Korábbi és Közösségi: a Játék gomb mindig jobbra áll (már betöltés közben is, nem ugrik át balról). */
+.kisokos-tabrow.sel-row .back-pill{ order: 0; margin-left: auto; }

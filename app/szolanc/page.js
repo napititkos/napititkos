@@ -68,7 +68,7 @@ export default function SzolancPage() {
       )}
       <GameBar game="szolanc" />
       <h1 className="sr-only">Napititkos.hu - Szólánc</h1>
-      <div className="card">{!data ? <p data-nosnippet="">Betöltés…</p> : data.error ? <p>A mai Szólánc nem tölthető be. Próbáld újra később!</p> : <SzolancGame key={data.date} data={data} onSolved={solved} />}</div>
+      <div className={`card${!data ? ' szl-loading' : ''}`}>{!data ? <p data-nosnippet="">Betöltés…</p> : data.error ? <p>A mai Szólánc nem tölthető be. Próbáld újra később!</p> : <SzolancGame key={data.date} data={data} onSolved={solved} />}</div>
       <GameFooter game="szolanc" />
     </div>
   );

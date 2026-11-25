@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { isAdminRequest } from '../../../../lib/adminAuth';
 import { todayStr, isValidDateStr } from '../../../../lib/date';
 import { readJson } from '../../../../lib/validate';
-import { allShortestPaths, generateSzolanc, isWord, levelOf, ladderInfo, suggestSzolanc, szolancLevel } from '../../../../lib/szolancServer';
+import { allShortestPaths, fitsLevel, generateSzolanc, isWord, levelOf, ladderInfo, suggestSzolanc, szolancLevel } from '../../../../lib/szolancServer';
 import { pickSzolanc, szolancSchedule, unpickSzolanc } from '../../../../lib/szolancStore';
 
 const unauthorized = () => Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -61,9 +61,11 @@ export async function POST(req) {
     const s = await state();
     if (!s.next) return Response.json({ error: 'no-day' }, { status: 400 });
     const info = ladderInfo(start, end);
-    const lv = levelOf(info.d, info.paths);
-    if (lv !== s.nextLevel) return Response.json({ error: 'level-mismatch', message: `A soron következő nap (${s.next}) ${s.nextLevel}/5-ös, ez a feladvány ${lv || '?'}/5-ös.` }, { status: 400 });
-    const v = await pickSzolanc(s.next, start, end);
+    if (!fitsLevel(info.d, info.paths, [...start].length, s.nextLevel)) {
+      const lv = levelOf(info.d, info.paths);
+      return Response.json({ error: 'level-mismatch', message: `A soron következő nap (${s.next}) ${s.nextLevel}/5-ös, ez a feladvány ${lv || '?'}/5-ös.` }, { status: 400 });
+    }
+    const v = await pickSzolanc(s.next, start, end, s.nextLevel);
     return Response.json({ ok: true, date: s.next, picked: v, ...(await state()) });
   }
   if (body.action === 'remove') {

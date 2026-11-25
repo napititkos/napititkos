@@ -14,7 +14,9 @@ import { CoachTail } from './RamNote';
 // A homályosító réteg „lyuka” a kiemelt elem körül: lekerekített téglalap, akkora ráhagyással,
 // hogy a villogó gomb lüktető fénye és nagyobbodása is beleférjen (ne vágódjon le szögletesen).
 function holePath(r, vw, vh) {
-  const pad = 13;
+  // Szoros ráhagyás (a szomszédos szövegek ne lógjanak bele félig); villogó elemnél nagyobb, hogy a
+  // lüktető fény is beleférjen.
+  const pad = r.blink ? 13 : 6;
   const x = Math.round(r.left - pad);
   const y = Math.round(r.top - pad);
   const w = Math.round(r.width + 2 * pad);
@@ -38,6 +40,8 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     if (h && Math.abs(h - boxH) > 1) setBoxH(h);
   });
   useEffect(() => setMounted(true), []);
+  const [settled, setSettled] = useState(false);
+  const lockRef = useRef(null);
   // Lépésenként egyszer: ha a buborék csak görgetéssel fér el a kiemelt elem alatt, odagörgetünk.
   const scrolledFor = useRef(null);
   const pendingScroll = useRef(null);
@@ -57,10 +61,12 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
       if (el) {
         el.classList.add('coach-target');
         const r = el.getBoundingClientRect();
-        setRect({ top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height });
+        setRect({ top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height, blink: !!(blink && el.matches(blink)) || el.classList.contains('coach-blink') });
       } else setRect(null);
       if (blink) document.querySelectorAll(blink).forEach((x) => x.classList.add('coach-blink'));
     };
+    const cleanups = [];
+    lockRef.current = null;
     // Először azonnal (animáció nélkül) a célhoz görgetünk, hogy az üzenet ne "csússzon" utána.
     const first = target ? document.querySelector(target) : null;
     if (scroll && first && place !== 'bottom' && place !== 'side') first.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -71,6 +77,19 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
     }
     measure();
     const id = setInterval(measure, 400);
+    // Amíg az oldal görög (a célhoz igazítás), a kos és a homályosítás nem jelenik meg; a görgetés
+    // végén egyszer dől el a buborék helye, és onnantól a célelemmel együtt mozog (nem ugrál).
+    setSettled(false);
+    let idle = setTimeout(() => setSettled(true), 260);
+    const bump = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => setSettled(true), 180);
+    };
+    window.addEventListener('scroll', bump, true);
+    cleanups.push(() => {
+      clearTimeout(idle);
+      window.removeEventListener('scroll', bump, true);
+    });
     const onMove = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(measure);
@@ -84,6 +103,7 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
       window.removeEventListener('resize', onMove);
       document.querySelectorAll('.coach-target').forEach((x) => x.classList.remove('coach-target'));
       if (blink) document.querySelectorAll(blink).forEach((x) => x.classList.remove('coach-blink'));
+      cleanups.forEach((f) => f());
     };
   }, [target, place, blink, scroll]);
 
@@ -144,6 +164,12 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
   }
 
   pendingScroll.current = wantScroll;
+  // Helyzet rögzítése: a görgetés végén kiszámolt helyhez képest a buborék a célelemmel együtt mozog.
+  if (settled && rect && place !== 'bottom' && typeof style.top === 'number') {
+    if (!lockRef.current) lockRef.current = { left: style.left, dy: style.top - rect.top, width: style.width };
+    const L = lockRef.current;
+    style = { left: L.left, top: Math.max(8, Math.min(vh - (boxH || 0) - 8, rect.top + L.dy)), width: L.width };
+  }
   // Egész képpontokra kerekítve: tört képpontos helyzetben a buborék kerete és a nyúlvány
   // élsimítása eltér, és a nyúlvány előtt halvány vonal látszik.
   style = Object.fromEntries(Object.entries(style).map(([k, v]) => [k, typeof v === 'number' ? Math.round(v) : v]));
@@ -152,12 +178,12 @@ export default function RamCoach({ target, place = 'below', children, okLabel = 
       {/* Ha van kiemelt elem, a környezete elhomályosul (a kiemelt rész lyukként tiszta marad). */}
       {(blocking || rect) && (
         <div
-          className={`coach-blocker${rect ? ' spot' : ''}${blocking ? '' : ' free'}`}
+          className={`coach-blocker${rect && settled ? ' spot' : ''}${blocking ? '' : ' free'}`}
           aria-hidden="true"
-          style={rect ? { clipPath: holePath(rect, vw, vh) } : undefined}
+          style={rect && settled ? { clipPath: holePath(rect, vw, vh) } : undefined}
         />
       )}
-      <div className="coach-wrap" ref={wrapRef} style={style} role="dialog" aria-live="polite" aria-label="A kos üzenete">
+      <div className="coach-wrap" ref={wrapRef} style={{ ...style, visibility: settled ? 'visible' : 'hidden' }} role="dialog" aria-live="polite" aria-label="A kos üzenete">
         <img className="coach-ram" src="/logo-96.png" alt="" aria-hidden="true" width={44} height={44} />
         <div className="coach-bubble">
           <CoachTail />

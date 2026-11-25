@@ -12,7 +12,16 @@ export default function MyMinis() {
       .catch(() => setItems(null));
   }
   useEffect(load, []);
-  if (!items) return null;
+  // Betöltés közben is ott a doboz (ugyanakkora fejléccel), hogy alatta ne ugorjanak le a többiek.
+  if (!items)
+    return (
+      <div className="card">
+        <div className="help-block" style={{ marginBottom: 0 }}>
+          <h3>Közösségi minijeim</h3>
+          <p style={{ color: 'var(--ink-soft)' }}>Betöltés…</p>
+        </div>
+      </div>
+    );
   async function remove(it) {
     if (!confirm('Biztosan törlöd ezt a minit?')) return;
     await fetch(`/api/community/minis/${it.id}`, { method: 'DELETE' });
