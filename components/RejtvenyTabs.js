@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import PrettySelect from './PrettySelect';
 
 // Korábbi és Közösségi rejtvények: választó a fejlécben (Titkosírások / Minik), csak a mini
 // élesítése után. A kiválasztott fül az URL-ben is megmarad (?tab=mini), így a link megosztható.
@@ -62,16 +63,10 @@ export default function RejtvenyTabs({ tab, onChange, labels = { titkos: 'Titkos
   }, []);
   if (asSelect)
     return (
-      <label className="ach-filter rejtveny-select">
-        <span>Játék:</span>
-        <select className="pretty-select" value={tab} onChange={(e) => onChange(e.target.value)} aria-label="Rejtvénytípus">
-          {opts.map(([v, label]) => (
-            <option key={v} value={v}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="ach-filter rejtveny-select">
+        <span aria-hidden="true">Játék:</span>
+        <PrettySelect value={tab} onChange={onChange} options={opts} label="Rejtvénytípus" />
+      </div>
     );
   return (
     <div className="rejtveny-tabs" role="tablist" aria-label="Rejtvénytípus" ref={ref}>

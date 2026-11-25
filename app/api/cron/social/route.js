@@ -23,7 +23,15 @@ export async function GET(req) {
   const { date } = await res.json();
 
   const pollMs = Number(process.env.SOCIAL_POLL_MS) || undefined;
-  const result = await runSocialPost({ date, siteUrl, pollMs });
+  // Két futás naponta (vercel.json): délelőtt (?slot=am) az első facebookos poszt, az Instagram és a
+  // heti mini; délután négykor (?slot=pm) a második facebookos poszt. Paraméter nélkül: minden.
+  const q = new URL(req.url).searchParams.get('slot');
+  const slot = q === 'am' || q === 'pm' ? q : 'all';
+  const result = await runSocialPost({ date, siteUrl, pollMs, slot });
+  if (slot === 'pm') {
+    const failedPm = result.fb?.status === 'error' || result.fbCombo?.status === 'error' || !!result.error;
+    return Response.json(result, { status: failedPm ? 500 : 200 });
+  }
   // A heti mini keresztrejtvény posztja (élesítés után, hetente egyszer: a hét első futásakor).
   try {
     const cur = await currentMini();

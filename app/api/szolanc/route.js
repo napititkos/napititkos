@@ -4,7 +4,7 @@ import { todayStr, isValidDateStr } from '../../../lib/date';
 import { kv } from '../../../lib/kv';
 import { auth } from '../../../auth';
 import { actorFor } from '../../../lib/reactions';
-import { SZOLANC_START, szolancResKey } from '../../../lib/szolancServer';
+import { SZOLANC_START, shortestPath, szolancResKey } from '../../../lib/szolancServer';
 import { szolancForDate } from '../../../lib/szolancStore';
 
 // A nap Szólánca (?date=ÉÉÉÉ-HH-NN: korábbi nap, jövőbeli nem): kezdő- és célszó, nehézség,
@@ -38,5 +38,12 @@ export async function GET(req) {
     const o = JSON.parse(mineRaw || 'null');
     if (o) mine = { steps: Number(o.s) || 0, elapsed: Number(o.e) || 0, chain: Array.isArray(o.c) ? o.c : null };
   } catch {}
-  return Response.json({ date, start, end, level, par, paths, number, mine }, { headers: { 'Cache-Control': 'private, no-store' } });
+  // Megfejtés után (és csak akkor) egy legrövidebb út is jön („Legrövidebb út” gomb).
+  let best = null;
+  if (mine) {
+    try {
+      best = shortestPath(start, end);
+    } catch {}
+  }
+  return Response.json({ date, start, end, level, par, paths, number, mine, best }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

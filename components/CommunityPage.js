@@ -100,7 +100,7 @@ export default function CommunityPage() {
       {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban és a korábbiaknál. */}
       <div className="kisokos-tabrow sel-row">
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} asSelect labels={{ titkos: 'Titkosírások', mini: 'Minik' }} />}
-        <BackButton pill className="kisokos-back" />
+        <BackButton pill className="kisokos-back" label="Mai rejtvény" />
       </div>
       {!tabReady ? null : miniLive && kind === 'mini' ? (
         <CommunityMinis />

@@ -994,7 +994,20 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   r = await fetch(`${BASE}/api/social/card?d=2099-01-01&f=fb`); check('posztkép jövőbeli (meg nem jelent) napra: 404', r.status === 404);
   r = await fetch(`${BASE}/api/social/card?d=holnap`); check('posztkép hibás dátummal: 400', r.status === 400);
   const vj = JSON.parse(fs.readFileSync(new URL('../../vercel.json', import.meta.url), 'utf8'));
-  check('vercel.json: napi egy cron a /api/cron/social útvonalra', vj.crons?.length === 1 && vj.crons[0].path === '/api/cron/social' && /^\d+ \d+ \* \* \*$/.test(vj.crons[0].schedule));
+  check('vercel.json: napi két cron (délelőtt és délután négykor) a /api/cron/social útvonalra', vj.crons?.length === 2 && vj.crons[0].path === '/api/cron/social?slot=am' && vj.crons[1].path === '/api/cron/social?slot=pm' && vj.crons.every((c) => /^\d+ \d+ \* \* \*$/.test(c.schedule)) && vj.crons[1].schedule === '0 15 * * *');
+  {
+    // délelőtti és délutáni futás: az első és a második facebookos poszt külön megy ki
+    await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday, 'social:fbcombo:' + budapestToday);
+    const b0 = posts().length;
+    let rr = await fetch(BASE + '/api/cron/social?slot=am', { headers: { authorization: 'Bearer helyi-cron-titok' } });
+    const am = await rr.json();
+    const amPhotos = posts().slice(b0).filter((g) => g.path === '/111/photos').length;
+    const b1 = posts().length;
+    rr = await fetch(BASE + '/api/cron/social?slot=pm', { headers: { authorization: 'Bearer helyi-cron-titok' } });
+    const pm = await rr.json();
+    const pmPhotos = posts().slice(b1).filter((g) => g.path === '/111/photos').length;
+    check('délelőtt egy facebookos poszt (és az Instagram), délután négykor a másik', am.fbOrder?.length === 1 && pm.fbOrder?.length === 1 && am.fbOrder[0] !== pm.fbOrder[0] && amPhotos === 1 && pmPhotos === 1 && pm.ig?.status === 'later', JSON.stringify({ am: am.fbOrder, pm: pm.fbOrder, amPhotos, pmPhotos, ig: pm.ig }));
+  }
   graphSrv.close();
 }
 

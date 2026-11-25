@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 const HREF = { titkos: '/titkosiras', mini: '/mini', szo: '/szokereso', sudoku: '/sudoku', szolanc: '/szolanc' };
 
 // pill: a játékok gombsorának gombjaival azonos formájú („Főoldal”-szerű) gomb.
-export default function BackButton({ game, className = '', pill = false }) {
+export default function BackButton({ game, className = '', pill = false, label = null }) {
   const [live, setLive] = useState(true);
   const [g, setG] = useState(game || 'titkos');
   useEffect(() => {
@@ -26,11 +26,11 @@ export default function BackButton({ game, className = '', pill = false }) {
   }, [game]);
   if (pill)
     return (
-      <a href={live ? HREF[g] : '/'} className={`pill quick-pill back-pill ${className}`.trim()} aria-label={live ? 'Vissza a játékhoz' : 'Főoldal'}>
+      <a href={live ? HREF[g] : '/'} className={`pill quick-pill back-pill ${className}`.trim()} aria-label={live ? (label ? `Vissza: ${label}` : 'Vissza a játékhoz') : 'Főoldal'}>
         <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" className="quick-ico">
           <path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span className="bp-label">{live ? 'Játék' : 'Főoldal'}</span>
+        <span className="bp-label">{live ? label || 'Játék' : 'Főoldal'}</span>
       </a>
     );
   return (
