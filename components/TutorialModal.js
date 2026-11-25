@@ -1,5 +1,5 @@
 'use client';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { TUTORIAL_SECTIONS, loadTutorialProgress, completedSectionsCount, basicsUnlocked, isTutorialSynced } from '../lib/tutorial';
 import { useSession } from 'next-auth/react';
 import { loadProgress, saveProgress } from '../lib/progress';
@@ -32,10 +32,17 @@ export function TutorialContent() {
   // a már máshol megoldott feladatoknál se induljon el a kos bemutatója; vendégként azonnal indul.
   const { data: session, status } = useSession();
   const [ready, setReady] = useState(false);
+  const readyRef = useRef(false);
   useEffect(() => {
     const onUpdate = (e) => {
       if (!e.detail) return;
       setProgress(e.detail);
+      // Első megjelenéskor a lenyitás is most dől el (egy lépésben, ugrás nélkül).
+      if (!readyRef.current) {
+        readyRef.current = true;
+        setAutoOpened(true);
+        if (!basicsUnlocked(e.detail)) setExpandedSection('kezdetek');
+      }
       setReady(true);
     };
     window.addEventListener('tutorial-progress', onUpdate);
@@ -43,15 +50,22 @@ export function TutorialContent() {
   }, []);
   useEffect(() => {
     if (status === 'loading' || ready) return undefined;
-    if (status === 'unauthenticated' || isTutorialSynced()) {
-      setProgress(loadTutorialProgress());
+    // A haladással együtt (egy lépésben) dől el az is, hogy a Kezdetek lenyitva jelenik-e meg:
+    // így nem ugrik le utólag a lista.
+    const start = () => {
+      if (readyRef.current) return;
+      readyRef.current = true;
+      const pr = loadTutorialProgress();
+      setProgress(pr);
+      setAutoOpened(true);
+      if (!basicsUnlocked(pr)) setExpandedSection('kezdetek');
       setReady(true);
+    };
+    if (status === 'unauthenticated' || isTutorialSynced()) {
+      start();
       return undefined;
     }
-    const t = setTimeout(() => {
-      setProgress(loadTutorialProgress());
-      setReady(true);
-    }, 3000);
+    const t = setTimeout(start, 3000);
     return () => clearTimeout(t);
   }, [status, ready]);
   // Aki még nem végezte el a Kezdeteket, annak az nyílik meg elsőként (a végleges haladás alapján).
