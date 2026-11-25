@@ -160,7 +160,6 @@ export default function CommunityPage() {
                   <span>
                     Beküldte: <b>{it.name || 'Névtelen'}</b> · {formatDate(it.createdAt)}
                   </span>
-                  {it.promoted && <span className="community-badge">Bekerült a napi titkosírások közé</span>}
                 </span>
                 {/* Megfejtve: dobozos pipa jobbra (mint a korábbi rejtvényeknél). */}
                 {it.solved && <SolvedMark />}
@@ -169,6 +168,7 @@ export default function CommunityPage() {
             {open && (
               <CommunityDetail
                 id={it.id}
+                promotedNote={it.promoted ? `${it.promotedDate ? `${formatDate(`${it.promotedDate}T12:00:00Z`)} ` : ''}bekerült a napi titkosírások közé` : ''}
                 onChanged={(patch) => setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, ...patch } : x)))}
                 onDeleted={() => {
                   setOpenId(null);

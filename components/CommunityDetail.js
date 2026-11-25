@@ -10,7 +10,7 @@ import ReactionBar, { applyReaction } from './ReactionBar';
 
 // Egy közösségi titkosírás megnyitva: megoldó felület (tippekkel), értékelés, reakciók, és
 // adminnak a beemelés / törlés.
-export default function CommunityDetail({ id, onChanged, onDeleted }) {
+export default function CommunityDetail({ id, onChanged, onDeleted, promotedNote = '' }) {
   const { data: session } = useSession();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -191,7 +191,7 @@ export default function CommunityDetail({ id, onChanged, onDeleted }) {
 
   return (
     <div className="community-detail">
-      <PuzzlePlayer puzzle={puzzle} initiallySolved={mine.solved} onSolved={handleSolved} dateLabel={formatHuDay(puzzle.createdAt)} />
+      <PuzzlePlayer puzzle={puzzle} initiallySolved={mine.solved} onSolved={handleSolved} dateLabel={formatHuDay(puzzle.createdAt)} note={promotedNote} />
 
       {/* Megfejtés előtt csak az átlagértékelés látszik a megoldó felület alatt, megfejtés után
           az értékelő rész a reakciókkal. */}

@@ -15,7 +15,9 @@ export async function GET() {
   const list = await communityList();
   const sums = await summaries(list.map((s) => s.id));
   const today = todayStr();
-  const shownBefore = new Set(((await kv.get('rotation:history')) || []).filter((h) => h?.shownDate && h.shownDate < today).map((h) => h.id));
+  const shownList = ((await kv.get('rotation:history')) || []).filter((h) => h?.shownDate && h.shownDate < today);
+  const shownBefore = new Set(shownList.map((h) => h.id));
+  const shownDateOf = new Map(shownList.map((h) => [h.id, h.shownDate]));
   // Bejelentkezve: melyiket fejtette már meg (a listában pipa jelzi).
   const session = await auth();
   let solvedIds = new Set();
@@ -39,6 +41,8 @@ export async function GET() {
         // "Bekerült a napi titkosírások közé" csak akkor, ha a napi rejtvényként már meg is
         // jelent (az archívumban van), nem már a beemeléskor.
         promoted: !!(s.promotedPuzzleId && shownBefore.has(s.promotedPuzzleId)),
+        // Melyik napon jelent meg napi titkosírásként (a lenyitott nézetben látszik).
+        promotedDate: s.promotedPuzzleId ? shownDateOf.get(s.promotedPuzzleId) || null : null,
         solved: solvedIds.has(s.id),
       })),
     },
