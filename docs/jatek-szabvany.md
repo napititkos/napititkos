@@ -97,3 +97,11 @@ léteznek, újra kell használni őket, nem újat írni.
   saját `layout.js`-ben címe és leírása van (`metadata`).
 - Nehézség: hétfő, kedd 1/5 · szerda, csütörtök 2/5 · péntek 3/5 · szombat 4/5 · vasárnap 5/5
   (`lib/dayLevel.js`).
+
+
+## Közösségi posztok (Facebook, Instagram)
+- **Világos / sötét ritmus platformonként:** minden poszt az előzőhöz képest a másik témát kapja, a
+  poszt fajtájától függetlenül (titkosírás, szókereső + szólánc, heti mini). Új poszttípusnál a téma
+  mindig `themeFor(platform, jelzőkulcs)` (`lib/social.js`), és a kép címe kapja meg (`&t=`).
+- **Facebook:** naponta két poszt (titkosírás; szókereső + szólánc egymás mellett), a sorrendjük
+  naponta cserélődik; hetente a heti mini. **Instagram:** naponta a titkosírás, hetente a heti mini.

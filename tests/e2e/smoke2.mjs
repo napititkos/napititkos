@@ -873,7 +873,7 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   r = await cron('Bearer rossz-titok'); check('cron rossz titokkal: 401', r.status === 401);
   check('a hibás hívások nem érték el a Graph API-t', graphLog.length === 0);
 
-  await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday);
+  await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday, 'social:fbcombo:' + budapestToday, 'social:seq:fb', 'social:seq:ig');
   // A megszűnt kommentek egyszeri törléséhez: régi komment-listák és mellettük más kulcsok.
   await redis.rpush('comments:2026-01-01', JSON.stringify({ id: 'a', text: 'régi' }), JSON.stringify({ id: 'b', text: 'régi 2' }));
   await redis.rpush('comments:2026-01-02', JSON.stringify({ id: 'c', text: 'régi 3' }));
@@ -881,24 +881,39 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   await redis.set('comments:2026-01-03', 'nem lista, marad');
   await redis.set('commentsx:2026-01-01', 'marad');
   await redis.hset('community:reactions:valami', 'u:1', '2');
-  const keysBefore = (await redis.keys('*')).filter((k) => !/^comments:2026-01-0[12]$/.test(k)).sort();
+  const keysBefore = (await redis.keys('*')).filter((k) => !/^comments:2026-01-0[12]$/.test(k) && !k.startsWith('szo:puzzle:') && k !== 'szo:used').sort();
   const today = await getPuzzle();
   r = await cron('Bearer helyi-cron-titok'); j = await r.json();
   check('cron helyes titokkal: 200, mindkét platform rendben', r.status === 200 && j.fb?.status === 'ok' && j.ig?.status === 'ok' && j.fb.postId === '111_p1' && j.ig.mediaId === 'm1', JSON.stringify(j));
   check('a mai (budapesti) napra posztol', j.date === budapestToday);
-  const photo = posts().find((g) => g.path === '/111/photos');
+  const photo = posts().find((g) => g.path === '/111/photos' && /\/api\/social\/card/.test(g.body.url));
+  const combo = posts().find((g) => g.path === '/111/photos' && /\/api\/social\/combo-card/.test(g.body.url));
+  const tOf = (u) => (String(u).match(/[?&]t=(light|dark)/) || [])[1];
+  check('Facebook: naponta két poszt – titkosírás és szókereső + szólánc –, a kettő témája eltér', j.fbCombo?.status === 'ok' && combo && /^Mai szókereső és szólánc – /.test(combo.body.caption) && tOf(photo?.body.url) && tOf(combo.body.url) && tOf(photo.body.url) !== tOf(combo.body.url), JSON.stringify({ j, c: combo?.body }));
+  check('a két facebookos poszt sorrendje a nap sorszámától függ (naponta cserélődik)', Array.isArray(j.fbOrder) && j.fbOrder.length === 2 && new Set(j.fbOrder).size === 2);
+  {
+    const cms = posts().filter((g) => /\/comments$/.test(g.path)).map((g) => g.body.message);
+    const szoC = cms.filter((m) => /\/szokereso$/.test(m)), lancC = cms.filter((m) => /\/szolanc$/.test(m));
+    check('szókereső + szólánc poszt: a két játék linkje két külön hozzászólásban', szoC.length === 1 && lancC.length === 1 && !cms.some((m) => /\/szokereso/.test(m) && /\/szolanc/.test(m)), JSON.stringify(cms));
+  }
+  {
+    const ci = await fetch(combo.body.url); const cb = Buffer.from(await ci.arrayBuffer());
+    check('szókereső + szólánc kép: PNG 1200×630', ci.status === 200 && cb.readUInt32BE(16) === 1200 && cb.readUInt32BE(20) === 630);
+    const fut = await fetch(`${BASE}/api/social/combo-card?d=2099-01-01&t=light`); check('szókereső + szólánc kép jövőbeli napra: 404', fut.status === 404);
+  }
   const comment = posts().find((g) => g.path === '/111_p1/comments');
   const media = posts().find((g) => g.path === '/178/media');
   const publish = posts().find((g) => g.path === '/178/media_publish');
-  check('Facebook: fotó a napi képpel (a tartalom lenyomatával)', photo && new RegExp(`^${BASE}/api/social/card\\?d=${budapestToday}&f=fb&v=[a-f0-9]{12}$`).test(photo.body.url), JSON.stringify(photo?.body));
+  check('Facebook: fotó a napi képpel (a tartalom lenyomatával és a témával)', photo && new RegExp(`^${BASE}/api/social/card\\?d=${budapestToday}&f=fb&v=[a-f0-9]{12}&t=(light|dark)$`).test(photo.body.url), JSON.stringify(photo?.body));
   check('Facebook: az Instagram hashtagjei is', photo && photo.body.caption.includes('#kriptikusrejtvény #napirejtvény #fejtörő #magyarrejtvény #napititkos'));
   check('a poszt szövegében a rejtvény és a betűszám szerepel, a megfejtés nem', photo && photo.body.caption.includes(today.puzzle.clue) && /\(\d+(,\d+)*\)/.test(photo.body.caption) && !photo.body.caption.includes(today.puzzle.answer));
   check('Facebook: az első hozzászólás a linkkel', comment && comment.body.message.includes(BASE));
-  check('Instagram: konténer a JPEG képpel, a link nélkül (nem kattintható ott)', media && media.body.image_url === photo.body.url.replace('&f=fb&', '&f=ig&') && /profilban/.test(media.body.caption) && !media.body.caption.includes(today.puzzle.answer));
+  check('Instagram: konténer a JPEG képpel, a link nélkül (nem kattintható ott)', media && new RegExp(`^${BASE}/api/social/card\\?d=${budapestToday}&f=ig&v=[a-f0-9]{12}&t=(light|dark)$`).test(media.body.image_url) && /profilban/.test(media.body.caption) && !media.body.caption.includes(today.puzzle.answer));
   const maint = j.maintenance?.legacyComments;
   check('karbantartás: a régi kommentek törölve (2 lista, 3 komment)', maint?.deletedKeys === 2 && maint?.deletedComments === 3, JSON.stringify(j.maintenance));
-  const keysAfter = (await redis.keys('*')).filter((k) => !k.startsWith('social:') && !k.startsWith('maintenance:') && !k.startsWith('rl:') && !k.startsWith('lock:')).sort();
-  check('karbantartás: minden más kulcs érintetlen (a nem dátumos és a nem lista komment-kulcs is)', JSON.stringify(keysAfter) === JSON.stringify(keysBefore.filter((k) => !k.startsWith('rl:') && !k.startsWith('lock:'))) && (await redis.get('comments:2026-01-03')) === 'nem lista, marad' && (await redis.lrange('comments:nem-datum', 0, -1))[0] === 'marad' && (await redis.hget('community:reactions:valami', 'u:1')) === '2', JSON.stringify({ hiányzik: keysBefore.filter((k) => !keysAfter.includes(k)) }));
+  // (a posztolás a napi szókereső rácsát is előállíthatja, ha még nem készült el: az nem karbantartás)
+  const keysAfter = (await redis.keys('*')).filter((k) => !k.startsWith('social:') && !k.startsWith('maintenance:') && !k.startsWith('rl:') && !k.startsWith('lock:') && !k.startsWith('szo:puzzle:') && k !== 'szo:used').sort();
+  check('karbantartás: minden más kulcs érintetlen (a nem dátumos és a nem lista komment-kulcs is)', JSON.stringify(keysAfter) === JSON.stringify(keysBefore.filter((k) => !k.startsWith('rl:') && !k.startsWith('lock:'))) && (await redis.get('comments:2026-01-03')) === 'nem lista, marad' && (await redis.lrange('comments:nem-datum', 0, -1))[0] === 'marad' && (await redis.hget('community:reactions:valami', 'u:1')) === '2', JSON.stringify({ új: keysAfter.filter((k) => !keysBefore.includes(k)), hiányzik: keysBefore.filter((k) => !keysAfter.includes(k) && !k.startsWith('rl:')) }));
   check('Instagram: a feldolgozást megvárja, majd publikál', containerPolls >= 2 && publish && publish.body.creation_id === 'ct1');
   check('a token csak fejlécben megy, URL-ben soha', graphLog.every((g) => g.auth === 'Bearer helyi-oldal-token' && !/token/i.test(g.query)));
   const fbFlag = JSON.parse(await redis.get('social:fb:' + budapestToday));
@@ -931,10 +946,10 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   cur.submittedBy = 'Beküldő Béla';
   cur.difficulty = 4;
   await redis.set('puzzles:list', JSON.stringify(plist));
-  await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday);
+  await redis.del('social:fb:' + budapestToday, 'social:ig:' + budapestToday, 'social:fbcombo:' + budapestToday);
   const before3 = posts().length;
   r = await cron('Bearer helyi-cron-titok'); j = await r.json();
-  const photo2 = posts().slice(before3).find((g) => g.path === '/111/photos');
+  const photo2 = posts().slice(before3).find((g) => g.path === '/111/photos' && /\/api\/social\/card/.test(g.body.url));
   const media2 = posts().slice(before3).find((g) => g.path === '/178/media');
   check('módosítás után: a szövegben az új rejtvény és a beküldő', r.status === 200 && photo2?.body.caption.includes('„Javított szöveg posztolás előtt.”') && /\nBeküldte: Beküldő Béla\n/.test(photo2.body.caption) && /Beküldte: Beküldő Béla/.test(media2?.body.caption || ''), photo2?.body.caption);
   check('módosítás után: új képcím (más lenyomat)', photo2 && photo2.body.url !== oldUrl);
@@ -945,12 +960,13 @@ section('Közösségi posztolás (Facebook, Instagram) hamis Graph API-val');
   check('módosítás után: a kép is az új szöveggel készül (eltér a korábbitól)', newPng.length > 0 && !newPng.equals(oldPng));
   await redis.set('puzzles:list', savedList);
 
-  // Téma: a titkosírás sorszáma szerint páratlan napon világos, párosan sötét a kép.
+  // Téma: a közös világos/sötét ritmusból (a kép a címében kapott témával készül).
   const sharp = require('sharp');
   const hist = JSON.parse(await redis.get('rotation:history'));
   const dayNo = hist.map((h) => h.shownDate).lastIndexOf(budapestToday) + 1;
   const px = (await sharp(newPng).removeAlpha().extract({ left: 2, top: 2, width: 1, height: 1 }).raw().toBuffer()).toString('hex');
-  check(`téma: a(z) ${dayNo}. napon ${dayNo % 2 ? 'világos' : 'sötét'} háttér`, px === (dayNo % 2 ? 'f0f0fc' : '16121e'), px);
+  const t2 = tOf(photo2.body.url);
+  check(`téma: a kép háttere a poszt témája (${t2})`, px === (t2 === 'light' ? 'f0f0fc' : '16121e'), px);
   const shiftedDate = (() => { const d = new Date(budapestToday + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); })();
   if (!hist.some((h) => h.shownDate === shiftedDate)) {
     hist.splice(hist.length - 1, 0, { ...hist[hist.length - 1], shownDate: shiftedDate });
@@ -1430,6 +1446,13 @@ section('Mini keresztrejtvény: élesítés utáni felhasználói rész (oldal, 
   const mi = log.filter((g) => g.m === 'POST' && g.p === '/178/media').find((g) => /mini-card/.test(g.body.image_url));
   check('heti mini poszt: Facebook (kép, „Heti mini keresztrejtvény”, link az első kommentben)', j.mini?.fb?.status === 'ok' && mp && /Heti mini keresztrejtvény/.test(mp.body.caption) && mc, JSON.stringify(j.mini));
   check('heti mini poszt: Instagram (JPEG kép, link a profilban)', j.mini?.ig?.status === 'ok' && mi && /f=ig/.test(mi.body.image_url) && /profilban/.test(mi.body.caption));
+  {
+    // a heti mini is a közös világos/sötét ritmusban: a facebookos sorozat következő eleme
+    const seqFb = Number(await redis.get('social:seq:fb'));
+    const seqIg = Number(await redis.get('social:seq:ig'));
+    const tm = (u) => (String(u).match(/[?&]t=(light|dark)/) || [])[1];
+    check(`heti mini: a közös ritmus következő témája (Facebook ${tm(mp.body.url)}, Instagram ${tm(mi.body.image_url)})`, tm(mp.body.url) === (seqFb % 2 === 1 ? 'light' : 'dark') && tm(mi.body.image_url) === (seqIg % 2 === 1 ? 'light' : 'dark'), JSON.stringify({ seqFb, seqIg }));
+  }
   const n1 = log.length;
   r = await fetch(BASE + '/api/cron/social', { headers: { authorization: 'Bearer helyi-cron-titok' } }); j = await r.json();
   check('a heti mini poszt hetente csak egyszer megy ki', !log.slice(n1).some((g) => g.m === 'POST' && (/mini-card/.test(g.body.url || '') || /mini-card/.test(g.body.image_url || ''))));

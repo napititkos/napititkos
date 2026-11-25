@@ -42,6 +42,6 @@ export async function GET(req) {
     console.error('Karbantartási hiba (kommentek törlése):', err.message);
     result.maintenance = { legacyComments: { error: err.message } };
   }
-  const failed = [result.fb, result.ig, result.mini?.fb, result.mini?.ig].some((r) => r?.status === 'error') || !!result.error;
+  const failed = [result.fb, result.fbCombo, result.ig, result.mini?.fb, result.mini?.ig].some((r) => r?.status === 'error') || !!result.error;
   return Response.json(result, { status: failed ? 500 : 200, headers: { 'Cache-Control': 'no-store' } });
 }

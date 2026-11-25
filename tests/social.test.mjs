@@ -96,3 +96,10 @@ test('reakciók: régi sorszámos és új emojis tárolás együtt, sorrend', as
   assert.deepEqual(o.slice(10), ['😤', '🦄']);
   assert.ok(!PRESET_EMOJIS.includes('😤') && PRESET_EMOJIS.length === 10);
 });
+
+test('szókereső + szólánc poszt szövege: kezdő- és célszó, a két link két külön hozzászólásban', async () => {
+  const { comboCaptions } = await import('../lib/social.js').catch(() => ({}));
+  if (!comboCaptions) return; // a modul Redis-kapcsolatot igényel; az e2e teszt ellenőrzi
+  const c = comboCaptions({ date: '2026-11-24', start: 'mely', end: 'nagy', siteUrl: 'https://napititkos.hu' });
+  assert.ok(/MELY → NAGY/.test(c.fb) && Array.isArray(c.fbComment) && c.fbComment.length === 2 && /\/szokereso$/.test(c.fbComment[0]) && /\/szolanc$/.test(c.fbComment[1]));
+});
