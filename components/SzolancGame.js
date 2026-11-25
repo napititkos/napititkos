@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GameHead from './GameHead';
 import CopyResultButton from './CopyResultButton';
+import NextGameButton from './NextGameButton';
+import { deviceId } from '../lib/device';
 import { fireConfetti } from './Confetti';
 import { useWinWave, diagFromBottomLeft } from '../lib/winWave';
 import { hasSzolancLength, isWord, oneLetterApart, shortestPath } from '../lib/szolanc';
@@ -49,6 +51,11 @@ export default function SzolancGame({ data, preview = false, compact = false, on
   const [msg, setMsg] = useState(null);
   const [shake, setShake] = useState(false);
   const solved = chain[chain.length - 1] === end;
+  // Újrapróbálás: a megfejtés után a lánc újra kirakható gyakorlásként (nem kerül újra a ranglistára,
+  // és nem írja felül a mentett megfejtést).
+  const [practice, setPractice] = useState(false);
+  const [showBest, setShowBest] = useState(false);
+  const [bestPath, setBestPath] = useState(null);
   const [elapsed, setElapsed] = useState(data.mine?.elapsed || saved.elapsed || 0);
   const startRef = useRef(Date.now() - (data.mine?.elapsed || saved.elapsed || 0));
   const [wave, playWave] = useWinWave();
@@ -105,7 +112,7 @@ export default function SzolancGame({ data, preview = false, compact = false, on
     return () => clearInterval(t);
   }, [solved]);
   useEffect(() => {
-    if (preview || (compact && !solved)) return;
+    if (preview || practice || (compact && !solved)) return;
     try {
       const all = loadAll();
       all[date] = compact ? { ...(all[date] || {}), archiveSolved: true } : { chain, elapsed, solved };
@@ -165,7 +172,7 @@ export default function SzolancGame({ data, preview = false, compact = false, on
       setElapsed(el);
       playWave(nc.length + 4);
       fireConfetti();
-      onSolved && onSolved({ steps: nc.length - 1, elapsed: el, chain: nc });
+      if (!practice) onSolved && onSolved({ steps: nc.length - 1, elapsed: el, chain: nc });
     }
   }, [solved, typed, last, chain, end, playWave, onSolved, N]);
 
@@ -194,6 +201,29 @@ export default function SzolancGame({ data, preview = false, compact = false, on
   }, [type, erase, submit]);
 
   const best = useMemo(() => (solved && hasSzolancLength(N) ? shortestPath(start, end) : []), [solved, start, end, N]);
+  // Egy legrövidebb út megmutatása (az 5 betűs szavak listája csak a szerveren van: onnan kérjük).
+  async function toggleBest() {
+    if (showBest) return setShowBest(false);
+    if (!bestPath) {
+      if (best.length) setBestPath(best);
+      else {
+        try {
+          const d = await (await fetch(`/api/szolanc?date=${date}&device=${deviceId()}`, { cache: 'no-store' })).json();
+          if (Array.isArray(d.best)) setBestPath(d.best);
+        } catch {}
+      }
+    }
+    setShowBest(true);
+  }
+  function retry() {
+    setPractice(true);
+    setShowBest(false);
+    setChain([start]);
+    setTyped('');
+    setMsg(null);
+    startRef.current = Date.now();
+    setElapsed(0);
+  }
   const steps = data.mine && !serverChain && chain.length === 2 ? data.mine.steps : chain.length - 1;
   const rows = [...chain, ...(solved ? [] : [end])];
   const dayLabel = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00Z`).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
@@ -278,13 +308,36 @@ export default function SzolancGame({ data, preview = false, compact = false, on
               Lépések: {steps} (legrövidebb: {par})
             </span>
           </div>
-          {steps > par && best.length > 0 && <p className="szl-best">Egy legrövidebb út: {best.map((w) => w.toUpperCase()).join(' → ')}</p>}
-          {!preview && !compact && (
-            <div className="result-actions game-result-actions">
-              <CopyResultButton
+          {practice && <p className="szl-best">Gyakorlás: ez a megoldás már nem kerül a ranglistára.</p>}
+          {showBest && bestPath && <p className="szl-best">Egy legrövidebb út: {bestPath.map((w) => w.toUpperCase()).join(' → ')}</p>}
+          {!preview && (
+            <div className="result-actions game-result-actions szl-actions">
+              {!compact && (
+                <CopyResultButton
                 round
                 text={[`Napi Szólánc #${number} – ${dayLabel}`, `Nehézség: ${level}/5`, `${start.toUpperCase()} → ${end.toUpperCase()}: ${steps} lépés (legrövidebb: ${par})`, `Idő: ${fmt(elapsed)}`, 'napititkos.hu/szolanc'].join('\n')}
-              />
+                />
+              )}
+              {/* Újrapróbálás (gyakorlásként) és – ha nem a legrövidebb úton jutott célba – egy legrövidebb út. */}
+              <div className="result-action">
+                <button type="button" className="primary round-btn" onClick={retry} aria-label="Újrapróbálom">
+                  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19.5 12a7.5 7.5 0 1 1-2.6-5.7M19.5 4.5v4.3h-4.3" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <span>Újrapróbálom</span>
+              </div>
+              {steps > par && (
+                <div className="result-action">
+                  <button type="button" className={`primary round-btn${showBest ? ' on' : ''}`} onClick={toggleBest} aria-label="Legrövidebb út" aria-pressed={showBest}>
+                    <span className="szl-hash1" aria-hidden="true">
+                      #1
+                    </span>
+                  </button>
+                  <span>Legrövidebb út</span>
+                </div>
+              )}
+              {!compact && <NextGameButton current="szolanc" />}
             </div>
           )}
         </>

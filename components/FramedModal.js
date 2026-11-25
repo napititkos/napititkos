@@ -8,16 +8,17 @@ import { usePathname, useRouter } from 'next/navigation';
 // oldalon vagyunk, csak bezárja az ablakot). Váltáskor csak a középső rész töltődik újra.
 // foot: saját lábléc (alapból Bezárás és Játszom).
 // playLabel: a Játszom gomb felirata helyett más (pl. „Következő játék”).
-const FramedModal = forwardRef(function FramedModal({ title, head, children, playHref, playLabel = null, onClose, labelId, bodyLabel, foot = null, className = '' }, bodyRef) {
+const FramedModal = forwardRef(function FramedModal({ title, head, children, playHref, playLabel = null, playHrefFn = null, onClose, labelId, bodyLabel, foot = null, className = '' }, bodyRef) {
   const router = useRouter();
   const pathname = usePathname();
   function play() {
     onClose();
-    if (!playHref) return;
+    const href = (playHrefFn && playHrefFn()) || playHref;
+    if (!href) return;
     // Ha már a játék oldalán vagyunk, nem töltjük újra: az oldal az eseményből tudja meg, mit kell
     // mutatnia (pl. a sudoku a 9x9-est, ha a 9x9-es ranglistáról jöttünk).
-    if (pathname === playHref.split('?')[0]) window.dispatchEvent(new CustomEvent('framed-play', { detail: { href: playHref } }));
-    else router.push(playHref);
+    if (pathname === href.split('?')[0]) window.dispatchEvent(new CustomEvent('framed-play', { detail: { href } }));
+    else router.push(href);
   }
   return (
     <div className="modal-overlay framed-overlay" onClick={onClose}>

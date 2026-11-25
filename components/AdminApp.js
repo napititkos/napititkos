@@ -6,6 +6,7 @@ import AdminMini from './AdminMini';
 import AdminSzo from './AdminSzo';
 import AdminSudoku from './AdminSudoku';
 import AdminSzolanc from './AdminSzolanc';
+import PrettySelect from './PrettySelect';
 
 const HINT_TYPES = [
   { key: 'definicio', label: 'Definíció' },
@@ -204,6 +205,16 @@ export default function AdminApp({ section = 'home' }) {
   const [loginError, setLoginError] = useState(null);
   const [entries, setEntries] = useState([]);
   const [users, setUsers] = useState([]);
+  // Felhasználók rendezése: regisztráció dátuma (legújabb / legrégebbi), név vagy e-mail szerint.
+  const [userSort, setUserSort] = useState('reg-desc');
+  const sortedUsers = [...users].sort((a, b) => {
+    const t = (u) => (u.registeredAt ? Date.parse(u.registeredAt) : 0);
+    const str = (x) => String(x || '').toLocaleLowerCase('hu');
+    if (userSort === 'reg-desc') return t(b) - t(a);
+    if (userSort === 'reg-asc') return t(a) - t(b);
+    if (userSort === 'name') return str(a.name).localeCompare(str(b.name), 'hu');
+    return str(a.email).localeCompare(str(b.email), 'hu');
+  });
   const [usersExpanded, setUsersExpanded] = useState(section === 'users');
   const [notifications, setNotifications] = useState([]);
   const [notifText, setNotifText] = useState('');
@@ -1111,7 +1122,18 @@ export default function AdminApp({ section = 'home' }) {
             {users.length === 0 && (
               <p style={{ color: 'var(--ink-soft)', fontSize: 14 }}>Még nincs regisztrált felhasználó.</p>
             )}
-            {users.map((u) => (
+            {users.length > 1 && (
+              <div className="ach-filter admin-user-sort" style={{ margin: '8px 0 6px' }}>
+                <span aria-hidden="true">Rendezés:</span>
+                <PrettySelect
+                  value={userSort}
+                  onChange={setUserSort}
+                  label="Felhasználók rendezése"
+                  options={[['reg-desc', 'Regisztráció (legújabb elöl)'], ['reg-asc', 'Regisztráció (legrégebbi elöl)'], ['name', 'Felhasználónév (A–Z)'], ['email', 'E-mail (A–Z)']]}
+                />
+              </div>
+            )}
+            {sortedUsers.map((u) => (
               <div className="sub-item" key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                 <div>
                   <div>

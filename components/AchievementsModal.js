@@ -7,6 +7,7 @@ const GAME_LABEL = { titkos: 'Titkosírás', szo: 'Szókereső', szolanc: 'Szól
 const GROUP_LABEL = { altalanos: 'Általános', ...GAME_LABEL };
 import { loadProgress } from '../lib/progress';
 import Icon from './Icon';
+import PrettySelect from './PrettySelect';
 import FramedModal, { GAME_HREF } from './FramedModal';
 
 export default function AchievementsModal() {
@@ -21,6 +22,15 @@ export default function AchievementsModal() {
   const [from, setFrom] = useState('titkos');
   const bodyRef = useRef(null);
   const [jump, setJump] = useState(null);
+  // Az utolsó csoport (Heti Mini) is felülre görgethető legyen: legalább akkora, mint a keret.
+  useEffect(() => {
+    if (!open) return;
+    const box = bodyRef.current;
+    const groups = box ? [...box.querySelectorAll('.ach-group')] : [];
+    groups.forEach((g) => (g.style.minHeight = ''));
+    const last = groups[groups.length - 1];
+    if (last && filter === "all" && groups.length > 1) last.style.minHeight = `${box.clientHeight}px`;
+  });
   // Megnyitáskor (és ha a Mini állapota megjön) az aktuális játék csoportja a keret tetejére kerül.
   useEffect(() => {
     if (!open || !jump || !multi) return;
@@ -66,6 +76,18 @@ export default function AchievementsModal() {
       bodyLabel="Trófeák listája"
       onClose={close}
       playHref={GAME_HREF[filter === 'all' || filter === 'altalanos' ? from : filter]}
+      // Az „Összes” nézetben a Játszom arra a játékra visz, amelyiknek a címe épp felül áll.
+      playHrefFn={() => {
+        if (filter !== 'all') return null;
+        const box = bodyRef.current;
+        if (!box) return null;
+        const groups = [...box.querySelectorAll('.ach-group')];
+        const top = box.scrollTop + 12;
+        let g = groups[0];
+        for (const x of groups) if (x.offsetTop <= top) g = x;
+        const k = g?.dataset.game;
+        return k && k !== 'altalanos' ? GAME_HREF[k] : null;
+      }}
       title={
         <>
           <Icon src="/icons/Trofeak.png" size={24} /> Trófeák
@@ -77,24 +99,19 @@ export default function AchievementsModal() {
       head={
         /* Szűrő: Összes (alapból, játékonként csoportosítva) / Titkosírás / Szókereső / Sudoku / Mini. */
         multi && (
-          <label className="ach-filter">
-            <span>Játék:</span>
-            <select
+          <div className="ach-filter">
+            <span aria-hidden="true">Játék:</span>
+            <PrettySelect
               value={filter}
-              onChange={(e) => {
-                setFilter(e.target.value);
+              onChange={(v) => {
+                setFilter(v);
                 setJump(null);
                 if (bodyRef.current) bodyRef.current.scrollTop = 0;
               }}
-              aria-label="Trófeák játék szerint"
-            >
-              {[['all', 'Összes'], ['altalanos', 'Általános'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['szolanc', 'Szólánc'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']].map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+              label="Trófeák játék szerint"
+              options={[['all', 'Összes'], ['altalanos', 'Általános'], ['titkos', 'Titkosírás'], ['szo', 'Szókereső'], ['szolanc', 'Szólánc'], ['sudoku', 'Sudoku'], ['mini', 'Heti Mini']]}
+            />
+          </div>
         )
       }
     >

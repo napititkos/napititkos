@@ -2335,3 +2335,26 @@ button.szl-key.wide{ flex: 0 0 54px; }
 .wrap{ min-height: calc(100vh - 40px); }
 /* Korábbi és Közösségi: a Játék gomb mindig jobbra áll (már betöltés közben is, nem ugrik át balról). */
 .kisokos-tabrow.sel-row .back-pill{ order: 0; margin-left: auto; }
+/* Legördülő választó (PrettySelect): buborék gomb, lekerekített lista – az oldal stílusában. */
+.pselect{ position: relative; display: inline-block; }
+.pselect-btn{ display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 14px; min-height: 32px; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--accent2); background: var(--accent2-soft); color: var(--accent-text); font-weight: 800; font-size: 14px; line-height: 1; white-space: nowrap; }
+.pselect-btn:hover{ transform: none; filter: brightness(1.04); }
+.pselect-btn svg{ transition: transform 0.15s ease; }
+.pselect.open .pselect-btn svg{ transform: rotate(180deg); }
+.pselect-list{ position: absolute; left: 0; top: calc(100% + 6px); z-index: 80; min-width: 100%; margin: 0; padding: 6px; list-style: none; background: var(--card); border: 2px solid var(--accent2); border-radius: 16px; box-shadow: 0 10px 24px rgba(31, 26, 43, 0.18); }
+.pselect-list li{ padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; color: var(--ink); cursor: pointer; white-space: nowrap; }
+.pselect-list li.act{ background: var(--accent-soft); }
+.pselect-list li.on{ color: var(--accent-text); }
+.pselect-list li.on::after{ content: ' ✓'; }
+@media (prefers-color-scheme: dark){ .pselect-list{ box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5); } }
+/* A logó alatti első sor (választó, vissza gomb) ne érjen a logóhoz; a választó a gombokkal egy magas. */
+.kisokos-tabrow{ margin-top: 2px; }
+.ach-filter{ display: flex; align-items: center; gap: 8px; }
+/* Szólánc eredménysor: Eredmény másolása, Újrapróbálom, (Legrövidebb út), Következő játék. */
+.result-actions.szl-actions{ display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); justify-items: center; align-items: start; gap: 10px 4px; width: 100%; max-width: 440px; margin-left: auto; margin-right: auto; }
+.result-actions.szl-actions .result-action{ width: 100%; text-align: center; }
+.result-actions.szl-actions .result-action span{ white-space: normal; line-height: 1.2; }
+.szl-hash1{ font-family: var(--font-fredoka), Fredoka, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; color: #fff; }
+.round-btn.on{ box-shadow: 0 0 0 3px var(--accent2); }
+@media (max-width: 400px){ .result-actions.szl-actions .result-action span{ font-size: 12px; } }
+.result-actions.szl-actions .result-action .round-btn .szl-hash1{ color: #fff; font-size: 17px; font-weight: 700; line-height: 1; white-space: nowrap; }
