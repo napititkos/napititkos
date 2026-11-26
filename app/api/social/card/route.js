@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { kv } from '../../../../lib/kv';
 import { isValidDateStr } from '../../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../../lib/rateLimit';
+import { xmasFor } from '../../../../lib/xmas';
 import { renderSocialCard, themeForDay } from '../../../../lib/socialCard';
 import { socialEntryFor } from '../../../../lib/social';
 
@@ -26,7 +27,8 @@ export async function GET(req) {
   // A téma a közös világos/sötét posztritmusból jön (t=); régi címeknél a sorszám szerinti.
   const t = url.searchParams.get('t');
   const theme = t === 'light' || t === 'dark' ? t : themeForDay(found.dayNumber);
-  const image = renderSocialCard({ entry: found.entry, format, dayNumber: found.dayNumber, theme });
+  // December 1–25.: karácsonyi kép (a poszt napja szerint; ?x=1 / ?x=0 kipróbáláshoz).
+  const image = renderSocialCard({ entry: found.entry, format, dayNumber: found.dayNumber, theme, xmas: xmasFor(req.url, date) });
   const png = Buffer.from(await image.arrayBuffer());
   const body = format === 'ig' ? await sharp(png).jpeg({ quality: 90, mozjpeg: true }).toBuffer() : png;
   return new Response(body, {

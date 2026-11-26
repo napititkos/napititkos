@@ -16,6 +16,16 @@ export default function Logo({ size = 32, className = '', style }) {
         alt=""
         draggable={false}
       />
+      {/* December 1–25.: a sapkás kos (a sapka a kör fölé nyúlik; a CSS váltja a kettőt). */}
+      <img
+        className="site-logo-xmas"
+        src="/logo-xmas-96.png"
+        srcSet="/logo-xmas-96.png 96w, /logo-xmas-192.png 192w, /logo-xmas-384.png 384w"
+        sizes={typeof size === 'number' ? `${size}px` : '64px'}
+        alt=""
+        loading="lazy"
+        draggable={false}
+      />
     </span>
   );
 }

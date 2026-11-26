@@ -103,3 +103,9 @@ test('szókereső + szólánc poszt szövege: játékleírás nélkül, a két l
   const c = comboCaptions({ date: '2026-11-24', start: 'mely', end: 'nagy', siteUrl: 'https://napititkos.hu' });
   assert.ok(/^Mai szókereső és szólánc – /.test(c.fb) && !/találd meg|lépésenként/.test(c.fb) && Array.isArray(c.fbComment) && c.fbComment.length === 2 && /\/szokereso$/.test(c.fbComment[0]) && /\/szolanc$/.test(c.fbComment[1]));
 });
+
+test('karácsonyi időszak: december 1–25. (a képeken)', async () => {
+  const { isXmasDate } = await import('../lib/xmas.js');
+  assert.ok(isXmasDate('2026-12-01') && isXmasDate('2026-12-25'));
+  assert.ok(!isXmasDate('2026-11-30') && !isXmasDate('2026-12-26') && !isXmasDate('2027-01-01'));
+});

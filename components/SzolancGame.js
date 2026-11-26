@@ -293,7 +293,10 @@ export default function SzolancGame({ data, preview = false, compact = false, on
               )}
               {i === 3 && (
                 <button type="button" className="szl-key wide enter" onClick={submit} aria-label="Beküldés">
-                  ↵
+                  {/* a játék többi nyilával egyező stílus: vastag, lekerekített végű */}
+                  <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19 5v6.5a2 2 0 0 1-2 2H6.5M10.5 9l-4.5 4.5 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
               )}
             </div>

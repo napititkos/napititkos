@@ -5,7 +5,7 @@ import Logo from './Logo';
 // Ő, ezért az ékezeteket magából a betűtípus Ó betűjéből vágjuk ki (csak az ékezet látszik belőle),
 // így pontosan olyanok, mint a TITKOSÍRÁS Í és Á ékezetei.
 const Ring = ({ acute = false, umlaut = false, small = false, bare = false }) => (
-  <span className={`brand-o${small ? ' brand-o-small' : ''}${bare ? ' brand-o-bare' : ''}`}>
+  <span className={`brand-o${small ? ' brand-o-small' : ''}${bare ? ' brand-o-bare' : ''}${acute || umlaut ? ' has-acc' : ''}`}>
     <Logo size={null} className="brand-o-logo" />
     {acute && <Accent />}
     {umlaut && <Accent ch="Ö" cls="acc-uml" />}

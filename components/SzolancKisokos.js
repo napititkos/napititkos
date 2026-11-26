@@ -7,10 +7,10 @@ import RamCoach from './RamCoach';
 // gyakorló láncon (mentés nélkül). Két megoldás is jó: BOLT → BONT → FONT és BOLT → FOLT → FONT.
 const DEMO = { date: 'kisokos', number: 0, level: 1, start: 'bolt', end: 'font', par: 2, paths: 2 };
 const STEPS = [
-  { target: '.szolanc-kisokos .szl-board', text: 'Új játékunk a Szólánc! Fent a KEZDŐ SZÓ, lent a CÉL SZÓ. Juss el az egyikből a másikba!' },
+  { target: '.szolanc-kisokos .szl-board', text: 'Fent a KEZDŐ SZÓ, lent a CÉL SZÓ. Juss el az egyikből a másikba!' },
   { target: '.szolanc-kisokos .szl-row.input', text: 'A kettő közötti üres sorba írd be a következő szót. Minden lépésben pontosan egy betű változhat (a helye marad), és létező szónak kell lennie – ragozott alak is jó.' },
-  { target: '.szolanc-kisokos .szl-keys', text: 'Írj a billentyűzeten (gépen a saját billentyűzeteden is). A ⌫ töröl egy betűt, a ↵ beküldi a szót. Ha jó a szó, lenyílik egy új üres sor. Visszalépni úgy tudsz, hogy újra beírod az előző szót (ez is egy lépésnek számít).' },
-  { target: '.szolanc-kisokos .szl-row.target', text: 'A célszó azon betűi, amelyek már a helyükön vannak, kiemelve látszanak. Próbáld ki: BOLT-ból FONT, két lépésben! Két jó út is van: BOLT → BONT → FONT vagy BOLT → FOLT → FONT.' },
+  { target: '.szolanc-kisokos .szl-keys', text: 'Írj a billentyűzeten (gépen a saját billentyűzeteden is). A ⌫ töröl egy betűt, a nyíl gomb beküldi a szót. Ha jó a szó, lenyílik egy új üres sor. Visszalépni úgy tudsz, hogy újra beírod az előző szót (ez is egy lépésnek számít).' },
+  { target: '.szolanc-kisokos .szl-row.target', text: 'A célszó azon betűi, amelyek már a helyükön vannak, kiemelve látszanak. Próbáld ki: juss el BOLT-ból FONT-ba két lépésben!' },
 ];
 
 export default function SzolancKisokos() {

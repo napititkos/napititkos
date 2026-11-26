@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { isValidDateStr, todayStr } from '../../../../lib/date';
 import { clientIp, isLimited, tooMany } from '../../../../lib/rateLimit';
 import { renderComboCard } from '../../../../lib/socialCard';
+import { xmasFor } from '../../../../lib/xmas';
 import { comboFor } from '../../../../lib/social';
 
 // A szókereső + szólánc poszt képe: /api/social/combo-card?d=YYYY-MM-DD&t=light|dark. Csak a mai
@@ -17,6 +18,6 @@ export async function GET(req) {
   if (date > todayStr()) return Response.json({ error: 'not-found' }, { status: 404 });
   const c = await comboFor(date);
   if (!c) return Response.json({ error: 'not-found' }, { status: 404 });
-  const png = Buffer.from(await renderComboCard({ theme, date, ...c }).arrayBuffer());
+  const png = Buffer.from(await renderComboCard({ theme, date, ...c, xmas: xmasFor(req.url, date) }).arrayBuffer());
   return new Response(png, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300, s-maxage=300' } });
 }
