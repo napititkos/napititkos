@@ -8,7 +8,7 @@ import { HL_TYPES, highlightMap } from '../lib/clue';
 import Icon from './Icon';
 import { fireConfetti } from './Confetti';
 import { HINT_LABELS, HINT_ORDER, norm, emptyGuess, emptyLocked, HINT_HELP } from '../lib/puzzleLogic';
-import { enumerationFor } from '../lib/format';
+import { enumerationFor, stripEnum } from '../lib/format';
 import FieldHelp from './FieldHelp';
 
 // note: a dátum alatti külön sor (pl. „… bekerült a napi titkosírások közé”).
@@ -135,7 +135,7 @@ export default function PuzzlePlayer({ puzzle, onSolved, onGaveUp, initiallySolv
       {note && <div className="player-note">{note}</div>}
       <div className="clue-box" style={{ marginBottom: 10 }}>
         <div className="clue-text">
-          <ClueText clue={puzzle.clue} marks={highlightMap(puzzle.hints, answered ? HL_TYPES : revealed)} />{' '}
+          <ClueText clue={stripEnum(puzzle.clue)} marks={highlightMap(puzzle.hints, answered ? HL_TYPES : revealed)} />{' '}
           <span className="clue-enum">{enumerationFor(puzzle.answer)}</span>
         </div>
       </div>
