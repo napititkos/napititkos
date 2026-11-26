@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import CommunityDetail from './CommunityDetail';
 import Icon from './Icon';
 import SolvedMark from './SolvedMark';
+import PrettySelect from './PrettySelect';
 import ClueLine from './ClueLine';
 import { enumerationFor } from '../lib/format';
 import CommunityMinis from './CommunityMinis';
@@ -98,9 +99,20 @@ export default function CommunityPage() {
     <div className="wrap">
       <h1 className="sr-only">Közösségi rejtvények</h1>
       {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban és a korábbiaknál. */}
-      <div className="kisokos-tabrow sel-row">
+      {/* Egy sorban: játékválasztó, rendezés (titkosírásoknál) és a főoldal gomb. */}
+      <div className="kisokos-tabrow sel-row filter-row">
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} asSelect labels={{ titkos: 'Titkosírások', mini: 'Minik' }} />}
-        <BackButton pill className="kisokos-back" label="Mai rejtvény" />
+        {tabReady && !(miniLive && kind === 'mini') && (
+          <div className="ach-filter">
+            <span aria-hidden="true">Rendezés:</span>
+            <PrettySelect value={sort} onChange={setSort} label="Rendezés" options={SORTS.map((s) => [s.key, s.label])} />
+          </div>
+        )}
+        <a className="pill quick-pill home-pill" href="/" aria-label="Főoldal" title="Főoldal">
+          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" className="quick-ico">
+            <path d="M2 7.5 8 2.5l6 5M3.5 6.5V13h3.5V9.5h2V13h3.5V6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </a>
       </div>
       {!tabReady ? null : miniLive && kind === 'mini' ? (
         <CommunityMinis />
@@ -115,16 +127,7 @@ export default function CommunityPage() {
           <b>Valaki megosztott veled egy közösségi titkosírást!</b>
         </div>
       )}
-      <div className="community-sort">
-        <label htmlFor="community-sort">Rendezés:</label>
-        <select id="community-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
-          {SORTS.map((s) => (
-            <option key={s.key} value={s.key}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </div>
+
       {error && <div className="card">{error}</div>}
       {!error && items === null && <div className="card">Betöltés…</div>}
       {items && items.length === 0 && (

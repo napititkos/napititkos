@@ -1982,8 +1982,9 @@ section('Szólánc admin: javaslatok, beemelés a következő szabad napra, tör
   const dd = j.days?.find((d) => d.date === next);
   check('admin: beemelés a következő szabad napra', rr.status === 200 && j.date === next && dd?.picked && dd.start === sg[0].start && j.next > next, JSON.stringify({ date: j.date, dd }));
   // rossz nehézségű feladvány nem emelhető be
-  const other = (st.nextLevel % 5) + 1;
-  const wrongLv = (await (await post('/api/admin/szolanc', { action: 'suggest', level: j.nextLevel === other ? (other % 5) + 1 : other, count: 1 }, adm)).json()).suggestions[0];
+  // biztosan eltérő lépésszámú nehézség (4 lépéses ↔ 5 lépéses), hogy egyik szóhosszon se illeszkedjen
+  const wantLv = j.nextLevel <= 2 ? 5 : 1;
+  const wrongLv = (await (await post('/api/admin/szolanc', { action: 'suggest', level: wantLv, count: 1 }, adm)).json()).suggestions[0];
   rr = await post('/api/admin/szolanc', { action: 'pick', start: wrongLv.start, end: wrongLv.end }, adm);
   check('admin: más nehézségű feladvány nem emelhető be: 400', rr.status === 400);
   rr = await post('/api/admin/szolanc', { action: 'remove', date: next }, adm);
