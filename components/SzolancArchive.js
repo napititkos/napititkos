@@ -1,4 +1,5 @@
 'use client';
+import { applyArchiveFilter, filterEmptyText } from '../lib/archiveFilter';
 import SolvedMark from './SolvedMark';
 import { useEffect, useState } from 'react';
 import SzolancGame from './SzolancGame';
@@ -16,7 +17,7 @@ function day(d) {
   }
 }
 
-export default function SzolancArchive() {
+export default function SzolancArchive({ status = 'all', level = 'all' }) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
@@ -39,8 +40,10 @@ export default function SzolancArchive() {
   if (!items) return <p>Betöltés…</p>;
   if (!items.length) return <p className="mini-muted">Még nincs korábbi Szólánc – a mai holnaptól kerül ide.</p>;
   // Év és hónap szerinti bontás (mint a korábbi titkosírásoknál): a legutóbbi hónap nyitva.
+  const shown = applyArchiveFilter(items, { status, level }, { isSolved: (it) => !!it.solvedMs, levelOf: (it) => it.level });
+  if (!shown.length) return <p className="mini-muted">{filterEmptyText(status, level)}</p>;
   const groups = [];
-  for (const it of items) {
+  for (const it of shown) {
     const [y, m] = it.date.split('-');
     let g = groups.find((x) => x.y === y);
     if (!g) groups.push((g = { y, months: [] }));

@@ -1,11 +1,12 @@
 'use client';
 import BackButton from '../../components/BackButton';
 import AuthPrompt from '../../components/AuthPrompt';
+import PrettySelect from '../../components/PrettySelect';
 import SolvedMark from '../../components/SolvedMark';
 import ResendVerification from '../../components/ResendVerification';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { enumerationFor } from '../../lib/format';
+import { enumerationFor, stripEnum } from '../../lib/format';
 import { loadProgress, saveProgress } from '../../lib/progress';
 import { recordArchiveVisit } from '../../lib/gameProgress';
 import PuzzlePlayer from '../../components/PuzzlePlayer';
@@ -107,15 +108,18 @@ export default function ArchivePage() {
     setArchiveSolved(prog.archiveSolved);
   }
 
-  // Szűrő: összes / megfejtett / megfejtetlen.
+  // Szűrők (a fejlécben, minden játékra): Állapot (összes / megfejtett / megfejtetlen) és Nehézség.
   const [filter, setFilter] = useState('all');
+  const [levelF, setLevelF] = useState('all');
   const grouped = useMemo(() => {
     if (!items) return {};
     const byYear = {};
     // A most nyitott (éppen játszott) rejtvény akkor is marad, ha közben kiesne a szűrőből
     // (pl. a "Megfejtetlen" nézetben megfejted).
     const list = items.filter(
-      (it) => (playingId && String(playingId).startsWith(it.id)) || (filter === 'all' ? true : filter === 'solved' ? isSolved(it) : !isSolved(it))
+      (it) =>
+        (playingId && String(playingId).startsWith(it.id)) ||
+        ((filter === 'all' ? true : filter === 'solved' ? isSolved(it) : !isSolved(it)) && (levelF === 'all' || String(it.difficulty || '') === levelF))
     );
     for (const it of list) {
       const [y, m] = (it.shownDate || '').split('-');
@@ -125,7 +129,7 @@ export default function ArchivePage() {
       byYear[y][m].push(it);
     }
     return byYear;
-  }, [items, filter, history, archiveSolved, playingId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [items, filter, levelF, history, archiveSolved, playingId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function solvedCount(list) {
     return list.filter((it) => isSolved(it)).length;
@@ -175,6 +179,21 @@ export default function ArchivePage() {
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo withSudoku withSzolanc asSelect labels={{ titkos: 'Titkosírás', szo: 'Szókereső', szolanc: 'Szólánc', mini: 'Heti Mini', sudoku: 'Sudoku' }} />}
         <BackButton pill className="kisokos-back" label="Mai rejtvény" />
       </div>
+      {/* Szűrők a fejlécben, minden játéknál ugyanott: Állapot és (ahol van) Nehézség. */}
+      {tabReady && status === 'authenticated' && (
+        <div className="archive-filters">
+          <div className="ach-filter">
+            <span aria-hidden="true">Állapot:</span>
+            <PrettySelect value={filter} onChange={setFilter} label="Állapot" options={[['all', 'Összes'], ['solved', 'Megfejtett'], ['unsolved', 'Megfejtetlen']]} />
+          </div>
+          {!(miniLive && kind === 'mini') && (
+            <div className="ach-filter">
+              <span aria-hidden="true">Nehézség:</span>
+              <PrettySelect value={levelF} onChange={setLevelF} label="Nehézség" options={[['all', 'Összes'], ['1', '1/5'], ['2', '2/5'], ['3', '3/5'], ['4', '4/5'], ['5', '5/5']]} />
+            </div>
+          )}
+        </div>
+      )}
       {tabReady && miniLive && kind === 'sudoku' && (
         <div className="rejtveny-tabs sudoku-arch-size" role="tablist" aria-label="Sudoku mérete">
           {[6, 9].map((n) => (
@@ -185,13 +204,13 @@ export default function ArchivePage() {
         </div>
       )}
       {!tabReady ? null : miniLive && kind === 'szolanc' ? (
-        <SzolancArchive />
+        <SzolancArchive status={filter} level={levelF} />
       ) : miniLive && kind === 'sudoku' ? (
-        <SudokuArchive size={sudSize} />
+        <SudokuArchive size={sudSize} status={filter} level={levelF} />
       ) : miniLive && kind === 'szo' ? (
-        <SzoArchive />
+        <SzoArchive status={filter} level={levelF} />
       ) : miniLive && kind === 'mini' ? (
-        <MiniArchive />
+        <MiniArchive status={filter} />
       ) : (
       <div className="card archive-card">
         {error && <p style={{ color: 'var(--bad)' }}>{error}</p>}
@@ -205,22 +224,10 @@ export default function ArchivePage() {
           </p>
         )}
 
-        {items && items.length > 0 && (
-          <div className="archive-filter" role="group" aria-label="Szűrés">
-            {[
-              ['all', 'Összes'],
-              ['solved', 'Megfejtett'],
-              ['unsolved', 'Megfejtetlen'],
-            ].map(([key, label]) => (
-              <button key={key} type="button" className={`archive-filter-btn${filter === key ? ' on' : ''}`} aria-pressed={filter === key} onClick={() => setFilter(key)}>
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+
         {items && items.length > 0 && years.length === 0 && (
           <p style={{ color: 'var(--ink-soft)', textAlign: 'center', margin: '8px 0 0' }}>
-            {filter === 'solved' ? 'Még nincs megfejtett korábbi titkosírásod.' : 'Minden korábbi titkosírást megfejtettél - szép munka!'}
+            {levelF !== 'all' ? 'Nincs a szűrésnek megfelelő korábbi titkosírás.' : filter === 'solved' ? 'Még nincs megfejtett korábbi titkosírásod.' : 'Minden korábbi titkosírást megfejtettél - szép munka!'}
           </p>
         )}
 
@@ -288,7 +295,7 @@ export default function ArchivePage() {
                                       ) : (
                                         <button type="button" className="community-head archive-head-compact" aria-expanded={false} onClick={() => setPlayingId(itemKey)}>
                                           {/* Kicsinyítve csak a kérdés látszik; ha megfejtette, jobbra egy pipa. */}
-                                          <ClueLine text={`${it.clue} ${enumerationFor(it.answer)}`} className="community-clue" lines={8} />
+                                          <ClueLine text={`${stripEnum(it.clue)} ${enumerationFor(it.answer)}`} className="community-clue" lines={8} />
                                           {solved && <SolvedMark />}
                                         </button>
                                       )}

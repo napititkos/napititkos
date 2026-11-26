@@ -2360,3 +2360,21 @@ button.szl-key.wide{ flex: 0 0 54px; }
 .result-actions.szl-actions .result-action .round-btn .szl-hash1{ color: #fff; font-size: 17px; font-weight: 700; line-height: 1; white-space: nowrap; }
 /* Lenyitott közösségi titkosírás: a dátum alatti sorban, balra zárva, ha bekerült a napiak közé. */
 .player-note{ margin: -2px 0 8px; font-size: 13px; font-weight: 700; color: var(--accent-text); text-align: left; }
+/* Korábbi rejtvények: a szűrők sora a játékválasztó alatt (Állapot, Nehézség). */
+.archive-filters{ display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 0 0 12px; }
+.archive-filters .ach-filter > span{ font-size: 13.5px; color: var(--ink-soft); font-weight: 700; }
+/* Admin listák egységesen (táblázatszerűen): balra az adatok (a hosszú név, e-mail tördelődik, nem
+   tolja el a gombokat), jobbra a gombok egy oszlopban, egy sorban; keskeny kijelzőn minden sorban
+   ugyanúgy az adatok alatt, balra zárva. */
+.sub-item{ display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; }
+.sub-item > :first-child{ min-width: 0; overflow-wrap: anywhere; }
+.sub-item .user-actions{ display: flex; flex-wrap: nowrap; gap: 6px; justify-content: flex-end; }
+.sub-item .user-actions button{ white-space: nowrap; }
+@media (max-width: 640px){
+  .sub-item{ grid-template-columns: minmax(0, 1fr); }
+  .sub-item .user-actions{ justify-content: flex-start; flex-wrap: wrap; }
+}
+/* A felhasználók gombjai rögzített oszlopokban (táblázatként): ahol kevesebb gomb van, ott üres a hely. */
+.sub-item .user-actions{ display: grid; grid-template-columns: repeat(2, 150px); gap: 6px; justify-content: end; }
+.sub-item .user-actions > *{ width: 100%; box-sizing: border-box; }
+@media (max-width: 640px){ .sub-item .user-actions{ grid-template-columns: repeat(2, minmax(0, 150px)); justify-content: start; } }

@@ -19,7 +19,7 @@ import LetterBoxes from './LetterBoxes';
 import PlayActions from './PlayActions';
 import ClueText from './ClueText';
 import { HL_TYPES, highlightMap } from '../lib/clue';
-import { enumerationFor } from '../lib/format';
+import { enumerationFor, stripEnum } from '../lib/format';
 import DailyReactions from './DailyReactions';
 import NotificationsButton from './NotificationsButton';
 import { HINT_HELP } from '../lib/puzzleLogic';
@@ -792,7 +792,7 @@ export default function DailyGame() {
         <div className="clue-row" style={{ borderTop: 'none', paddingTop: 0, paddingBottom: answered ? 0 : undefined }}>
           <div className="clue-box">
             <div className="clue-text">
-              <ClueText clue={puzzle.clue} marks={marks} />{' '}
+              <ClueText clue={stripEnum(puzzle.clue)} marks={marks} />{' '}
               <span className="clue-enum">{enumerationFor(puzzle.answer)}</span>
             </div>
           </div>
@@ -1018,7 +1018,7 @@ export default function DailyGame() {
             </h2>
             <div className="clue-box" style={{ marginBottom: 10 }}>
               <div className="clue-text">
-                <ClueText clue={puzzle.clue} marks={highlightMap(puzzle.hints, HL_TYPES)} />{' '}
+                <ClueText clue={stripEnum(puzzle.clue)} marks={highlightMap(puzzle.hints, HL_TYPES)} />{' '}
                 <span className="clue-enum">{enumerationFor(puzzle.answer)}</span>
               </div>
             </div>

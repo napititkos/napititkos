@@ -1,4 +1,5 @@
 'use client';
+import { applyArchiveFilter, filterEmptyText } from '../lib/archiveFilter';
 import SolvedMark from './SolvedMark';
 import { useEffect, useState } from 'react';
 import MiniPlayer from './MiniPlayer';
@@ -13,7 +14,7 @@ function fmt(ms) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export default function MiniArchive() {
+export default function MiniArchive({ status = 'all' }) {
   const [items, setItems] = useState(null);
   const [openId, setOpenId] = useState(null);
   const [error, setError] = useState('');
@@ -41,7 +42,8 @@ export default function MiniArchive() {
   if (!items.length) return <p className="mini-muted">Még nincs korábbi mini keresztrejtvény – az első a következő héten kerül ide.</p>;
   return (
     <div className="mini-list">
-      {items.map((it) => {
+      {applyArchiveFilter(items, { status }, { isSolved: (it) => it.solvedMs != null, levelOf: () => '' }).length === 0 && <p className="mini-muted">{filterEmptyText(status, 'all')}</p>}
+      {applyArchiveFilter(items, { status }, { isSolved: (it) => it.solvedMs != null, levelOf: () => '' }).map((it) => {
         const open = openId === it.id;
         return (
           <div key={it.id} className={`card mini-list-item${open ? ' open' : ''}`}>
