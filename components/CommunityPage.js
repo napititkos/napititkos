@@ -98,7 +98,12 @@ export default function CommunityPage() {
   return (
     <div className="wrap">
       <h1 className="sr-only">Közösségi rejtvények</h1>
-      {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban és a korábbiaknál. */}
+      {/* Felül az „Írj te is” gomb (titkosírásoknál), alatta egy sorban a játék, a rendezés és a főoldal gomb. */}
+      {tabReady && !(miniLive && kind === 'mini') && (
+        <a className="community-cta" href="/submit">
+        <Icon src="/icons/Rejtveny_bekuldese.png" size={22} className="icon-on-accent" /> Írj te is titkosírást!
+        </a>
+      )}
       {/* Egy sorban: játékválasztó, rendezés (titkosírásoknál) és a főoldal gomb. */}
       <div className="kisokos-tabrow sel-row filter-row">
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} asSelect labels={{ titkos: 'Titkosírások', mini: 'Minik' }} />}
@@ -112,15 +117,13 @@ export default function CommunityPage() {
           <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" className="quick-ico">
             <path d="M2 7.5 8 2.5l6 5M3.5 6.5V13h3.5V9.5h2V13h3.5V6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
+          <span className="home-label">Főoldal</span>
         </a>
       </div>
       {!tabReady ? null : miniLive && kind === 'mini' ? (
         <CommunityMinis />
       ) : (
       <>
-      <a className="community-cta" href="/submit">
-        <Icon src="/icons/Rejtveny_bekuldese.png" size={22} className="icon-on-accent" /> Írj te is titkosírást!
-      </a>
       {/* Vendégnek a bejelentkezés csak a lenyitott rejtvénynél jelenik meg (ott, ahol megfejtené). */}
       {status === 'unauthenticated' && sharedLink && (
         <div className="community-guest-note">

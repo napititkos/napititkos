@@ -64,6 +64,14 @@ export default function RootLayout({ children }) {
             __html: 'html{background:#F0F0FC;color-scheme:light dark}@media (prefers-color-scheme:dark){html{background:#16121E}}',
           }}
         />
+        {/* Karácsonyi kinézet december 1. és 25. között (budapesti idő szerint; a ?xmas=1 / ?xmas=0
+            paraméterrel kipróbálható). Még a festés előtt dől el, így nem villan. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var q=new URLSearchParams(location.search).get('xmas');var p=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Budapest',month:'2-digit',day:'2-digit'}).format(new Date()).split('-');var on=q==='1'||(q!=='0'&&p[0]==='12'&&+p[1]<=25);if(on)document.documentElement.classList.add('xmas')}catch(e){}",
+          }}
+        />
         {/* Az admin gomb az első megjelenéstől a helyén legyen (ne villanjon fel oldalváltáskor). */}
         <script
           dangerouslySetInnerHTML={{

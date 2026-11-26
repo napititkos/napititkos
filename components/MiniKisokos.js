@@ -28,7 +28,7 @@ const STEPS = [
     text: 'A Mini keresztrejtvénynél soronként és oszloponként (kivilágítva egyet-egyet) kell kitöltened a rejtvényt. Eredményt csak akkor fogsz látni, ha helyesen kitöltöd az egészet.',
   },
   { target: '.mini-kisokos .mini-board', text: 'Ha sorról oszlopra vagy oszlopról sorra váltanál, elég még egyszer rányomnod a cellára, amin épp állsz.' },
-  { target: '.mini-kisokos .mini-player-top button', text: 'Ha elbizonytalanodtál, nyomj az Ellenőrzés gombra, ami kijelzi, mely betűid helyesek. Jó fejtést!' },
+  { target: '.mini-kisokos .mini-check-row button', blink: '.mini-kisokos .mini-check-row button', text: 'Ha elbizonytalanodtál, nyomj az Ellenőrzés gombra, ami kijelzi, mely betűid helyesek. Jó fejtést!' },
 ];
 
 export default function MiniKisokos() {
@@ -45,7 +45,7 @@ export default function MiniKisokos() {
         </button>
       </div>
       {cur && (
-        <RamCoach target={cur.target} place="below" onOk={() => setStep((s) => s + 1)}>
+        <RamCoach target={cur.target} blink={cur.blink} place="below" onOk={() => setStep((s) => s + 1)}>
           {cur.text}
         </RamCoach>
       )}
