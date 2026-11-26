@@ -2363,18 +2363,38 @@ button.szl-key.wide{ flex: 0 0 54px; }
 /* Korábbi rejtvények: a szűrők sora a játékválasztó alatt (Állapot, Nehézség). */
 .archive-filters{ display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 0 0 12px; }
 .archive-filters .ach-filter > span{ font-size: 13.5px; color: var(--ink-soft); font-weight: 700; }
-/* Admin listák egységesen (táblázatszerűen): balra az adatok (a hosszú név, e-mail tördelődik, nem
-   tolja el a gombokat), jobbra a gombok egy oszlopban, egy sorban; keskeny kijelzőn minden sorban
-   ugyanúgy az adatok alatt, balra zárva. */
-.sub-item{ display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; }
-.sub-item > :first-child{ min-width: 0; overflow-wrap: anywhere; }
-.sub-item .user-actions{ display: flex; flex-wrap: nowrap; gap: 6px; justify-content: flex-end; }
-.sub-item .user-actions button{ white-space: nowrap; }
+/* Admin listák egységesen (táblázatszerűen): balra az adatok (a hosszú név, e-mail tördelődik), jobbra
+   a gombok két rögzített oszlopban (jogosultság | tiltás); ahol egy gomb hiányzik, ott üres a hely.
+   Keskeny kijelzőn a gombok az adatok alatt, két egyforma oszlopban, a felirat szükség esetén tördelődik
+   (soha nem csúszik egymásra). */
+.sub-item:has(> .user-actions), .sub-item:has(> button){ display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; }
+.sub-item:has(> .user-actions) > :first-child, .sub-item:has(> button) > :first-child{ min-width: 0; overflow-wrap: anywhere; }
+.sub-item .user-actions{ display: grid; grid-template-columns: 200px 140px; gap: 6px; max-width: none; justify-content: end; align-items: stretch; }
+.sub-item .user-actions > button{ width: 100%; box-sizing: border-box; white-space: normal; line-height: 1.2; margin: 0; }
+.sub-item .user-actions > .ua-role{ grid-column: 1; }
+.sub-item .user-actions > .ua-ban{ grid-column: 2; }
 @media (max-width: 640px){
-  .sub-item{ grid-template-columns: minmax(0, 1fr); }
-  .sub-item .user-actions{ justify-content: flex-start; flex-wrap: wrap; }
+  .sub-item:has(> .user-actions){ grid-template-columns: minmax(0, 1fr); }
+  .sub-item .user-actions{ grid-template-columns: 1fr 1fr; justify-content: stretch; }
 }
-/* A felhasználók gombjai rögzített oszlopokban (táblázatként): ahol kevesebb gomb van, ott üres a hely. */
-.sub-item .user-actions{ display: grid; grid-template-columns: repeat(2, 150px); gap: 6px; justify-content: end; }
-.sub-item .user-actions > *{ width: 100%; box-sizing: border-box; }
-@media (max-width: 640px){ .sub-item .user-actions{ grid-template-columns: repeat(2, minmax(0, 150px)); justify-content: start; } }
+/* Korábbi rejtvények: hosszú „Vissza a mai rejtvényhez” gomb, alatta egy sorban a szűrők; Közösségi:
+   egy sorban a játék, a rendezés és a főoldal gomb. Mobilon a szűrők felirat nélkül. */
+.back-pill.back-long{ display: flex; width: 100%; justify-content: center; box-sizing: border-box; margin: 2px 0 10px; min-height: 36px; }
+.back-pill.back-long .bp-label{ display: inline !important; }
+.kisokos-tabrow.filter-row{ flex-wrap: wrap; gap: 8px 12px; margin-top: 0; }
+.kisokos-tabrow.filter-row .home-pill{ margin-left: auto; flex: none; }
+@media (max-width: 560px){
+  .kisokos-tabrow.filter-row .ach-filter > span{ display: none; }
+  .kisokos-tabrow.filter-row{ gap: 6px; flex-wrap: nowrap; }
+  .kisokos-tabrow.filter-row .pselect-btn{ padding: 6px 9px 6px 11px; font-size: 13px; gap: 5px; }
+}
+.kisokos-tabrow.filter-row{ align-items: center; }
+.kisokos-tabrow.filter-row > .ach-filter, .kisokos-tabrow.filter-row > .rejtveny-select{ margin: 0; flex: 0 1 auto; min-width: 0; }
+.kisokos-tabrow.filter-row .pselect{ min-width: 0; max-width: 100%; }
+.kisokos-tabrow.filter-row .pselect-btn{ max-width: 100%; }
+.kisokos-tabrow.filter-row .pselect-btn > span{ overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 560px){
+  /* mobilon a választók kitöltik a sort, egyenlően osztozva a helyen */
+  .kisokos-tabrow.filter-row > .ach-filter, .kisokos-tabrow.filter-row > .rejtveny-select{ flex: 1 1 0; }
+  .kisokos-tabrow.filter-row .pselect, .kisokos-tabrow.filter-row .pselect-btn{ width: 100%; justify-content: space-between; }
+}

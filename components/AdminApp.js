@@ -1159,7 +1159,7 @@ export default function AdminApp({ section = 'home' }) {
                 <div className="user-actions">
                   {!u.banned && (
                     <button
-                      className="ghost small"
+                      className="ghost small ua-role"
                       onClick={() => changeUserRole(u.id, u.role === 'admin' ? 'user' : 'admin', u.name || u.email)}
                     >
                       {u.role === 'admin' ? 'Admin-jog visszavonása' : 'Admin-jog adása'}
@@ -1167,7 +1167,7 @@ export default function AdminApp({ section = 'home' }) {
                   )}
                   {u.role !== 'admin' && (
                     <button
-                      className={`ghost small${u.banned ? '' : ' danger'}`}
+                      className={`ghost small ua-ban${u.banned ? '' : ' danger'}`}
                       onClick={() => changeUserBan(u.id, !u.banned, u.name || u.email)}
                     >
                       {u.banned ? 'Tiltás feloldása' : 'Fiók tiltása'}

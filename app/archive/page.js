@@ -111,6 +111,20 @@ export default function ArchivePage() {
   // Szűrők (a fejlécben, minden játékra): Állapot (összes / megfejtett / megfejtetlen) és Nehézség.
   const [filter, setFilter] = useState('all');
   const [levelF, setLevelF] = useState('all');
+  // Keskeny kijelzőn a szűrők felirat nélkül, a választókban beszédesebb „Összes …” szöveggel.
+  // (Nagyon keskeny kijelzőn, ahol az „Összes rejtvény” sem férne ki, a választó a szűrő nevét mutatja.)
+  const [narrow, setNarrow] = useState(false);
+  const [tiny, setTiny] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 560px)');
+    const mq2 = window.matchMedia('(max-width: 480px)');
+    mq2.addEventListener?.('change', () => setTiny(mq2.matches));
+    setTiny(mq2.matches);
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, []);
   const grouped = useMemo(() => {
     if (!items) return {};
     const byYear = {};
@@ -175,25 +189,24 @@ export default function ArchivePage() {
     <div className="wrap">
       <h1 className="sr-only">Korábbi rejtvények</h1>
       {/* A játékválasztó és a vissza (Játék) gomb egy sorban, mint a Kisokosban. */}
-      <div className="kisokos-tabrow sel-row">
+      {/* Felül egy hosszú gomb vissza a mai rejtvényhez, alatta egy sorban a szűrők (Játék, Állapot,
+          Nehézség). Mobilon felirat nélkül: a választókban „Összes rejtvény”, „Összes nehézség”. */}
+      <BackButton pill className="kisokos-back back-long" label="Vissza a mai rejtvényhez" />
+      <div className="kisokos-tabrow sel-row filter-row">
         {miniLive && <RejtvenyTabs tab={kind} onChange={setKind} withSzo withSudoku withSzolanc asSelect labels={{ titkos: 'Titkosírás', szo: 'Szókereső', szolanc: 'Szólánc', mini: 'Heti Mini', sudoku: 'Sudoku' }} />}
-        <BackButton pill className="kisokos-back" label="Mai rejtvény" />
-      </div>
-      {/* Szűrők a fejlécben, minden játéknál ugyanott: Állapot és (ahol van) Nehézség. */}
-      {tabReady && status === 'authenticated' && (
-        <div className="archive-filters">
+        {tabReady && status === 'authenticated' && (
           <div className="ach-filter">
             <span aria-hidden="true">Állapot:</span>
-            <PrettySelect value={filter} onChange={setFilter} label="Állapot" options={[['all', 'Összes'], ['solved', 'Megfejtett'], ['unsolved', 'Megfejtetlen']]} />
+            <PrettySelect value={filter} onChange={setFilter} label="Állapot" options={[['all', tiny ? 'Állapot' : narrow ? 'Összes rejtvény' : 'Összes'], ['solved', 'Megfejtett'], ['unsolved', 'Megfejtetlen']]} />
           </div>
-          {!(miniLive && kind === 'mini') && (
-            <div className="ach-filter">
-              <span aria-hidden="true">Nehézség:</span>
-              <PrettySelect value={levelF} onChange={setLevelF} label="Nehézség" options={[['all', 'Összes'], ['1', '1/5'], ['2', '2/5'], ['3', '3/5'], ['4', '4/5'], ['5', '5/5']]} />
-            </div>
-          )}
-        </div>
-      )}
+        )}
+        {tabReady && status === 'authenticated' && !(miniLive && kind === 'mini') && (
+          <div className="ach-filter">
+            <span aria-hidden="true">Nehézség:</span>
+            <PrettySelect value={levelF} onChange={setLevelF} label="Nehézség" options={[['all', tiny ? 'Nehézség' : narrow ? 'Összes nehézség' : 'Összes'], ['1', '1/5'], ['2', '2/5'], ['3', '3/5'], ['4', '4/5'], ['5', '5/5']]} />
+          </div>
+        )}
+      </div>
       {tabReady && miniLive && kind === 'sudoku' && (
         <div className="rejtveny-tabs sudoku-arch-size" role="tablist" aria-label="Sudoku mérete">
           {[6, 9].map((n) => (
